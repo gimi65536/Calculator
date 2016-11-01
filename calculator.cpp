@@ -23,7 +23,7 @@ bool ope = true; //use for unary minus
 bool CPPTYPE = true; //whether to use C++ format arithmetic expression
 
 int getPrior(char& n, bool ope = ::ope){
-	if(n == '~'){
+	if(n == '~' || n == '#'){
 		return 5;
 	}else if(n == '*' || n == '/' || n == '%'){
 		return 4;
