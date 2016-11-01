@@ -2,6 +2,7 @@
 #include <stack>
 #include <string>
 #include <sstream>
+#include <fstream>
 using namespace std;
 
 const string inputOPERATOR = "+-*/%()=";
@@ -10,7 +11,7 @@ const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
 const string space = " ";
-const int put_length = 15; //should > 0
+int put_length = 15; //should > 0
 
 stack<char> operand; //will be used to save operator
 stack<int> number; //will be used to save number
@@ -300,6 +301,9 @@ bool check(const string& String){
 }
 
 int main(){
+	ifstream fin("setup.ini");
+	fin >> CPPTYPE >> put_length;
+	fin.close();
 	string str, buf, postfix, delim = inputOPERATOR + variable_namespace + scalar + space;
 	stringstream ss;
 	while(cout << ">>", getline(cin, str)){
@@ -439,8 +443,18 @@ int main(){
 					}else if(now_char == '*'){
 						number.push(ll * rl);
 					}else if(now_char == '/'){
+						if(rl == 0){
+							cout << "Cannot divided by 0!" << endl;
+							error = true;
+							break;
+						}
 						number.push(ll / rl);
 					}else if(now_char == '%'){
+						if(rl == 0){
+							cout << "Cannot divided by 0!" << endl;
+							error = true;
+							break;
+						}
 						number.push(ll % rl);
 					}else{
 						variable[temp_index_for_assign] = rl;
