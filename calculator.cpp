@@ -169,6 +169,8 @@ public:
 				if(positive){return false;}
 				else{return n == -2147483648;}
 			}
+		}else{
+			return false;
 		}
 	}
 	bool operator == (const BigNumber& n) const{
