@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cassert>
 #include <stack>
 #include <string>
 #include <sstream>
@@ -37,7 +36,7 @@ private:
 			}
 		}
 		if(a[SIZE - 1] >= 1000000000){
-			//OVERFLOW
+			cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 		}
 		return (*this);
 	}
@@ -84,7 +83,15 @@ public:
 		}else{
 			positive = true;
 		}
-		assert(str.length() <= 9 * SIZE);
+		while(str.length() > 0 && str[0] == '0'){
+			str.erase(0, 1);
+		}
+		if(str.length() > 9 * SIZE){
+			while(str.length() > 9 * SIZE){
+				str.erase(0, 1);
+			}
+			cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+		}
 		for(int i = 0;i < SIZE;i++){
 			a[i] = 0;
 		}
@@ -326,7 +333,15 @@ private:
 		}else{
 			positive = true;
 		}
-		assert(str.length() <= 9 * SIZE);
+		while(str.length() > 0 && str[0] == '0'){
+			str.erase(0, 1);
+		}
+		if(str.length() > 9 * SIZE){
+			while(str.length() > 9 * SIZE){
+				str.erase(0, 1);
+			}
+			//cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+		}
 		for(int i = 0;i < SIZE;i++){
 			a[i] = 0;
 		}
@@ -446,7 +461,9 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		}
 		sol.positive = solution_positive;
 		sol.proliferate();
-		if(HI != 0){} //overflow alerk
+		if(HI != 0){
+			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+		} //overflow alerk
 		(*this) = LO;
 	}else{
 		BigNumber base = (*this);
