@@ -123,7 +123,7 @@ public:
 		while(str.length() > 0 && str[0] == '0'){
 			str.erase(0, 1);
 		}
-		if(str.length() > 9 * SIZE){
+		while(str.length() > 9 * SIZE){
 			//cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 			SIZE *= 2;
 		}
