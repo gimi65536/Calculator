@@ -1,0 +1,71 @@
+﻿001 運算子為+-*/%()=，變數為命名空間之一個字元、數字為阿拉伯數字與其餘（排除運算子與變數）非空格符號組成之共同體
+002 一個運算子構成一個槽位、一個變數構成一個槽位、一個數字構成一個槽位
+003 空格必作為槽位分隔之用
+004 左邊右邊為鄰接之槽位，「範圍」指涉一段空間中的所有槽位
+
+common case
+A00 字串處理
+	After A01
+	將邊緣空格刪除、將左右皆為變數或數字的空格保留（三元偵測）
+A01 除了運算子 數字 變數命名空間 空格以外的任何符號將視為無物處理（1,000,000這種）
+	id est, 將所有除運算子、命名空間、阿拉伯數字、空格以外的符號刪去
+	while(string.find_first_not_of(...)){string.erase();}
+A02 首槽位若是運算子則只能是加減或左括號
+	單元偵測 deny * / % ) =
+A03 兩個乘除階級的符號不能並列
+	雙元偵測 deny ** */ *% /* // /% %* %/ %%
+A04 加減右邊不可接乘除階級的符號
+	雙元偵測 deny +* +/ +% -* -/ -%
+A05 左括號右邊不可接乘除階級的符號
+	雙元偵測 deny (* (/ (%
+A06 左括號右邊不能為右括號
+	雙元偵測 deny ()
+A07 指派符號左邊不得有任何運算子
+	雙元偵測 deny += -= *= /= %= (= )= ==
+A08 指派符號右邊不可有乘除階級的符號
+	雙元偵測 deny =* =/ =%
+A09 指派符號不得並列
+	included A07
+A10 指派符號前面必須且僅放一個變數
+	第一個等號左邊、兩個等號中間的範圍
+A11 等號前方範圍不得出現除左括號與等號以外的運算子
+	Allow ( operand... = and = ... =
+A12 不得只有空格
+	全局偵測 string.length()
+A13 結尾槽不得放除右括號外的運算子
+	單元偵測 deny + - * / % = (
+A14 右括號左邊不得出現除右括號外任何運算子
+	雙元偵測 deny +) -) *) /) %) () =)
+
+C-style case
+B00 字串處理
+	After B01 check
+	將邊緣空格刪除、將左右皆為變數或數字或單引號的空格保留（三元偵測）
+B01 只有單引號'符號能被視為無物處理（c++14）其餘無關符號視為錯誤
+	if(string.find_first_not_of(... + " ") != string::npos){error!}
+B02 左括號左邊不能是數字（含變數）
+	雙元偵測 deny [integer]( [var](
+	depend on B10, [integer] must be an integer, not a quote
+B03 右括號右邊不能是數字（含變數）
+	雙元偵測 deny )[integer] )[var]
+	depend on B10, [integer] must be an integer, not a quote
+B04 左右括號數量應該相等
+	全局偵測 the number of ( == the number of )
+B05 出現右括號時必須已經有至少一個尚未配對的左括號
+	順序偵測 when it comes ), deny no unpaired ( exists
+B06 數字不得與變數連在一起、變數不得兩兩相連
+	雙元偵測 deny [number][var] [var][number] [var][var]
+	depend on B10, [integer] must be an integer, not a quote
+B07 數字或變數彼此兩兩之間不得只有空格
+	depend on B00, eqivalent to deny any space
+B08 左右括號不得並列
+	雙元偵測 deny () )(
+B09 只有貼在字面常量的單引號可以被接受，其餘視為錯誤
+	三元偵測 only allow [integer]'[integer]
+B10 單引號不得放在數字左右緣
+	included B09
+B11 單引號不得連續出現
+	included B09
+	雙元偵測 deny ''
+B12 結尾不得放左括號
+	單元偵測 deny (

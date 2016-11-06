@@ -5,7 +5,9 @@
 #include <fstream>
 using namespace std;
 
-const int BASIC_SIZE = 4;
+//ofstream fout("log.txt", ios::app);
+
+const int BASIC_SIZE = 10;
 class BigNumber;
 class BigBigNumber;
 
@@ -37,6 +39,7 @@ private:
 		}
 		if(a[SIZE - 1] >= 1000000000){
 			cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			a[SIZE - 1] -= 1000000000;
 		}
 		return (*this);
 	}
@@ -80,6 +83,9 @@ public:
 		if(str.length() > 0 && str[0] == '-'){
 			positive = false;
 			str.erase(0, 1);
+		}else if(str.length() > 0 && str[0] == '+'){
+			positive = true;
+			str.erase(0, 1);
 		}else{
 			positive = true;
 		}
@@ -91,6 +97,7 @@ public:
 				str.erase(0, 1);
 			}
 			cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			//fout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 		}
 		for(int i = 0;i < SIZE;i++){
 			a[i] = 0;
@@ -465,6 +472,7 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		sol.proliferate();
 		if(HI != 0){
 			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			//fout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 		} //overflow alerk
 		(*this) = LO;
 	}else{
@@ -666,26 +674,33 @@ void alert(const int now, const int lef, const int righ, const string& str, cons
 	for(int i = now - put_length / 2;i < now + (put_length + 1) / 2;i++){
 		if(i >= len || i < 0){
 			cout << ' ';
+			//fout << ' ';
 		}else{
 			cout << str[i];
+			//fout << str[i];
 		}
 	}
 	cout << endl;
+	//fout << endl;
 	for(int i = 0;i < put_length;i++){
 		if(i >= put_length / 2 - lef && i <= put_length / 2 + righ){
 			cout << '^';
+			//fout << '^';
 		}else{
 			cout << ' ';
+			//fout << ' ';
 		}
 	}
 	cout << endl << error << endl;
+	//fout << endl << error << endl;
 }
 
-bool Cppcheack(string str){
+bool Cppcheck(string str){
 	string delim = inputOPERATOR + variable_namespace + scalar + space + digit_separator;
 	string& allow = delim, deny = delim;
 	if(str.find_first_not_of(delim) != string::npos){
 		cout << "You should not input any invalid symbol!" << endl;
+		//fout << "You should not input any invalid symbol!" << endl;
 		return false;
 	} //complete B01
 	delim = variable_namespace + scalar + digit_separator;
@@ -722,6 +737,7 @@ bool Cppcheack(string str){
 	} //complete B05
 	if(count != 0){
 		cout << "The number of ( does not equal to the number of ) !" << endl;
+		//fout << "The number of ( does not equal to the number of ) !" << endl;
 		return false;
 	} //complete B04
 	allow = scalar; //reuse
@@ -805,6 +821,7 @@ bool check(const string& String){
 	} //A00 complete
 	if(str.length() == 0){
 		cout << "You should input any valid symbol!" << endl;
+		//fout << "You should input any valid symbol!" << endl;
 		return false;
 	} //A12 complete
 	allow = variable_namespace + scalar + "+-("; //reuse
@@ -846,7 +863,7 @@ bool check(const string& String){
 		}
 		prev = now;
 	}
-	if(now == '+' || now == '-' || now == '*' || now == '/' || now == '%' || now == '='){
+	if(now == '+' || now == '-' || now == '*' || now == '/' || now == '%' || now == '(' || now == '='){
 		alert(len - 1, 0, 0, str, "Should not put this at this position!");
 		return false;
 	} //complete A13
@@ -879,7 +896,7 @@ bool check(const string& String){
 			apos = str.find_first_of('=', pos + 1);
 		} //complete A10
 	}
-	return !CPPTYPE || Cppcheack(String);
+	return !CPPTYPE || Cppcheck(String);
 }
 
 int main(){
@@ -888,12 +905,14 @@ int main(){
 	fin.close();
 	string str, buf, postfix, delim = inputOPERATOR + variable_namespace + scalar + space;
 	stringstream ss;
-	while(cout << ">>", getline(cin, str)){
+	while(cout << ">>> ", getline(cin, str)){
+		//fout << ">>> " << str << endl;
 		if(str.length() == 0){
 			continue;
 		}
 		if(!check(str)){
 			cout << "Please try to input again..." << endl;
+			//fout << "Please try to input again..." << endl;
 			continue;
 		}
 		postfix = "";
@@ -981,6 +1000,7 @@ int main(){
 				if(now_char == '~' || now_char == '#'){
 					if(number.size() < 1){
 						cout << "An unknown error happened!" << endl;
+						//fout << "An unknown error happened!" << endl;
 						error = true;
 						break;
 					}
@@ -1000,6 +1020,7 @@ int main(){
 				}else{
 					if(number.size() < 2){
 						cout << "An unknown error happened!" << endl;
+						//fout << "An unknown error happened!" << endl;
 						error = true;
 						break;
 					}
@@ -1028,6 +1049,7 @@ int main(){
 					}else if(now_char == '/'){
 						if(rl == 0){
 							cout << "Cannot divided by 0!" << endl;
+							//fout << "Cannot divided by 0!" << endl;
 							error = true;
 							break;
 						}
@@ -1035,6 +1057,7 @@ int main(){
 					}else if(now_char == '%'){
 						if(rl == 0){
 							cout << "Cannot divided by 0!" << endl;
+							//fout << "Cannot divided by 0!" << endl;
 							error = true;
 							break;
 						}
@@ -1052,12 +1075,15 @@ int main(){
 		}
 		if(number.size() != 1){
 			cout << "An unknown error happened!" << endl;
+			//fout << "An unknown error happened!" << endl;
 			continue;
 		}
 		if(number_is_var.top()){
 			cout << variable[number.top()] << endl;
+			//fout << variable[number.top()] << endl;
 		}else{
 			cout << number.top() << endl;
+			//fout << number.top() << endl;
 		}
 		number.pop();
 		number_is_var.pop();
