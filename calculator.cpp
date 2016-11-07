@@ -3,62 +3,33 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <chrono>
-#include <ctime>
 using namespace std;
 
-const int BASIC_SIZE = 4;
+//ofstream fout("log.txt", ios::app);
 
-ofstream fout("calculations_log.txt", ios::app);
+const int BASIC_SIZE = 10;
+class BigNumber;
+class BigBigNumber;
 
 class BigNumber{
+friend class BigBigNumber;
 private:
-	static int SIZE;
-	mutable int size;
-	mutable int* a;
+	static const int SIZE = BASIC_SIZE;
+	int a[SIZE];
 	bool positive;
-	void resize() const{
-		if(size != SIZE){
-			int* temp = new int[SIZE];
-			for(int i = 0;i < size && i < SIZE;i++){
-				temp[i] = a[i];
-			}
-			for(int i = size;i < SIZE;i++){
-				temp[i] = 0;
-			}
-			delete[] a;
-			a = temp;
-			size = SIZE;
-		}
-	}
-	void coresize(const BigNumber& n) const{
-		resize();
-		n.resize();
-	}
-	int getSize(){
-		for(int i = size - 1;i >= 0;i--){
-			if(a[i] != 0){
-				return i + 1;
-			}
-		}
-		return 1;
-	}
 	const BigNumber& PURE_assignment(const BigNumber& n){
-		coresize(n);
 		for(int i = 0;i < SIZE;i++){
 			a[i] = n.a[i];
 		}
 	}
 public:
 	const BigNumber& operator = (const BigNumber& n){
-		coresize(n);
 		PURE_assignment(n);
 		positive = n.positive;
 		return (*this);
 	}
 private:
 	const BigNumber& PURE_ADD_assignment(const BigNumber& n){
-		coresize(n);
 		for(int i = 0;i < SIZE;i++){
 			a[i] += n.a[i];
 			if(a[i] >= 1000000000 && i < SIZE - 1){
@@ -67,17 +38,12 @@ private:
 			}
 		}
 		if(a[SIZE - 1] >= 1000000000){
-			//cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-			int temp = SIZE;
-			SIZE *= 2;
-			coresize(n);
-			a[temp - 1] -= 1000000000;
-			a[temp] ++;
+			cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			a[SIZE - 1] -= 1000000000;
 		}
 		return (*this);
 	}
 	const BigNumber& PURE_MINUS_assignment(const BigNumber& n){
-		coresize(n);
 		for(int i = 0;i < SIZE;i++){
 			a[i] -= n.a[i];
 			if(a[i] < 0 && i < SIZE - 1){
@@ -88,7 +54,6 @@ private:
 		return (*this);
 	}
 	const BigNumber PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
-		resize();
 		stringstream ss;
 		ss << (*this) << 0;
 		string str = ss.str();
@@ -97,7 +62,6 @@ private:
 		return (*this);
 	}
 	const BigNumber PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
-		resize();
 		stringstream ss;
 		ss << (*this);
 		string str = ss.str();
@@ -110,9 +74,7 @@ private:
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	BigNumber(){
-		size = SIZE;
 		positive = true;
-		a = new int[SIZE];
 		for(int i = 0;i < SIZE;i++){
 			a[i] = 0;
 		}
@@ -121,18 +83,22 @@ public:
 		if(str.length() > 0 && str[0] == '-'){
 			positive = false;
 			str.erase(0, 1);
+		}else if(str.length() > 0 && str[0] == '+'){
+			positive = true;
+			str.erase(0, 1);
 		}else{
 			positive = true;
 		}
 		while(str.length() > 0 && str[0] == '0'){
 			str.erase(0, 1);
 		}
-		while(str.length() > 9 * SIZE){
-			//cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-			SIZE *= 2;
+		if(str.length() > 9 * SIZE){
+			while(str.length() > 9 * SIZE){
+				str.erase(0, 1);
+			}
+			cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			//fout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 		}
-		size = SIZE;
-		a = new int[SIZE];
 		for(int i = 0;i < SIZE;i++){
 			a[i] = 0;
 		}
@@ -153,24 +119,15 @@ public:
 		ss >> a[t];
 	}
 	BigNumber(int n){
-		size = SIZE;
-		a = new int[SIZE];
 		(*this) = n;
 	}
 	BigNumber(const BigNumber& n){
-		n.resize();
-		size = SIZE;
-		a = new int[SIZE];
 		for(int i = 0;i < SIZE;i++){
 			a[i] = n.a[i];
 		}
 		positive = n.positive;
 	}
-	~BigNumber(){
-		delete[] a;
-	}
 	size_t digit() const{
-		resize();
 		stringstream ss;
 		ss << (*this);
 		string str = ss.str();
@@ -180,7 +137,6 @@ public:
 		return str.length();
 	}
 	int getDigit(int n) const{
-		resize();
 		if(n <= 0 || n > 9 * SIZE){
 			return -1;
 		}
@@ -196,7 +152,6 @@ public:
 		return a[0] * (positive ? 1 : -1);
 	}
 	bool operator == (int n) const{
-		resize();
 		for(int i = SIZE - 1;i > 1;i--){
 			if(a[i] != 0){
 				return false;
@@ -226,7 +181,6 @@ public:
 		}
 	}
 	bool operator == (const BigNumber& n) const{
-		coresize(n);
 		bool zero = true;
 		for(int i = 0;i < SIZE;i++){
 			if(a[i] != n.a[i]){
@@ -245,7 +199,6 @@ public:
 		return !(*this == n);
 	}
 	bool operator < (const BigNumber& n) const{
-		coresize(n);
 		bool same_number = true, pure_number_smaller = false, zero = true;
 		for(int i = SIZE - 1;i >= 0;i--){
 			if(zero && (a[i] != 0 || n.a[i] != 0)){
@@ -276,7 +229,6 @@ public:
 		return (*this) < n || (*this) == n;
 	}
 	bool operator > (const BigNumber& n) const{
-		coresize(n);
 		bool same_number = true, pure_number_larger = false, zero = true;
 		for(int i = SIZE - 1;i >= 0;i--){
 			if(zero && (a[i] != 0 || n.a[i] != 0)){
@@ -307,17 +259,14 @@ public:
 		return (*this) > n || (*this) == n;
 	}
 	const BigNumber operator + () const{
-		resize();
 		return (*this);
 	}
 	const BigNumber operator - () const{
-		resize();
 		BigNumber temp = (*this);
 		temp.positive = !temp.positive;
 		return temp;
 	}
 	const BigNumber& operator = (const int& n){
-		resize();
 		for(int i = 1;i < SIZE;i++){
 			a[i] = 0;
 		}
@@ -331,13 +280,11 @@ public:
 		return (*this);
 	}
 	const BigNumber abs() const{
-		resize();
 		BigNumber temp = (*this);
 		temp.positive = true;
 		return temp;
 	}
 	const BigNumber& operator += (const BigNumber& n){
-		coresize(n);
 		if(positive == n.positive){ //straightly add
 			PURE_ADD_assignment(n);
 		}else if(abs() >= n.abs()){
@@ -350,13 +297,11 @@ public:
 		return (*this);
 	}
 	const BigNumber operator + (const BigNumber& n) const{
-		resize();
 		BigNumber temp = (*this);
 		temp += n;
 		return temp;
 	}
 	const BigNumber& operator -= (const BigNumber& n){
-		coresize(n);
 		if(positive != n.positive){ //straightly add
 			PURE_ADD_assignment(n);
 		}else if(abs() >= n.abs()){
@@ -369,7 +314,6 @@ public:
 		return (*this);
 	}
 	const BigNumber operator - (const BigNumber& n) const{
-		resize();
 		BigNumber temp = (*this);
 		temp -= n;
 		return temp;
@@ -380,42 +324,176 @@ public:
 	const BigNumber operator / (const BigNumber& n) const;
 	const BigNumber& operator %= (const BigNumber& n);
 	const BigNumber operator % (const BigNumber& n) const;
-	friend void var_resize();
 };
 
-int BigNumber::SIZE = BASIC_SIZE;
+BigNumber HI(0), LO(0); //using for mult and div
 
-BigNumber HI(0), LO(0);
+class BigBigNumber{ //only use in overflow, user cannot access it directly
+friend class BigNumber;
+private:
+	static const int SIZE = 2 * BASIC_SIZE;
+	int a[SIZE];
+	bool positive;
+	friend ostream& operator << (ostream& os, const BigBigNumber& n);
+	BigBigNumber(string str){
+		if(str[0] == '-'){
+			positive = false;
+			str.erase(0, 1);
+		}else{
+			positive = true;
+		}
+		while(str.length() > 0 && str[0] == '0'){
+			str.erase(0, 1);
+		}
+		if(str.length() > 9 * SIZE){
+			while(str.length() > 9 * SIZE){
+				str.erase(0, 1);
+			}
+			//cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+		}
+		for(int i = 0;i < SIZE;i++){
+			a[i] = 0;
+		}
+		if(str.length() == 0 || str.find_first_of("0123456789") == string::npos){
+			return;
+		}
+		stringstream ss;
+		int t = (str.length() - 1) / 9;
+		for(int i = 0;i < t;i++){
+			string sub = str.substr(str.length() - 9, 9);
+			ss << sub;
+			ss >> a[i];
+			ss.clear();
+			ss.str("");
+			str = str.erase(str.length() - 9, 9);
+		}
+		ss << str;
+		ss >> a[t];
+	}
+	BigBigNumber(const BigNumber& n){
+		for(int i = 0;i < SIZE / 2;i++){
+			a[i] = n.a[i];
+		}
+		for(int i = SIZE / 2;i < SIZE;i++){
+			a[i] = 0;
+		}
+		positive = n.positive;
+	}
+	BigBigNumber(const BigBigNumber& n){
+		for(int i = 0;i < SIZE;i++){
+			a[i] = n.a[i];
+		}
+		positive = n.positive;
+	}
+	const BigBigNumber& PURE_assignment(const BigBigNumber& n){
+		for(int i = 0;i < SIZE;i++){
+			a[i] = n.a[i];
+		}
+	}
+	const BigBigNumber& operator = (const BigBigNumber& n){
+		PURE_assignment(n);
+		positive = n.positive;
+		return (*this);
+	}
+	const BigBigNumber& operator = (const int& n){
+		for(int i = 1;i < SIZE;i++){
+			a[i] = 0;
+		}
+		if(n < 0){a[0] = -n;}
+		else{a[0] = n;}
+		while(a[0] >= 1000000000){
+			a[0] -= 1000000000;
+			a[1] ++;
+		}
+		positive = (n >= 0);
+		return (*this);
+	}
+	const BigBigNumber& PURE_ADD_assignment(const BigBigNumber& n){
+		for(int i = 0;i < SIZE;i++){
+			a[i] += n.a[i];
+			if(a[i] >= 1000000000 && i < SIZE - 1){
+				a[i + 1] ++;
+				a[i] -= 1000000000;
+			}
+		}
+		return (*this);
+	}
+	const BigBigNumber PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
+		stringstream ss;
+		ss << (*this) << 0;
+		string str = ss.str();
+		BigBigNumber temp(str);
+		(*this) = temp;
+		return (*this);
+	}
+	const BigBigNumber PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
+		stringstream ss;
+		ss << (*this);
+		string str = ss.str();
+		str.pop_back();
+		BigBigNumber temp(str);
+		(*this) = temp;
+		return (*this);
+	}
+	void proliferate(){
+		HI.positive = positive;
+		LO.positive = positive;
+		for(int i = 0;i < SIZE / 2;i++){
+			LO.a[i] = a[i];
+		}
+		for(int i = 0;i < SIZE / 2;i++){
+			HI.a[i] = a[BigNumber::SIZE + i];
+		}
+	}
+};
+
 static BigNumber be_divided(0);
 static BigNumber divide(0);
 
 const BigNumber& BigNumber::operator *= (const BigNumber& n){
-	coresize(n);
 	be_divided = 0;
 	divide = 0;
 	bool solution_positive = (positive == n.positive);
 	if(digit() + n.digit() > 9 * SIZE){
-		SIZE *= 2;
-		coresize(n);
-	}
-	BigNumber base = (*this);
-	(*this) = 0;
-	int t = n.digit();
-	for(int i = 2;i <= t;i++){
-		base.PURE_PSEUDOMULTIPLE_assignment();
-	}
-	for(int i = t;i >= 1;i--){
-		int time = n.getDigit(i);
-		for(int j = 1;j <= time;j++){
-			PURE_ADD_assignment(base);
+		BigBigNumber base = (*this);
+		BigBigNumber sol("0");
+		int t = n.digit();
+		for(int i = 2;i <= t;i++){
+			base.PURE_PSEUDOMULTIPLE_assignment();
 		}
-		base.PURE_PSEUDODIVIDE_assignment();
-	}
+		for(int i = t;i >= 1;i--){
+			int time = n.getDigit(i);
+			for(int j = 1;j <= time;j++){
+				sol.PURE_ADD_assignment(base);
+			}
+			base.PURE_PSEUDODIVIDE_assignment();
+		}
+		sol.positive = solution_positive;
+		sol.proliferate();
+		if(HI != 0){
+			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			//fout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+		} //overflow alerk
+		(*this) = LO;
+	}else{
+		BigNumber base = (*this);
+		(*this) = 0;
+		int t = n.digit();
+		for(int i = 2;i <= t;i++){
+			base.PURE_PSEUDOMULTIPLE_assignment();
+		}
+		for(int i = t;i >= 1;i--){
+			int time = n.getDigit(i);
+			for(int j = 1;j <= time;j++){
+				PURE_ADD_assignment(base);
+			}
+			base.PURE_PSEUDODIVIDE_assignment();
+		}
 		positive = solution_positive;
+	}
 	return (*this);
 }
 const BigNumber BigNumber::operator * (const BigNumber& n) const{
-	resize();
 	BigNumber temp = (*this);
 	temp *= n;
 	return temp;
@@ -448,7 +526,6 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 	LO = quo;
 }
 const BigNumber& BigNumber::operator /= (const BigNumber& n){
-	coresize(n);
 	if(divide == n && be_divided == (*this)){
 		(*this) = LO;
 		return (*this);
@@ -458,13 +535,11 @@ const BigNumber& BigNumber::operator /= (const BigNumber& n){
 	return (*this);
 }
 const BigNumber BigNumber::operator / (const BigNumber& n) const{
-	resize();
 	BigNumber temp = (*this);
 	temp /= n;
 	return temp;
 }
 const BigNumber& BigNumber::operator %= (const BigNumber& n){
-	coresize(n);
 	if(divide == n && be_divided == (*this)){
 		(*this) = HI;
 		return (*this);
@@ -474,15 +549,33 @@ const BigNumber& BigNumber::operator %= (const BigNumber& n){
 	return (*this);
 }
 const BigNumber BigNumber::operator % (const BigNumber& n) const{
-	resize();
 	BigNumber temp = (*this);
 	temp %= n;
 	return temp;
 }
 
 ostream& operator << (ostream& os, const BigNumber& n){
-	n.resize();
 	for(int i = BigNumber::SIZE - 1;i >= 0;i--){
+		if(n.a[i] != 0){
+			if(!n.positive){
+				os << '-';
+			}
+			os << n.a[i];
+			for(int j = i - 1;j >= 0;j--){
+				os.width(9);
+				os.fill('0');
+				os << n.a[j];
+			}
+			break;
+		}else if(i == 0){
+			os << 0;
+		}
+	}
+	return os;
+}
+
+ostream& operator << (ostream& os, const BigBigNumber& n){
+	for(int i = BigBigNumber::SIZE - 1;i >= 0;i--){
 		if(n.a[i] != 0){
 			if(!n.positive){
 				os << '-';
@@ -581,25 +674,25 @@ void alert(const int now, const int lef, const int righ, const string& str, cons
 	for(int i = now - put_length / 2;i < now + (put_length + 1) / 2;i++){
 		if(i >= len || i < 0){
 			cout << ' ';
-			fout << ' ';
+			//fout << ' ';
 		}else{
 			cout << str[i];
-			fout << str[i];
+			//fout << str[i];
 		}
 	}
 	cout << endl;
-	fout << endl;
+	//fout << endl;
 	for(int i = 0;i < put_length;i++){
 		if(i >= put_length / 2 - lef && i <= put_length / 2 + righ){
 			cout << '^';
-			fout << '^';
+			//fout << '^';
 		}else{
 			cout << ' ';
-			fout << ' ';
+			//fout << ' ';
 		}
 	}
 	cout << endl << error << endl;
-	fout << endl << error << endl;
+	//fout << endl << error << endl;
 }
 
 bool Cppcheck(string str){
@@ -607,7 +700,7 @@ bool Cppcheck(string str){
 	string& allow = delim, deny = delim;
 	if(str.find_first_not_of(delim) != string::npos){
 		cout << "You should not input any invalid symbol!" << endl;
-		fout << "You should not input any invalid symbol!" << endl;
+		//fout << "You should not input any invalid symbol!" << endl;
 		return false;
 	} //complete B01
 	delim = variable_namespace + scalar + digit_separator;
@@ -644,7 +737,7 @@ bool Cppcheck(string str){
 	} //complete B05
 	if(count != 0){
 		cout << "The number of ( does not equal to the number of ) !" << endl;
-		fout << "The number of ( does not equal to the number of ) !" << endl;
+		//fout << "The number of ( does not equal to the number of ) !" << endl;
 		return false;
 	} //complete B04
 	allow = scalar; //reuse
@@ -728,7 +821,7 @@ bool check(const string& String){
 	} //A00 complete
 	if(str.length() == 0){
 		cout << "You should input any valid symbol!" << endl;
-		fout << "You should input any valid symbol!" << endl;
+		//fout << "You should input any valid symbol!" << endl;
 		return false;
 	} //A12 complete
 	allow = variable_namespace + scalar + "+-("; //reuse
@@ -806,35 +899,20 @@ bool check(const string& String){
 	return !CPPTYPE || Cppcheck(String);
 }
 
-void var_resize(){
-	int max = 0;
-	for(int i = 0;i < 52;i++){
-		int tmp = variable[i].getSize();
-		if(tmp > max){max = tmp;}
-	}
-	if(max < BASIC_SIZE){max = BASIC_SIZE;}
-	BigNumber::SIZE = max;
-	for(int i = 0;i < 52;i++){
-		variable[i].resize();
-	}
-}
-
 int main(){
 	ifstream fin("setup.ini");
 	fin >> CPPTYPE >> put_length;
 	fin.close();
 	string str, buf, postfix, delim = inputOPERATOR + variable_namespace + scalar + space;
 	stringstream ss;
-	auto nowtime = chrono::system_clock::to_time_t(chrono::system_clock::now());
-	fout << endl << endl << ctime(&nowtime) << "Start to calculate..." << endl << endl;
 	while(cout << ">>> ", getline(cin, str)){
-		fout << ">>> " << str << endl;
+		//fout << ">>> " << str << endl;
 		if(str.length() == 0){
 			continue;
 		}
 		if(!check(str)){
 			cout << "Please try to input again..." << endl;
-			fout << "Please try to input again..." << endl;
+			//fout << "Please try to input again..." << endl;
 			continue;
 		}
 		postfix = "";
@@ -922,7 +1000,7 @@ int main(){
 				if(now_char == '~' || now_char == '#'){
 					if(number.size() < 1){
 						cout << "An unknown error happened!" << endl;
-						fout << "An unknown error happened!" << endl;
+						//fout << "An unknown error happened!" << endl;
 						error = true;
 						break;
 					}
@@ -942,7 +1020,7 @@ int main(){
 				}else{
 					if(number.size() < 2){
 						cout << "An unknown error happened!" << endl;
-						fout << "An unknown error happened!" << endl;
+						//fout << "An unknown error happened!" << endl;
 						error = true;
 						break;
 					}
@@ -971,7 +1049,7 @@ int main(){
 					}else if(now_char == '/'){
 						if(rl == 0){
 							cout << "Cannot divided by 0!" << endl;
-							fout << "Cannot divided by 0!" << endl;
+							//fout << "Cannot divided by 0!" << endl;
 							error = true;
 							break;
 						}
@@ -979,7 +1057,7 @@ int main(){
 					}else if(now_char == '%'){
 						if(rl == 0){
 							cout << "Cannot divided by 0!" << endl;
-							fout << "Cannot divided by 0!" << endl;
+							//fout << "Cannot divided by 0!" << endl;
 							error = true;
 							break;
 						}
@@ -993,25 +1071,22 @@ int main(){
 			}
 		}
 		if(error){
-			var_resize();
 			continue;
 		}
 		if(number.size() != 1){
 			cout << "An unknown error happened!" << endl;
-			fout << "An unknown error happened!" << endl;
-			var_resize();
+			//fout << "An unknown error happened!" << endl;
 			continue;
 		}
 		if(number_is_var.top()){
 			cout << variable[number.top()] << endl;
-			fout << variable[number.top()] << endl;
+			//fout << variable[number.top()] << endl;
 		}else{
 			cout << number.top() << endl;
-			fout << number.top() << endl;
+			//fout << number.top() << endl;
 		}
 		number.pop();
 		number_is_var.pop();
-		var_resize();
 	}
 	return 0;
 }
