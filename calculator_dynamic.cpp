@@ -349,6 +349,28 @@ public:
 		}
 		return (*this);
 	}
+	const BigNumber& operator += (const int& temp){
+		resize();
+		BigNumber n(temp);
+		if(positive == n.positive){ //straightly add
+			PURE_ADD_assignment(n);
+		}else if(abs() >= n.abs()){
+			PURE_MINUS_assignment(n);
+		}else{
+			const BigNumber temp = (*this);
+			(*this) = n;
+			PURE_MINUS_assignment(temp);
+		}
+		return (*this);
+	}
+	const BigNumber& operator ++ (){
+		(*this) += 1;
+		return (*this);
+	}
+	const BigNumber& operator ++ (int null){
+		++(*this);
+		return (*this);
+	}
 	const BigNumber operator + (const BigNumber& n) const{
 		resize();
 		BigNumber temp = (*this);
@@ -368,6 +390,28 @@ public:
 		}
 		return (*this);
 	}
+	const BigNumber& operator -= (const int& temp){
+		resize();
+		BigNumber n(temp);
+		if(positive != n.positive){ //straightly add
+			PURE_ADD_assignment(n);
+		}else if(abs() >= n.abs()){
+			PURE_MINUS_assignment(n);
+		}else{
+			const BigNumber temp = (*this);
+			(*this) = -n;
+			PURE_MINUS_assignment(temp);
+		}
+		return (*this);
+	}
+	const BigNumber& operator -- (){
+		(*this) -= 1;
+		return (*this);
+	}
+	const BigNumber& operator -- (int null){
+		--(*this);
+		return (*this);
+	}
 	const BigNumber operator - (const BigNumber& n) const{
 		resize();
 		BigNumber temp = (*this);
@@ -380,6 +424,7 @@ public:
 	const BigNumber operator / (const BigNumber& n) const;
 	const BigNumber& operator %= (const BigNumber& n);
 	const BigNumber operator % (const BigNumber& n) const;
+	const BigNumber operator ^ (const BigNumber& n) const;
 	friend void var_resize();
 };
 
@@ -479,6 +524,20 @@ const BigNumber BigNumber::operator % (const BigNumber& n) const{
 	temp %= n;
 	return temp;
 }
+const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
+	coresize(n);
+	BigNumber temp;
+	if(n < 0){
+		temp = 0;
+	}else{
+		temp = 1;
+		HI = 0, LO = 0;
+		for(BigNumber i = 1;i <= n;i++){
+			temp *= (*this);
+		}
+	}
+	return temp;
+}
 
 ostream& operator << (ostream& os, const BigNumber& n){
 	n.resize();
@@ -501,7 +560,8 @@ ostream& operator << (ostream& os, const BigNumber& n){
 	return os;
 }
 
-const string inputOPERATOR = "+-*/%()=";
+const string CPPinputOPERATOR = "+-*/%()=";
+const string inputOPERATOR = CPPinputOPERATOR + "^";
 const string OPERATOR = inputOPERATOR + "~#";
 const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const string scalar = "1234567890";
@@ -519,21 +579,23 @@ bool CPPTYPE = true; //whether to use C++ format arithmetic expression
 
 int getPrior(char& n, bool ope = ::ope){
 	if(n == '~' || n == '#'){
-		return 5;
+		return 50;
+	}else if(n == '^'){
+		return 45;
 	}else if(n == '*' || n == '/' || n == '%'){
-		return 4;
+		return 40;
 	}else if(!ope && (n == '+' || n == '-')){
-		return 3;
+		return 30;
 	}else if(n == '='){
-		return 2;
+		return 20;
 	}else if(ope && n == '-'){
 		n = '~'; //turn unary negative to '~'
-		return 5;
+		return 50;
 	}else if(ope && n == '+'){
 		n = '#'; //turn unary positive to '#'
-		return 5;
+		return 50;
 	}
-	return 1; //preserved for ()
+	return 10; //preserved for ()
 }
 
 BigNumber getIndex(const char& n){
@@ -547,7 +609,7 @@ BigNumber getIndex(const char& n){
 }
 
 bool left_to_right(const char& n){
-	if(n == '=' || n == '~' || n == '#'){
+	if(n == '=' || n == '~' || n == '#' || n == '^'){
 		return false;
 	}
 	return true;
@@ -603,7 +665,7 @@ void alert(const int now, const int lef, const int righ, const string& str, cons
 }
 
 bool Cppcheck(string str){
-	string delim = inputOPERATOR + variable_namespace + scalar + space + digit_separator;
+	string delim = CPPinputOPERATOR + variable_namespace + scalar + space + digit_separator;
 	string& allow = delim, deny = delim;
 	if(str.find_first_not_of(delim) != string::npos){
 		cout << "You should not input any invalid symbol!" << endl;
@@ -742,18 +804,18 @@ bool check(const string& String){
 		now = str[i];
 		if(is(prev, inputOPERATOR) && is(now, inputOPERATOR)){
 			if(prev == '+' || prev == '-'){
-				if(now == '*' || now == '/' || now == '%' || now == '=' || now == ')'){
-					alert(i, 1, 0, str, "Cannot put \"*/%)=\" right after operator \"+-\" !");
+				if(now == '*' || now == '/' || now == '%' || now == '=' || now == ')' || now == '^'){
+					alert(i, 1, 0, str, "Cannot put \"*/%)=^\" right after operator \"+-\" !");
 					return false;
 				} //complete A04
-			}else if(prev == '*' || prev == '/' || prev == '%'){
-				if(now == '*' || now == '/' || now == '%' || now == '=' || now == ')'){
-					alert(i, 1, 0, str, "Cannot put \"*/%)=\" right after operator \"*/%\" !");
+			}else if(prev == '*' || prev == '/' || prev == '%' || prev == '^'){
+				if(now == '*' || now == '/' || now == '%' || now == '=' || now == ')' || now == '^'){
+					alert(i, 1, 0, str, "Cannot put \"*/%)=^\" right after operator \"*/%^\" !");
 					return false;
 				} //complete A03
 			}else if(prev == '('){
-				if(now == '*' || now == '/' || now == '%' || now == ')' || now == '='){
-					alert(i, 1, 0, str, "Cannot put \"*/%)=\" right after operator \"(\" !");
+				if(now == '*' || now == '/' || now == '%' || now == ')' || now == '=' || now == '^'){
+					alert(i, 1, 0, str, "Cannot put \"*/%)=^\" right after operator \"(\" !");
 					return false;
 				} //complete A05 A06
 			}else if(prev == ')'){
@@ -762,7 +824,7 @@ bool check(const string& String){
 					return false;
 				}
 			}else if(prev == '='){
-				if(now == '*' || now == '/' || now == '%' || now == ')' || now == '='){
+				if(now == '*' || now == '/' || now == '%' || now == ')' || now == '=' || now == '^'){
 					alert(i, 1, 0, str, "Cannot put \"*/%)=\" right after operator \"=\" !");
 					return false;
 				} //complete A07 A08 A09 A14
@@ -770,7 +832,7 @@ bool check(const string& String){
 		}
 		prev = now;
 	}
-	if(now == '+' || now == '-' || now == '*' || now == '/' || now == '%' || now == '(' || now == '='){
+	if(now == '+' || now == '-' || now == '*' || now == '/' || now == '%' || now == '(' || now == '=' || now == '^'){
 		alert(len - 1, 0, 0, str, "Should not put this at this position!");
 		return false;
 	} //complete A13
@@ -984,6 +1046,8 @@ int main(){
 							break;
 						}
 						number.push(ll % rl);
+					}else if(now_char == '^'){
+						number.push(ll ^ rl);
 					}else{
 						variable[temp_index_for_assign] = rl;
 						number.push(rl);
