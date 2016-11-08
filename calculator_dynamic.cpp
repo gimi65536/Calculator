@@ -1047,7 +1047,7 @@ int main(){
 					}else if(now_char == '^'){
 						if(ll == 0 && rl < static_cast<BigNumber>(0)){
 							cout << "Cannot compute 0 to the power of negative number!" << endl;
-							//fout << "Cannot compute 0 to the power of negative number!" << endl;
+							fout << "Cannot compute 0 to the power of negative number!" << endl;
 							error = true;
 							break;
 						}
