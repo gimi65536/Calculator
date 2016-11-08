@@ -602,8 +602,14 @@ const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
 		temp = 0;
 	}else{
 		temp = 1;
+		HI = 0, LO = 0;
 		for(BigNumber i = 1;i <= n;i++){
 			temp *= (*this);
+			if(HI != 0){
+				//overflow
+				cout << "Stop the power calculation." << endl;
+				break;
+			}
 		}
 	}
 	return temp;
