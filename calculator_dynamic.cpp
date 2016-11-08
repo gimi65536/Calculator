@@ -272,7 +272,15 @@ public:
 			else{return false;}
 		}
 	}
+	bool operator < (const int& n) const{
+		resize();
+		BigNumber temp = n;
+		return (*this) < temp;
+	}
 	bool operator <= (const BigNumber& n) const{
+		return (*this) < n || (*this) == n;
+	}
+	bool operator <= (const int& n) const{
 		return (*this) < n || (*this) == n;
 	}
 	bool operator > (const BigNumber& n) const{
@@ -303,7 +311,15 @@ public:
 			else{return false;}
 		}
 	}
+	bool operator > (const int& n) const{
+		resize();
+		BigNumber temp = n;
+		return (*this) > temp;
+	}
 	bool operator >= (const BigNumber& n) const{
+		return (*this) > n || (*this) == n;
+	}
+	bool operator >= (const int& n) const{
 		return (*this) > n || (*this) == n;
 	}
 	const BigNumber operator + () const{
@@ -609,7 +625,7 @@ BigNumber getIndex(const char& n){
 }
 
 bool left_to_right(const char& n){
-	if(n == '=' || n == '~' || n == '#' || n == '^'){
+	if(n == '=' || n == '~' || n == '#' || n == '^' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
 		return false;
 	}
 	return true;
@@ -899,7 +915,7 @@ int main(){
 	ifstream fin("setup.ini");
 	fin >> CPPTYPE >> put_length;
 	fin.close();
-	string str, buf, postfix, delim = inputOPERATOR + additional_assignment_OPERATOR + variable_namespace + scalar + space;
+	string str, buf, postfix, delim = inputOPERATOR + variable_namespace + scalar + space;
 	stringstream ss;
 	auto nowtime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 	fout << endl << endl << ctime(&nowtime) << "Start to calculate..." << endl << endl;
@@ -916,7 +932,11 @@ int main(){
 		postfix = "";
 		ope = true;
 		bool error = false;
-		size_t pos = 0;
+		size_t pos = str.find_first_not_of(delim);
+		while(pos != string::npos){
+			str.erase(pos, 1);
+			pos = str.find_first_not_of(delim);
+		}
 		for(int i = 0;i < 5;i++){
 			pos = str.find(additional_assignment[i]);
 			while(pos != string::npos){
@@ -924,11 +944,6 @@ int main(){
 				str[pos] = additional_assignment_OPERATOR[i];
 				pos = str.find(additional_assignment[i]);
 			}
-		}
-		pos = str.find_first_not_of(delim);
-		while(pos != string::npos){
-			str.erase(pos, 1);
-			pos = str.find_first_not_of(delim);
 		}
 		while(number.size() > 0){
 			number.pop();
@@ -1070,7 +1085,7 @@ int main(){
 						}
 						number.push(ll % rl);
 					}else if(now_char == '^'){
-						if(ll == 0 && rl < static_cast<BigNumber>(0)){
+						if(ll == 0 && rl < 0){
 							cout << "Cannot compute 0 to the power of negative number!" << endl;
 							fout << "Cannot compute 0 to the power of negative number!" << endl;
 							error = true;
