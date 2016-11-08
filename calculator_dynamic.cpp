@@ -272,7 +272,15 @@ public:
 			else{return false;}
 		}
 	}
+	bool operator < (const int& n) const{
+		resize();
+		BigNumber temp = n;
+		return (*this) < temp;
+	}
 	bool operator <= (const BigNumber& n) const{
+		return (*this) < n || (*this) == n;
+	}
+	bool operator <= (const int& n) const{
 		return (*this) < n || (*this) == n;
 	}
 	bool operator > (const BigNumber& n) const{
@@ -303,7 +311,15 @@ public:
 			else{return false;}
 		}
 	}
+	bool operator > (const int& n) const{
+		resize();
+		BigNumber temp = n;
+		return (*this) > temp;
+	}
 	bool operator >= (const BigNumber& n) const{
+		return (*this) > n || (*this) == n;
+	}
+	bool operator >= (const int& n) const{
 		return (*this) > n || (*this) == n;
 	}
 	const BigNumber operator + () const{
@@ -562,7 +578,9 @@ ostream& operator << (ostream& os, const BigNumber& n){
 
 const string CPPinputOPERATOR = "+-*/%()=";
 const string inputOPERATOR = CPPinputOPERATOR + "^";
-const string OPERATOR = inputOPERATOR + "~#";
+const string additional_assignment_OPERATOR = "`!@$&";
+const string OPERATOR = inputOPERATOR + "~#" + additional_assignment_OPERATOR;
+const string additional_assignment[5] = {"+=", "-=", "*=", "/=", "%="};
 const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
@@ -584,7 +602,7 @@ int getPrior(char& n, bool ope = ::ope){
 		return 40;
 	}else if(!ope && (n == '+' || n == '-')){
 		return 30;
-	}else if(n == '='){
+	}else if(n == '=' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
 		return 20;
 	}else if(ope && n == '-'){
 		n = '~'; //turn unary negative to '~'
@@ -607,7 +625,7 @@ BigNumber getIndex(const char& n){
 }
 
 bool left_to_right(const char& n){
-	if(n == '=' || n == '~' || n == '#' || n == '^'){
+	if(n == '=' || n == '~' || n == '#' || n == '^' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
 		return false;
 	}
 	return true;
@@ -670,6 +688,13 @@ bool Cppcheck(string str){
 		fout << "You should not input any invalid symbol!" << endl;
 		return false;
 	} //complete B01
+	for(int i = 0;i < 5;i++){
+		size_t pos = str.find(additional_assignment[i]);
+		while(pos != string::npos){
+			str.erase(pos, 1);
+			pos = str.find(additional_assignment[i], pos + 1);
+		}
+	}
 	delim = variable_namespace + scalar + digit_separator;
 	size_t pos = str.find(' ');
 	while(pos != string::npos){
@@ -766,6 +791,13 @@ bool Cppcheck(string str){
 bool check(const string& String){
 	string str = String, delim = inputOPERATOR + variable_namespace + scalar + space;
 	string& allow = delim, deny = delim;
+	for(int i = 0;i < 5;i++){
+		size_t pos = str.find(additional_assignment[i]);
+		while(pos != string::npos){
+			str.erase(pos, 1);
+			pos = str.find(additional_assignment[i], pos + 1);
+		}
+	}
 	size_t pos = str.find_first_not_of(delim);
 	while(pos != string::npos){
 		str.erase(pos, 1);
@@ -904,6 +936,14 @@ int main(){
 		while(pos != string::npos){
 			str.erase(pos, 1);
 			pos = str.find_first_not_of(delim);
+		}
+		for(int i = 0;i < 5;i++){
+			pos = str.find(additional_assignment[i]);
+			while(pos != string::npos){
+				str.erase(pos, 1);
+				str[pos] = additional_assignment_OPERATOR[i];
+				pos = str.find(additional_assignment[i]);
+			}
 		}
 		while(number.size() > 0){
 			number.pop();
@@ -1045,16 +1085,37 @@ int main(){
 						}
 						number.push(ll % rl);
 					}else if(now_char == '^'){
-						if(ll == 0 && rl < static_cast<BigNumber>(0)){
+						if(ll == 0 && rl < 0){
 							cout << "Cannot compute 0 to the power of negative number!" << endl;
 							fout << "Cannot compute 0 to the power of negative number!" << endl;
 							error = true;
 							break;
 						}
 						number.push(ll ^ rl);
+					}else if(now_char == '`'){
+						number.push(variable[temp_index_for_assign] += rl);
+					}else if(now_char == '!'){
+						number.push(variable[temp_index_for_assign] -= rl);
+					}else if(now_char == '@'){
+						number.push(variable[temp_index_for_assign] *= rl);
+					}else if(now_char == '$'){
+						if(rl == 0){
+							cout << "Cannot divided by 0!" << endl;
+							fout << "Cannot divided by 0!" << endl;
+							error = true;
+							break;
+						}
+						number.push(variable[temp_index_for_assign] /= rl);
+					}else if(now_char == '&'){
+						if(rl == 0){
+							cout << "Cannot divided by 0!" << endl;
+							fout << "Cannot divided by 0!" << endl;
+							error = true;
+							break;
+						}
+						number.push(variable[temp_index_for_assign] %= rl);
 					}else{
-						variable[temp_index_for_assign] = rl;
-						number.push(rl);
+						number.push(variable[temp_index_for_assign] = rl);
 					}
 					number_is_var.push(false);
 				}
