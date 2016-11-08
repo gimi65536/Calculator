@@ -562,7 +562,9 @@ ostream& operator << (ostream& os, const BigNumber& n){
 
 const string CPPinputOPERATOR = "+-*/%()=";
 const string inputOPERATOR = CPPinputOPERATOR + "^";
-const string OPERATOR = inputOPERATOR + "~#";
+const string additional_assignment_OPERATOR = "`!@$&";
+const string OPERATOR = inputOPERATOR + "~#" + additional_assignment_OPERATOR;
+const string additional_assignment[5] = {"+=", "-=", "*=", "/=", "%="};
 const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
@@ -584,7 +586,7 @@ int getPrior(char& n, bool ope = ::ope){
 		return 40;
 	}else if(!ope && (n == '+' || n == '-')){
 		return 30;
-	}else if(n == '='){
+	}else if(n == '=' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
 		return 20;
 	}else if(ope && n == '-'){
 		n = '~'; //turn unary negative to '~'
@@ -670,6 +672,13 @@ bool Cppcheck(string str){
 		fout << "You should not input any invalid symbol!" << endl;
 		return false;
 	} //complete B01
+	for(int i = 0;i < 5;i++){
+		size_t pos = str.find(additional_assignment[i]);
+		while(pos != string::npos){
+			str.erase(pos, 1);
+			pos = str.find(additional_assignment[i], pos + 1);
+		}
+	}
 	delim = variable_namespace + scalar + digit_separator;
 	size_t pos = str.find(' ');
 	while(pos != string::npos){
@@ -766,6 +775,13 @@ bool Cppcheck(string str){
 bool check(const string& String){
 	string str = String, delim = inputOPERATOR + variable_namespace + scalar + space;
 	string& allow = delim, deny = delim;
+	for(int i = 0;i < 5;i++){
+		size_t pos = str.find(additional_assignment[i]);
+		while(pos != string::npos){
+			str.erase(pos, 1);
+			pos = str.find(additional_assignment[i], pos + 1);
+		}
+	}
 	size_t pos = str.find_first_not_of(delim);
 	while(pos != string::npos){
 		str.erase(pos, 1);
@@ -883,7 +899,7 @@ int main(){
 	ifstream fin("setup.ini");
 	fin >> CPPTYPE >> put_length;
 	fin.close();
-	string str, buf, postfix, delim = inputOPERATOR + variable_namespace + scalar + space;
+	string str, buf, postfix, delim = inputOPERATOR + additional_assignment_OPERATOR + variable_namespace + scalar + space;
 	stringstream ss;
 	auto nowtime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 	fout << endl << endl << ctime(&nowtime) << "Start to calculate..." << endl << endl;
@@ -900,7 +916,16 @@ int main(){
 		postfix = "";
 		ope = true;
 		bool error = false;
-		size_t pos = str.find_first_not_of(delim);
+		size_t pos = 0;
+		for(int i = 0;i < 5;i++){
+			pos = str.find(additional_assignment[i]);
+			while(pos != string::npos){
+				str.erase(pos, 1);
+				str[pos] = additional_assignment_OPERATOR[i];
+				pos = str.find(additional_assignment[i]);
+			}
+		}
+		pos = str.find_first_not_of(delim);
 		while(pos != string::npos){
 			str.erase(pos, 1);
 			pos = str.find_first_not_of(delim);
@@ -1052,9 +1077,30 @@ int main(){
 							break;
 						}
 						number.push(ll ^ rl);
+					}else if(now_char == '`'){
+						number.push(variable[temp_index_for_assign] += rl);
+					}else if(now_char == '!'){
+						number.push(variable[temp_index_for_assign] -= rl);
+					}else if(now_char == '@'){
+						number.push(variable[temp_index_for_assign] *= rl);
+					}else if(now_char == '$'){
+						if(rl == 0){
+							cout << "Cannot divided by 0!" << endl;
+							fout << "Cannot divided by 0!" << endl;
+							error = true;
+							break;
+						}
+						number.push(variable[temp_index_for_assign] /= rl);
+					}else if(now_char == '&'){
+						if(rl == 0){
+							cout << "Cannot divided by 0!" << endl;
+							fout << "Cannot divided by 0!" << endl;
+							error = true;
+							break;
+						}
+						number.push(variable[temp_index_for_assign] %= rl);
 					}else{
-						variable[temp_index_for_assign] = rl;
-						number.push(rl);
+						number.push(variable[temp_index_for_assign] = rl);
 					}
 					number_is_var.push(false);
 				}
