@@ -1,4 +1,4 @@
-﻿001 運算子為+-*/%()=，變數為命名空間之一個字元、數字為阿拉伯數字與其餘（排除運算子與變數）非空格符號組成之共同體
+001 運算子為+-*/%()=，變數為命名空間之一個字元、數字為阿拉伯數字與其餘（排除運算子與變數）非空格符號組成之共同體
 002 一個運算子構成一個槽位、一個變數構成一個槽位、一個數字構成一個槽位
 003 空格必作為槽位分隔之用
 004 左邊右邊為鄰接之槽位，「範圍」指涉一段空間中的所有槽位
@@ -44,18 +44,18 @@ B00 字串處理
 B01 只有單引號'符號能被視為無物處理（c++14）其餘無關符號視為錯誤
 	if(string.find_first_not_of(... + " ") != string::npos){error!}
 B02 左括號左邊不能是數字（含變數）
-	雙元偵測 deny [integer]( [var](
-	depend on B10, [integer] must be an integer, not a quote
+	雙元偵測 deny [scalar]( [var](
+	depend on B10, [scalar] must be an integer, not a quote
 B03 右括號右邊不能是數字（含變數）
 	雙元偵測 deny )[integer] )[var]
-	depend on B10, [integer] must be an integer, not a quote
+	depend on B10, [scalar] must be an integer, not a quote
 B04 左右括號數量應該相等
 	全局偵測 the number of ( == the number of )
 B05 出現右括號時必須已經有至少一個尚未配對的左括號
 	順序偵測 when it comes ), deny no unpaired ( exists
 B06 數字不得與變數連在一起、變數不得兩兩相連
-	雙元偵測 deny [number][var] [var][number] [var][var]
-	depend on B10, [integer] must be an integer, not a quote
+	雙元偵測 deny [scalar][var] [var][scalar]
+	depend on B10, [scalar] must be an integer, not a quote
 B07 數字或變數彼此兩兩之間不得只有空格
 	depend on B00, eqivalent to deny any space
 B08 左右括號不得並列
@@ -67,7 +67,7 @@ B10 單引號不得放在數字左右緣
 B11 單引號不得連續出現
 	included B09
 	雙元偵測 deny ''
-B12 結尾不得放左括號
+*B12 結尾不得放左括號
 	單元偵測 deny (
 
 +005 在CommonCase加入^運算子
@@ -75,3 +75,13 @@ B12 結尾不得放左括號
 +A15 禁止+^ -^ *^ /^ %^ (^ =^
 +A16 禁止^* ^/ ^% ^) ^= ^^
 +A17 ^不得出現在頭尾
+
++006 變數名稱必須以命名空間的字元為開頭，名稱內可以包含命名空間的字元與阿拉伯數字
+
++007 新增+= -= *= /= %=額外指派運算子。執行上述下述有關「指派符號」之檢查時無特別指明一律視其為=
++A18 額外指派運算子前方無法接尚未初始化的變數
+	included A19
++008 初始化的形式：尚未出現之名稱+等號指派（不可為額外指派運算子）+有效數字
++A19 不得使用未定義變數進行一般運算與額外指派運算
+
++B13 不允許後方初始化
