@@ -327,9 +327,10 @@ public:
 		(*this) += 1;
 		return (*this);
 	}
-	const BigNumber& operator ++ (int null){
+	const BigNumber operator ++ (int null){
+		BigNumber tmp = (*this);
 		++(*this);
-		return (*this);
+		return tmp;
 	}
 	const BigNumber operator + (const BigNumber& n) const{
 		BigNumber temp = (*this);
@@ -366,8 +367,9 @@ public:
 		return (*this);
 	}
 	const BigNumber& operator -- (int null){
+		BigNumber tmp = (*this);
 		--(*this);
-		return (*this);
+		return tmp;
 	}
 	const BigNumber operator - (const BigNumber& n) const{
 		BigNumber temp = (*this);
