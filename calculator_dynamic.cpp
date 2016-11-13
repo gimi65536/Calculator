@@ -580,19 +580,130 @@ ostream& operator << (ostream& os, const BigNumber& n){
 
 const string CPPinputOPERATOR = "+-*/%()=";
 const string inputOPERATOR = CPPinputOPERATOR + "^";
-const string additional_assignment_OPERATOR = "`!@$&";
+const string additional_assignment_OPERATOR = "`!@\\&";
 const string OPERATOR = inputOPERATOR + "~#" + additional_assignment_OPERATOR;
 const string additional_assignment[5] = {"+=", "-=", "*=", "/=", "%="};
-const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
 const string space = " ";
 int put_length = 15; //should > 0
 
+class Node{
+friend class Variable_ADT;
+private:
+	string name;
+	Node* next;
+	Node(){
+		name = "\0";
+		num = 0;
+		next = nullptr;
+	}
+	Node(string nama){
+		name = nama;
+		num = 0;
+		next = nullptr;
+	}
+	Node(string nama, BigNumber n){
+		name = nama;
+		num = n;
+		next = nullptr;
+	}
+	~Node(){
+		delete next;
+	}
+public:
+	BigNumber num;
+	//set con/destructor private so that user cannot create Node casually
+	//but set Var_ADT friend so that it can create Node objects
+	//because Var_ADT is friend class, so we don't have to prepare getter or setter
+};
+
+class Variable_ADT{
+private:
+	Node* head;
+	BigNumber count;
+	Node Error_node;
+public:
+	Variable_ADT(){
+		head = nullptr;
+		count = 0;
+	}
+	Variable_ADT(bool temp){
+		head = nullptr;
+		count = 0;
+		if(temp){
+			BigNumber zero = 0;
+			for(int i = 0;i < 52;i++){
+				string nama;
+				nama += variable_namespace[i];
+				new_var(nama, zero);
+			}
+		}
+	}
+	~Variable_ADT(){
+		delete head;
+	}
+	BigNumber& operator [] (BigNumber i){
+		if(i < 0 || i >= count){
+			return Error_node.num;
+		}
+		/*Node* tmp = head;
+		for(BigNumber j = 0;j < i;j += 1){
+			tmp = head -> next;
+		}
+		return tmp -> num;*/ //this is wrong but I don't know why
+		Node* tmp = head;
+		for(BigNumber j = 0;j < count;j += 1){
+			if(j == i){
+				return tmp -> num;
+			}
+			tmp = tmp -> next;
+		}
+	}
+	bool new_var(string nama, const BigNumber& n){
+		if(count == 0){
+			head = new Node(nama, n);
+			count += 1;
+			return true;
+		}
+		Node* tmp = head;
+		while(tmp -> next != nullptr){
+			tmp = tmp -> next;
+		}
+		tmp -> next = new Node(nama, n);
+		count += 1;
+		return true;
+	}
+	bool check_name(string nama){
+		Node* tmp = head;
+		while(tmp != nullptr){
+			if(tmp -> name == nama){
+				return true;
+			}
+			tmp = tmp -> next;
+		}
+		return false;
+	}
+	BigNumber getIndex(string nama){
+		Node* tmp = head;
+		for(BigNumber i = 0;i < count;i += 1){
+			if(tmp -> name == nama){
+				return i;
+			}
+			tmp = tmp -> next;
+		}
+		return -1;
+	}
+	const BigNumber& getCount(){
+		return count;
+	}
+};
+
 stack<char> operand; //will be used to save operator
 stack<BigNumber> number; //will be used to save number
 stack<bool> number_is_var;
-BigNumber variable[52] = {0};
+Variable_ADT variable(true);
 
 bool ope = true; //use for unary minus
 bool CPPTYPE = true; //whether to use C++ format arithmetic expression
@@ -604,7 +715,7 @@ int getPrior(char& n, bool ope = ::ope){
 		return 40;
 	}else if(!ope && (n == '+' || n == '-')){
 		return 30;
-	}else if(n == '=' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
+	}else if(n == '=' || n == '`' || n == '!' || n == '@' || n == '\\' || n == '&'){
 		return 20;
 	}else if(ope && n == '-'){
 		n = '~'; //turn unary negative to '~'
@@ -616,18 +727,8 @@ int getPrior(char& n, bool ope = ::ope){
 	return 10; //preserved for ()
 }
 
-BigNumber getIndex(const char& n){
-	size_t pos = variable_namespace.find(n);
-	if(pos != string::npos){
-		BigNumber temp = pos;
-		return temp;
-	}
-	BigNumber temp = -1;
-	return temp; //error
-}
-
 bool left_to_right(const char& n){
-	if(n == '=' || n == '~' || n == '#' || n == '^' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
+	if(n == '=' || n == '~' || n == '#' || n == '^' || n == '`' || n == '!' || n == '@' || n == '\\' || n == '&'){
 		return false;
 	}
 	return true;
@@ -746,6 +847,36 @@ bool Cppcheck(string str){
 		}
 		pos = str.find('\'', pos + 1);
 	} //complete B09 B10 B11
+	bool variablesignal = false, scalarsignal = false;
+	for(int i = 0;i < len;i++){
+		if(is(str[i], inputOPERATOR)){
+			variablesignal = false;
+			scalarsignal = false;
+		}else if(is(str[i], scalar)){
+			if(!variablesignal){
+				scalarsignal = true;
+			}
+		}else if(is(str[i], variable_namespace)){
+			if(scalarsignal){
+				cout << "Variable name should initial with not integer" << endl;
+				fout << "Variable name should initial with not integer" << endl;
+				return false;
+			}//complete B06
+			variablesignal = true;
+		}else if(str[i] == '\''){
+			if(variablesignal){
+				cout << "Quote should be between two digits!" << endl;
+				fout << "Quote should be between two digits!" << endl;
+				return false;
+			}else if(scalarsignal){
+				if(i == str.length() - 1 || !is(str[i + 1], scalar)){
+					cout << "Quote should be between two digits!" << endl;
+					fout << "Quote should be between two digits!" << endl;
+					return false;
+				}
+			}
+		}
+	}
 	if(str[len - 1] == '('){
 		alert(len - 1, 0, 0, str, "Do NOT put left parenthesis at ending position!");
 		return false;
@@ -768,41 +899,57 @@ bool Cppcheck(string str){
 				alert(i, 1, 0, str, "Cannot put number or variable right after ) !");
 				return false;
 			} //complete B03 B08
-		}else if(is(prev, scalar)){
+		}else if(is(prev, scalar + variable_namespace)){
 			if(now == '('){
 				alert(i, 1, 0, str, "Cannot put ( right after number !");
 				return false;
-			}else if(is(now, variable_namespace)){
-				alert(i, 1, 0, str, "Cannot put variable right after number !");
-				return false;
 			}
-		}else if(is(prev, variable_namespace)){
-			if(now == '('){
-				alert(i, 1, 0, str, "Cannot put ( right after variable !");
-				return false;
-			}else if(is(now, variable_namespace)){
-				alert(i, 1, 0, str, "Cannot put number or variable right after variable !");
-				return false;
-			} //complete B02 B06
 		}
 		prev = now;
+	}
+	delim = "+-*/%()"; //reuse
+	pos = str.find_first_of(delim); //reuse
+	while(pos != string::npos){
+		str[pos] = ' ';
+		pos = str.find_first_of(delim);
+	}
+	pos = str.find('='); //reuse
+	if(pos != string::npos){
+		string substr = str.substr(pos + 1, len - pos - 1);
+		pos = substr.find('='); //reuse
+		while(pos != string::npos){
+			substr[pos] = ' ';
+		}
+		stringstream ss;
+		ss << substr;
+		string buf;
+		while(ss >> buf){
+			if(is(buf[0], variable_namespace) && !variable.check_name(buf)){
+				cout << "Disallow to initialize a variable after the first assignment." << endl;
+				fout << "Disallow to initialize a variable after the first assignment." << endl;
+				return false;
+			} //complete B13
+		}
 	}
 	return true;
 }
 
 bool check(const string& String){
-	string str = String, delim = inputOPERATOR + variable_namespace + scalar + space;
+	string str = String, specialassignmentstr = String, delim = inputOPERATOR + variable_namespace + scalar + space;
 	string& allow = delim, deny = delim;
 	for(int i = 0;i < 5;i++){
 		size_t pos = str.find(additional_assignment[i]);
 		while(pos != string::npos){
 			str.erase(pos, 1);
+			specialassignmentstr.erase(pos, 1);
+			specialassignmentstr[pos] = additional_assignment_OPERATOR[i];
 			pos = str.find(additional_assignment[i], pos + 1);
 		}
 	}
 	size_t pos = str.find_first_not_of(delim);
 	while(pos != string::npos){
 		str.erase(pos, 1);
+		specialassignmentstr.erase(pos, 1);
 		pos = str.find_first_not_of(delim);
 	} //A01 complete
 	delim = variable_namespace + scalar; //reuse
@@ -810,10 +957,12 @@ bool check(const string& String){
 	while(pos != string::npos){
 		if(pos == 0 || pos == str.length() - 1){
 			str.erase(pos, 1);
+			specialassignmentstr.erase(pos, 1);
 			pos = str.find(' ', pos);
 		}else{
 			if(!is(str[pos - 1], delim) || !is(str[pos + 1], delim)){
 				str.erase(pos, 1);
+				specialassignmentstr.erase(pos, 1);
 				pos = str.find(' ', pos);
 			}else{
 				pos = str.find(' ', pos + 1);
@@ -859,7 +1008,7 @@ bool check(const string& String){
 				if(now == '*' || now == '/' || now == '%' || now == ')' || now == '=' || now == '^'){
 					alert(i, 1, 0, str, "Cannot put \"*/%)=\" right after operator \"=\" !");
 					return false;
-				} //complete A07 A08 A09 A14
+				} //complete A07 A08 A09 A14 A15 A16
 			}
 		}
 		prev = now;
@@ -867,48 +1016,112 @@ bool check(const string& String){
 	if(now == '+' || now == '-' || now == '*' || now == '/' || now == '%' || now == '(' || now == '=' || now == '^'){
 		alert(len - 1, 0, 0, str, "Should not put this at this position!");
 		return false;
-	} //complete A13
+	} //complete A13 A17
 	pos = str.find_last_of('='); //reuse
 	if(pos != string::npos){
-		deny = "+-*/%)";
+		deny = "+-*/%)^";
+		bool variablesignal = false;
 		for(int i = 0;i < pos;i++){
 			if(is(str[i], deny)){
 				alert(i, 0, 0, str, "This operator should NOT appear BEFORE any assignment!");
 				return false;
-			}else if(is(str[i], scalar)){
+			}else if(is(str[i], scalar) && !variablesignal){
 				alert(i, 0, 0, str, "Scalar should NOT appear BEFORE any assignment!");
 				return false;
+			}else if(is(str[i], inputOPERATOR)){
+				variablesignal = false;
+			}else if(is(str[i], variable_namespace)){
+				variablesignal = true;
+			}else if(str[i] == ' '){
+				variablesignal = false;
 			}
 		} //complete A11
 		pos = str.find_first_of('=');
 		string substr = str.substr(0, pos);
-		if(substr.find_first_of(variable_namespace) != substr.find_last_of(variable_namespace)){
-			alert(pos, 0, 0, str, "Before this assignment, ONLY 1 VARIABLE is allowed!");
+		if(substr.find(" ") != string::npos){
+			cout << "Before an assignment, ONLY 1 VARIABLE is allowed!" << endl;
+			fout << "Before an assignment, ONLY 1 VARIABLE is allowed!" << endl;
 			return false;
 		}
 		size_t apos = str.find_first_of('=', pos + 1);
 		while(apos != string::npos){
 			substr = str.substr(pos, apos - pos - 1);
-			if(substr.find_first_of(variable_namespace) != substr.find_last_of(variable_namespace)){
-				alert(apos, 0, 0, str, "Before this assignment, ONLY 1 VARIABLE is allowed!");
+			if(substr.find(' ') != string::npos){
+				cout << "Before an assignment, ONLY 1 VARIABLE is allowed!" << endl;
+				fout << "Before an assignment, ONLY 1 VARIABLE is allowed!" << endl;
 				return false;
 			}
 			pos = apos;
 			apos = str.find_first_of('=', pos + 1);
 		} //complete A10
 	}
+	delim = "+-*/%()^"; //reuse
+	pos = str.find_first_of(delim); //reuse
+	while(pos != string::npos){
+		str[pos] = ' ';
+		specialassignmentstr[pos] = ' ';
+		pos = str.find_first_of(delim);
+	}
+	bool variablesignal = false;
+	for(int i = 0;i < str.length();i++){
+		if(str[i] == ' ' || is(str[i], inputOPERATOR)){
+			variablesignal = false;
+		}else if(is(str[i], variable_namespace)){
+			variablesignal = true;
+		}else if(is(str[i], scalar)){
+			if(!variablesignal){
+				str[i] = ' ';
+				specialassignmentstr[i] = ' ';
+			}
+		}
+	}
+	pos = str.find_last_of("="); //reuse
+	string substr;
+	if(pos != string::npos){
+		substr = str.substr(pos + 1, str.length() - pos - 1);
+	}else{
+		substr = str;
+	}
+	stringstream ss;
+	ss << substr;
+	string buf;
+	while(ss >> buf){
+		if(is(buf[0], variable_namespace) && !variable.check_name(buf)){
+			cout << "Cannot use undefined variable in computing" << endl;
+			fout << "Cannot use undefined variable in computing" << endl;
+			return false;
+		} //complete A19
+	}
+	pos = 0; //reuse
+	size_t apos = specialassignmentstr.find_first_of(additional_assignment_OPERATOR + "=");
+	while(apos != string::npos){
+		bool is_special = is(specialassignmentstr[apos], additional_assignment_OPERATOR);
+		substr = specialassignmentstr.substr(pos, apos - pos); //reuse
+		ss.clear();
+		ss.str("");
+		ss << substr;
+		while(ss >> buf){
+			if(is_special && !variable.check_name(buf)){
+				cout << "Don't put undefined variable before additional assignment operator." << endl;
+				fout << "Don't put undefined variable before additional assignment operator." << endl;
+				return false;
+			}
+		}
+		pos = apos + 1;
+		apos = specialassignmentstr.find_first_of(additional_assignment_OPERATOR + "=", pos);
+	} //complete A18
 	return !CPPTYPE || Cppcheck(String);
 }
 
 void var_resize(){
 	int max = 0;
-	for(int i = 0;i < 52;i++){
+	for(BigNumber i = 0;i < variable.getCount();++i){
 		int tmp = variable[i].getSize();
 		if(tmp > max){max = tmp;}
 	}
 	if(max < BASIC_SIZE){max = BASIC_SIZE;}
 	BigNumber::SIZE = max;
-	for(int i = 0;i < 52;i++){
+	for(BigNumber i = 0;i < variable.getCount();++i){
 		variable[i].resize();
 	}
 }
@@ -953,11 +1166,26 @@ int main(){
 		while(number_is_var.size() > 0){
 			number_is_var.pop();
 		}
-		pos = str.find_first_of(OPERATOR + variable_namespace);
-		while(pos != string::npos){
-			str.insert(pos + 1, " ");
-			str.insert(pos, " ");
-			pos = str.find_first_of(OPERATOR + variable_namespace, pos + 2);
+		bool variablesignal = false, scalarsignal = false;
+		for(int i = 0;i < str.length();i++){
+			if(is(str[i], inputOPERATOR)){
+				variablesignal = false;
+				scalarsignal = false;
+				str.insert(i + 1, " ");
+				str.insert(i, " ");
+				i++;
+			}else if(is(str[i], scalar)){
+				if(!variablesignal){
+					scalarsignal = true;
+				}
+			}else if(is(str[i], variable_namespace)){
+				if(scalarsignal){
+					scalarsignal = false;
+					str.insert(i, " ");
+					i++;
+				}
+				variablesignal = true;
+			}
 		}
 		//cout << str << endl;
 		ss.clear();
@@ -968,6 +1196,11 @@ int main(){
 				if(!ope){ //put * automatically
 					char now_char = '*';
 					put(now_char, postfix);
+				}
+				if(is(buf[0], variable_namespace)){ //if it is a var
+					if(!variable.check_name(buf)){
+						variable.new_var(buf, 0);
+					}
 				}
 				postfix += buf;
 				postfix += " ";
@@ -1015,7 +1248,7 @@ int main(){
 					number.push(temp);
 					number_is_var.push(false);
 				}else{
-					number.push(getIndex(buf[0]));
+					number.push(variable.getIndex(buf));
 					number_is_var.push(true);
 				}
 			}else{
@@ -1100,7 +1333,7 @@ int main(){
 						number.push(variable[temp_index_for_assign] -= rl);
 					}else if(now_char == '@'){
 						number.push(variable[temp_index_for_assign] *= rl);
-					}else if(now_char == '$'){
+					}else if(now_char == '\\'){
 						if(rl == 0){
 							cout << "Cannot divided by 0!" << endl;
 							fout << "Cannot divided by 0!" << endl;

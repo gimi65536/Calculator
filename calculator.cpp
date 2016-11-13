@@ -1,691 +1,133 @@
-#include <iostream>
+#include "BigNumber_static.h"
 #include <stack>
-#include <string>
-#include <sstream>
 #include <fstream>
 using namespace std;
 
 //ofstream fout("log.txt", ios::app);
 
-const int BASIC_SIZE = 10;
-class BigNumber;
-class BigBigNumber;
-
-class BigNumber{
-friend class BigBigNumber;
-private:
-	static const int SIZE = BASIC_SIZE;
-	int a[SIZE];
-	bool positive;
-	const BigNumber& PURE_assignment(const BigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] = n.a[i];
-		}
-	}
-public:
-	const BigNumber& operator = (const BigNumber& n){
-		PURE_assignment(n);
-		positive = n.positive;
-		return (*this);
-	}
-private:
-	const BigNumber& PURE_ADD_assignment(const BigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] += n.a[i];
-			if(a[i] >= 1000000000 && i < SIZE - 1){
-				a[i + 1] ++;
-				a[i] -= 1000000000;
-			}
-		}
-		if(a[SIZE - 1] >= 1000000000){
-			cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-			a[SIZE - 1] -= 1000000000;
-		}
-		return (*this);
-	}
-	const BigNumber& PURE_MINUS_assignment(const BigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] -= n.a[i];
-			if(a[i] < 0 && i < SIZE - 1){
-				a[i + 1] --;
-				a[i] += 1000000000;
-			}
-		}
-		return (*this);
-	}
-	const BigNumber PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
-		stringstream ss;
-		ss << (*this) << 0;
-		string str = ss.str();
-		BigNumber temp(str);
-		(*this) = temp;
-		return (*this);
-	}
-	const BigNumber PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
-		stringstream ss;
-		ss << (*this);
-		string str = ss.str();
-		str.pop_back();
-		BigNumber temp(str);
-		(*this) = temp;
-		return (*this);
-	}
-	void COMMON_DIVIDE(const BigNumber& n) const;
-public:
-	friend ostream& operator << (ostream& os, const BigNumber& n);
-	BigNumber(){
-		positive = true;
-		for(int i = 0;i < SIZE;i++){
-			a[i] = 0;
-		}
-	}
-	BigNumber(string str){
-		if(str.length() > 0 && str[0] == '-'){
-			positive = false;
-			str.erase(0, 1);
-		}else if(str.length() > 0 && str[0] == '+'){
-			positive = true;
-			str.erase(0, 1);
-		}else{
-			positive = true;
-		}
-		while(str.length() > 0 && str[0] == '0'){
-			str.erase(0, 1);
-		}
-		if(str.length() > 9 * SIZE){
-			while(str.length() > 9 * SIZE){
-				str.erase(0, 1);
-			}
-			cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-			//fout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-		}
-		for(int i = 0;i < SIZE;i++){
-			a[i] = 0;
-		}
-		if(str.length() == 0 || str.find_first_of("0123456789") == string::npos){
-			return;
-		}
-		stringstream ss;
-		int t = (str.length() - 1) / 9;
-		for(int i = 0;i < t;i++){
-			string sub = str.substr(str.length() - 9, 9);
-			ss << sub;
-			ss >> a[i];
-			ss.clear();
-			ss.str("");
-			str = str.erase(str.length() - 9, 9);
-		}
-		ss << str;
-		ss >> a[t];
-	}
-	BigNumber(int n){
-		(*this) = n;
-	}
-	BigNumber(const BigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] = n.a[i];
-		}
-		positive = n.positive;
-	}
-	size_t digit() const{
-		stringstream ss;
-		ss << (*this);
-		string str = ss.str();
-		if(str[0] == '-'){
-			str.erase(0, 1);
-		}
-		return str.length();
-	}
-	int getDigit(int n) const{
-		if(n <= 0 || n > 9 * SIZE){
-			return -1;
-		}
-		int index = (n - 1) / 9;
-		int target = a[index];
-		n = (n - 1) % 9;
-		for(int i = 1;i <= n;i++){
-			target /= 10;
-		}
-		return target % 10;
-	}
-	operator int(){
-		return a[0] * (positive ? 1 : -1);
-	}
-	bool operator == (int n) const{
-		for(int i = SIZE - 1;i > 1;i--){
-			if(a[i] != 0){
-				return false;
-			}
-		}
-		if(a[1] == 0){
-			int temp = a[0];
-			if(!positive){temp *= -1;}
-			return temp == n;
-		}else if(a[1] == 1){
-			int temp = 1000000000 + a[0];
-			if(!positive){temp *= -1;}
-			return temp == n;
-		}else if(a[1] == 2){
-			if(a[0] <= 147483467){
-				int temp = 2000000000 + a[0];
-				if(!positive){temp *= -1;}
-				return temp == n;
-			}else if(a[0] > 147483648){
-				return false;
-			}else{
-				if(positive){return false;}
-				else{return n == -2147483648;}
-			}
-		}else{
-			return false;
-		}
-	}
-	bool operator == (const BigNumber& n) const{
-		bool zero = true;
-		for(int i = 0;i < SIZE;i++){
-			if(a[i] != n.a[i]){
-				return false;
-			}
-			if(a[i] != 0){
-				zero = false;
-			}
-		}
-		return zero || (positive == n.positive); //if 0, don't ask +-
-	}
-	bool operator != (int n) const{
-		return !(*this == n);
-	}
-	bool operator != (const BigNumber& n) const{
-		return !(*this == n);
-	}
-	bool operator < (const BigNumber& n) const{
-		bool same_number = true, pure_number_smaller = false, zero = true;
-		for(int i = SIZE - 1;i >= 0;i--){
-			if(zero && (a[i] != 0 || n.a[i] != 0)){
-				zero = false;
-			}
-			if(a[i] > n.a[i]){
-				pure_number_smaller = false;
-				same_number = false;
-				break;
-			}else if(a[i] < n.a[i]){
-				pure_number_smaller = true;
-				same_number = false;
-				break;
-			}
-		}
-		if(!same_number){ //impossibly be 0
-			if(positive && !n.positive){return false;}
-			else if(!positive && n.positive){return true;}
-			else if(positive){return pure_number_smaller;}
-			else{return !pure_number_smaller;}
-		}else{ //possibly be 0
-			if(zero){return false;}
-			else if(!positive && n.positive){return true;}
-			else{return false;}
-		}
-	}
-	bool operator < (const int& n) const{
-		BigNumber temp = n;
-		return (*this) < temp;
-	}
-	bool operator <= (const BigNumber& n) const{
-		return (*this) < n || (*this) == n;
-	}
-	bool operator <= (const int& n) const{
-		return (*this) < n || (*this) == n;
-	}
-	bool operator > (const BigNumber& n) const{
-		bool same_number = true, pure_number_larger = false, zero = true;
-		for(int i = SIZE - 1;i >= 0;i--){
-			if(zero && (a[i] != 0 || n.a[i] != 0)){
-				zero = false;
-			}
-			if(a[i] > n.a[i]){
-				pure_number_larger = true;
-				same_number = false;
-				break;
-			}else if(a[i] < n.a[i]){
-				pure_number_larger = false;
-				same_number = false;
-				break;
-			}
-		}
-		if(!same_number){ //impossibly be 0
-			if(positive && !n.positive){return true;}
-			else if(!positive && n.positive){return false;}
-			else if(positive){return pure_number_larger;}
-			else{return !pure_number_larger;}
-		}else{ //possibly be 0
-			if(zero){return false;}
-			else if(positive && !n.positive){return true;}
-			else{return false;}
-		}
-	}
-	bool operator > (const int& n) const{
-		BigNumber temp = n;
-		return (*this) > temp;
-	}
-	bool operator >= (const BigNumber& n) const{
-		return (*this) > n || (*this) == n;
-	}
-	bool operator >= (const int& n) const{
-		return (*this) > n || (*this) == n;
-	}
-	const BigNumber operator + () const{
-		return (*this);
-	}
-	const BigNumber operator - () const{
-		BigNumber temp = (*this);
-		temp.positive = !temp.positive;
-		return temp;
-	}
-	const BigNumber& operator = (const int& n){
-		for(int i = 1;i < SIZE;i++){
-			a[i] = 0;
-		}
-		if(n < 0){a[0] = -n;}
-		else{a[0] = n;}
-		while(a[0] >= 1000000000){
-			a[0] -= 1000000000;
-			a[1] ++;
-		}
-		positive = (n >= 0);
-		return (*this);
-	}
-	const BigNumber abs() const{
-		BigNumber temp = (*this);
-		temp.positive = true;
-		return temp;
-	}
-	const BigNumber& operator += (const BigNumber& n){
-		if(positive == n.positive){ //straightly add
-			PURE_ADD_assignment(n);
-		}else if(abs() >= n.abs()){
-			PURE_MINUS_assignment(n);
-		}else{
-			const BigNumber temp = (*this);
-			(*this) = n;
-			PURE_MINUS_assignment(temp);
-		}
-		return (*this);
-	}
-	const BigNumber& operator += (const int& temp){
-		BigNumber n(temp);
-		if(positive == n.positive){ //straightly add
-			PURE_ADD_assignment(n);
-		}else if(abs() >= n.abs()){
-			PURE_MINUS_assignment(n);
-		}else{
-			const BigNumber temp = (*this);
-			(*this) = n;
-			PURE_MINUS_assignment(temp);
-		}
-		return (*this);
-	}
-	const BigNumber& operator ++ (){
-		(*this) += 1;
-		return (*this);
-	}
-	const BigNumber operator ++ (int null){
-		BigNumber tmp = (*this);
-		++(*this);
-		return tmp;
-	}
-	const BigNumber operator + (const BigNumber& n) const{
-		BigNumber temp = (*this);
-		temp += n;
-		return temp;
-	}
-	const BigNumber& operator -= (const BigNumber& n){
-		if(positive != n.positive){ //straightly add
-			PURE_ADD_assignment(n);
-		}else if(abs() >= n.abs()){
-			PURE_MINUS_assignment(n);
-		}else{
-			const BigNumber temp = (*this);
-			(*this) = -n;
-			PURE_MINUS_assignment(temp);
-		}
-		return (*this);
-	}
-	const BigNumber& operator -= (const int& temp){
-		BigNumber n(temp);
-		if(positive != n.positive){ //straightly add
-			PURE_ADD_assignment(n);
-		}else if(abs() >= n.abs()){
-			PURE_MINUS_assignment(n);
-		}else{
-			const BigNumber temp = (*this);
-			(*this) = -n;
-			PURE_MINUS_assignment(temp);
-		}
-		return (*this);
-	}
-	const BigNumber& operator -- (){
-		(*this) -= 1;
-		return (*this);
-	}
-	const BigNumber operator -- (int null){
-		BigNumber tmp = (*this);
-		--(*this);
-		return tmp;
-	}
-	const BigNumber operator - (const BigNumber& n) const{
-		BigNumber temp = (*this);
-		temp -= n;
-		return temp;
-	}
-	const BigNumber& operator *= (const BigNumber& n);
-	const BigNumber operator * (const BigNumber& n) const;
-	const BigNumber& operator /= (const BigNumber& n);
-	const BigNumber operator / (const BigNumber& n) const;
-	const BigNumber& operator %= (const BigNumber& n);
-	const BigNumber operator % (const BigNumber& n) const;
-	const BigNumber operator ^ (const BigNumber& n) const;
-};
-
-BigNumber HI(0), LO(0); //using for mult and div
-
-class BigBigNumber{ //only use in overflow, user cannot access it directly
-friend class BigNumber;
-private:
-	static const int SIZE = 2 * BASIC_SIZE;
-	int a[SIZE];
-	bool positive;
-	friend ostream& operator << (ostream& os, const BigBigNumber& n);
-	BigBigNumber(string str){
-		if(str[0] == '-'){
-			positive = false;
-			str.erase(0, 1);
-		}else{
-			positive = true;
-		}
-		while(str.length() > 0 && str[0] == '0'){
-			str.erase(0, 1);
-		}
-		if(str.length() > 9 * SIZE){
-			while(str.length() > 9 * SIZE){
-				str.erase(0, 1);
-			}
-			//cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-		}
-		for(int i = 0;i < SIZE;i++){
-			a[i] = 0;
-		}
-		if(str.length() == 0 || str.find_first_of("0123456789") == string::npos){
-			return;
-		}
-		stringstream ss;
-		int t = (str.length() - 1) / 9;
-		for(int i = 0;i < t;i++){
-			string sub = str.substr(str.length() - 9, 9);
-			ss << sub;
-			ss >> a[i];
-			ss.clear();
-			ss.str("");
-			str = str.erase(str.length() - 9, 9);
-		}
-		ss << str;
-		ss >> a[t];
-	}
-	BigBigNumber(const BigNumber& n){
-		for(int i = 0;i < SIZE / 2;i++){
-			a[i] = n.a[i];
-		}
-		for(int i = SIZE / 2;i < SIZE;i++){
-			a[i] = 0;
-		}
-		positive = n.positive;
-	}
-	BigBigNumber(const BigBigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] = n.a[i];
-		}
-		positive = n.positive;
-	}
-	const BigBigNumber& PURE_assignment(const BigBigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] = n.a[i];
-		}
-	}
-	const BigBigNumber& operator = (const BigBigNumber& n){
-		PURE_assignment(n);
-		positive = n.positive;
-		return (*this);
-	}
-	const BigBigNumber& operator = (const int& n){
-		for(int i = 1;i < SIZE;i++){
-			a[i] = 0;
-		}
-		if(n < 0){a[0] = -n;}
-		else{a[0] = n;}
-		while(a[0] >= 1000000000){
-			a[0] -= 1000000000;
-			a[1] ++;
-		}
-		positive = (n >= 0);
-		return (*this);
-	}
-	const BigBigNumber& PURE_ADD_assignment(const BigBigNumber& n){
-		for(int i = 0;i < SIZE;i++){
-			a[i] += n.a[i];
-			if(a[i] >= 1000000000 && i < SIZE - 1){
-				a[i + 1] ++;
-				a[i] -= 1000000000;
-			}
-		}
-		return (*this);
-	}
-	const BigBigNumber PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
-		stringstream ss;
-		ss << (*this) << 0;
-		string str = ss.str();
-		BigBigNumber temp(str);
-		(*this) = temp;
-		return (*this);
-	}
-	const BigBigNumber PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
-		stringstream ss;
-		ss << (*this);
-		string str = ss.str();
-		str.pop_back();
-		BigBigNumber temp(str);
-		(*this) = temp;
-		return (*this);
-	}
-	void proliferate(){
-		HI.positive = positive;
-		LO.positive = positive;
-		for(int i = 0;i < SIZE / 2;i++){
-			LO.a[i] = a[i];
-		}
-		for(int i = 0;i < SIZE / 2;i++){
-			HI.a[i] = a[BigNumber::SIZE + i];
-		}
-	}
-};
-
-static BigNumber be_divided(0);
-static BigNumber divide(0);
-
-const BigNumber& BigNumber::operator *= (const BigNumber& n){
-	be_divided = 0;
-	divide = 0;
-	bool solution_positive = (positive == n.positive);
-	if(digit() + n.digit() > 9 * SIZE){
-		BigBigNumber base = (*this);
-		BigBigNumber sol("0");
-		int t = n.digit();
-		for(int i = 2;i <= t;i++){
-			base.PURE_PSEUDOMULTIPLE_assignment();
-		}
-		for(int i = t;i >= 1;i--){
-			int time = n.getDigit(i);
-			for(int j = 1;j <= time;j++){
-				sol.PURE_ADD_assignment(base);
-			}
-			base.PURE_PSEUDODIVIDE_assignment();
-		}
-		sol.positive = solution_positive;
-		sol.proliferate();
-		if(HI != 0){
-			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-			//fout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-		} //overflow alerk
-		(*this) = LO;
-	}else{
-		BigNumber base = (*this);
-		(*this) = 0;
-		int t = n.digit();
-		for(int i = 2;i <= t;i++){
-			base.PURE_PSEUDOMULTIPLE_assignment();
-		}
-		for(int i = t;i >= 1;i--){
-			int time = n.getDigit(i);
-			for(int j = 1;j <= time;j++){
-				PURE_ADD_assignment(base);
-			}
-			base.PURE_PSEUDODIVIDE_assignment();
-		}
-		positive = solution_positive;
-	}
-	return (*this);
-}
-const BigNumber BigNumber::operator * (const BigNumber& n) const{
-	BigNumber temp = (*this);
-	temp *= n;
-	return temp;
-}
-void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
-	be_divided = (*this);
-	divide = n;
-	BigNumber module = (*this), minus = n, quo(0), plus(1);
-	bool solution_positive = (positive == n.positive);
-	int t = digit() - n.digit();
-	if(t < 0){
-		HI = (*this);
-		LO = 0;
-		return;
-	}
-	for(int i = 1;i <= t;i++){
-		minus.PURE_PSEUDOMULTIPLE_assignment();
-		plus.PURE_PSEUDOMULTIPLE_assignment();
-	}
-	for(int i = t;i >= 0;i--){
-		while(module.abs() >= minus.abs()){
-			module.PURE_MINUS_assignment(minus);
-			quo.PURE_ADD_assignment(plus);
-		}
-		minus.PURE_PSEUDODIVIDE_assignment();
-		plus.PURE_PSEUDODIVIDE_assignment();
-	}
-	quo.positive = solution_positive;
-	HI = module;
-	LO = quo;
-}
-const BigNumber& BigNumber::operator /= (const BigNumber& n){
-	if(divide == n && be_divided == (*this)){
-		(*this) = LO;
-		return (*this);
-	}
-	COMMON_DIVIDE(n);
-	(*this) = LO;
-	return (*this);
-}
-const BigNumber BigNumber::operator / (const BigNumber& n) const{
-	BigNumber temp = (*this);
-	temp /= n;
-	return temp;
-}
-const BigNumber& BigNumber::operator %= (const BigNumber& n){
-	if(divide == n && be_divided == (*this)){
-		(*this) = HI;
-		return (*this);
-	}
-	COMMON_DIVIDE(n);
-	(*this) = HI;
-	return (*this);
-}
-const BigNumber BigNumber::operator % (const BigNumber& n) const{
-	BigNumber temp = (*this);
-	temp %= n;
-	return temp;
-}
-const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
-	BigNumber temp;
-	if(n < 0){
-		temp = 0;
-	}else{
-		temp = 1;
-		HI = 0, LO = 0;
-		for(BigNumber i = 1;i <= n;i++){
-			temp *= (*this);
-			if(HI != 0){
-				//overflow
-				cout << "Stop the power calculation." << endl;
-				break;
-			}
-		}
-	}
-	return temp;
-}
-
-ostream& operator << (ostream& os, const BigNumber& n){
-	for(int i = BigNumber::SIZE - 1;i >= 0;i--){
-		if(n.a[i] != 0){
-			if(!n.positive){
-				os << '-';
-			}
-			os << n.a[i];
-			for(int j = i - 1;j >= 0;j--){
-				os.width(9);
-				os.fill('0');
-				os << n.a[j];
-			}
-			break;
-		}else if(i == 0){
-			os << 0;
-		}
-	}
-	return os;
-}
-
-ostream& operator << (ostream& os, const BigBigNumber& n){
-	for(int i = BigBigNumber::SIZE - 1;i >= 0;i--){
-		if(n.a[i] != 0){
-			if(!n.positive){
-				os << '-';
-			}
-			os << n.a[i];
-			for(int j = i - 1;j >= 0;j--){
-				os.width(9);
-				os.fill('0');
-				os << n.a[j];
-			}
-			break;
-		}else if(i == 0){
-			os << 0;
-		}
-	}
-	return os;
-}
-
 const string CPPinputOPERATOR = "+-*/%()=";
 const string inputOPERATOR = CPPinputOPERATOR + "^";
-const string additional_assignment_OPERATOR = "`!@$&";
+const string additional_assignment_OPERATOR = "`!@\\&";
 const string OPERATOR = inputOPERATOR + "~#" + additional_assignment_OPERATOR;
 const string additional_assignment[5] = {"+=", "-=", "*=", "/=", "%="};
-const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
 const string space = " ";
 int put_length = 15; //should > 0
 
+class Node{
+friend class Variable_ADT;
+private:
+	string name;
+	Node* next;
+	Node(){
+		name = "\0";
+		num = 0;
+		next = nullptr;
+	}
+	Node(string nama){
+		name = nama;
+		num = 0;
+		next = nullptr;
+	}
+	Node(string nama, BigNumber n){
+		name = nama;
+		num = n;
+		next = nullptr;
+	}
+	~Node(){
+		delete next;
+	}
+public:
+	BigNumber num;
+	//set con/destructor private so that user cannot create Node casually
+	//but set Var_ADT friend so that it can create Node objects
+	//because Var_ADT is friend class, so we don't have to prepare getter or setter
+};
+
+class Variable_ADT{
+private:
+	Node* head;
+	BigNumber count;
+	Node Error_node;
+public:
+	Variable_ADT(){
+		head = nullptr;
+		count = 0;
+	}
+	Variable_ADT(bool temp){
+		head = nullptr;
+		count = 0;
+		if(temp){
+			BigNumber zero = 0;
+			for(int i = 0;i < 52;i++){
+				string nama;
+				nama += variable_namespace[i];
+				new_var(nama, zero);
+			}
+		}
+	}
+	~Variable_ADT(){
+		delete head;
+	}
+	BigNumber& operator [] (BigNumber i){
+		if(i < 0 || i >= count){
+			return Error_node.num;
+		}
+		/*Node* tmp = head;
+		for(BigNumber j = 0;j < i;j += 1){
+			tmp = head -> next;
+		}
+		return tmp -> num;*/ //this is wrong but I don't know why
+		Node* tmp = head;
+		for(BigNumber j = 0;j < count;j += 1){
+			if(j == i){
+				return tmp -> num;
+			}
+			tmp = tmp -> next;
+		}
+	}
+	bool new_var(string nama, const BigNumber& n){
+		if(count == 0){
+			head = new Node(nama, n);
+			count += 1;
+			return true;
+		}
+		Node* tmp = head;
+		while(tmp -> next != nullptr){
+			tmp = tmp -> next;
+		}
+		tmp -> next = new Node(nama, n);
+		count += 1;
+		return true;
+	}
+	bool check_name(string nama){
+		Node* tmp = head;
+		while(tmp != nullptr){
+			if(tmp -> name == nama){
+				return true;
+			}
+			tmp = tmp -> next;
+		}
+		return false;
+	}
+	BigNumber getIndex(string nama){
+		Node* tmp = head;
+		for(BigNumber i = 0;i < count;i += 1){
+			if(tmp -> name == nama){
+				return i;
+			}
+			tmp = tmp -> next;
+		}
+		return -1;
+	}
+};
+
 stack<char> operand; //will be used to save operator
 stack<BigNumber> number; //will be used to save number
 stack<bool> number_is_var;
-BigNumber variable[52] = {0};
+Variable_ADT variable(true);
 
 bool ope = true; //use for unary minus
 bool CPPTYPE = true; //whether to use C++ format arithmetic expression
@@ -697,7 +139,7 @@ int getPrior(char& n, bool ope = ::ope){
 		return 40;
 	}else if(!ope && (n == '+' || n == '-')){
 		return 30;
-	}else if(n == '=' || n == '`' || n == '!' || n == '@' || n == '$' || n == '&'){
+	}else if(n == '=' || n == '`' || n == '!' || n == '@' || n == '\\' || n == '&'){
 		return 20;
 	}else if(ope && n == '-'){
 		n = '~'; //turn unary negative to '~'
@@ -707,16 +149,6 @@ int getPrior(char& n, bool ope = ::ope){
 		return 50;
 	}
 	return 10; //preserved for ()
-}
-
-BigNumber getIndex(const char& n){
-	size_t pos = variable_namespace.find(n);
-	if(pos != string::npos){
-		BigNumber temp = pos;
-		return temp;
-	}
-	BigNumber temp = -1;
-	return temp; //error
 }
 
 bool left_to_right(const char& n){
@@ -839,6 +271,33 @@ bool Cppcheck(string str){
 		}
 		pos = str.find('\'', pos + 1);
 	} //complete B09 B10 B11
+	bool variablesignal = false, scalarsignal = false;
+	for(int i = 0;i < len;i++){
+		if(is(str[i], inputOPERATOR)){
+			variablesignal = false;
+			scalarsignal = false;
+		}else if(is(str[i], scalar)){
+			if(!variablesignal){
+				scalarsignal = true;
+			}
+		}else if(is(str[i], variable_namespace)){
+			if(scalarsignal){
+				cout << "Variable name should initial with not integer" << endl;
+				return false;
+			}//complete B06
+			variablesignal = true;
+		}else if(str[i] == '\''){
+			if(variablesignal){
+				cout << "Quote should be between two digits!" << endl;
+				return false;
+			}else if(scalarsignal){
+				if(i == str.length() - 1 || !is(str[i + 1], scalar)){
+					cout << "Quote should be between two digits!" << endl;
+					return false;
+				}
+			}
+		}
+	}
 	if(str[len - 1] == '('){
 		alert(len - 1, 0, 0, str, "Do NOT put left parenthesis at ending position!");
 		return false;
@@ -861,41 +320,56 @@ bool Cppcheck(string str){
 				alert(i, 1, 0, str, "Cannot put number or variable right after ) !");
 				return false;
 			} //complete B03 B08
-		}else if(is(prev, scalar)){
+		}else if(is(prev, scalar + variable_namespace)){
 			if(now == '('){
 				alert(i, 1, 0, str, "Cannot put ( right after number !");
 				return false;
-			}else if(is(now, variable_namespace)){
-				alert(i, 1, 0, str, "Cannot put variable right after number !");
-				return false;
 			}
-		}else if(is(prev, variable_namespace)){
-			if(now == '('){
-				alert(i, 1, 0, str, "Cannot put ( right after variable !");
-				return false;
-			}else if(is(now, variable_namespace)){
-				alert(i, 1, 0, str, "Cannot put number or variable right after variable !");
-				return false;
-			} //complete B02 B06
 		}
 		prev = now;
+	}
+	delim = "+-*/%()"; //reuse
+	pos = str.find_first_of(delim); //reuse
+	while(pos != string::npos){
+		str[pos] = ' ';
+		pos = str.find_first_of(delim);
+	}
+	pos = str.find('='); //reuse
+	if(pos != string::npos){
+		string substr = str.substr(pos + 1, len - pos - 1);
+		pos = substr.find('='); //reuse
+		while(pos != string::npos){
+			substr[pos] = ' ';
+		}
+		stringstream ss;
+		ss << substr;
+		string buf;
+		while(ss >> buf){
+			if(is(buf[0], variable_namespace) && !variable.check_name(buf)){
+				cout << "Disallow to initialize a variable after the first assignment." << endl;
+				return false;
+			} //complete B13
+		}
 	}
 	return true;
 }
 
 bool check(const string& String){
-	string str = String, delim = inputOPERATOR + variable_namespace + scalar + space;
+	string str = String, specialassignmentstr = String, delim = inputOPERATOR + variable_namespace + scalar + space;
 	string& allow = delim, deny = delim;
 	for(int i = 0;i < 5;i++){
 		size_t pos = str.find(additional_assignment[i]);
 		while(pos != string::npos){
 			str.erase(pos, 1);
+			specialassignmentstr.erase(pos, 1);
+			specialassignmentstr[pos] = additional_assignment_OPERATOR[i];
 			pos = str.find(additional_assignment[i], pos + 1);
 		}
 	}
 	size_t pos = str.find_first_not_of(delim);
 	while(pos != string::npos){
 		str.erase(pos, 1);
+		specialassignmentstr.erase(pos, 1);
 		pos = str.find_first_not_of(delim);
 	} //A01 complete
 	delim = variable_namespace + scalar; //reuse
@@ -903,10 +377,12 @@ bool check(const string& String){
 	while(pos != string::npos){
 		if(pos == 0 || pos == str.length() - 1){
 			str.erase(pos, 1);
+			specialassignmentstr.erase(pos, 1);
 			pos = str.find(' ', pos);
 		}else{
 			if(!is(str[pos - 1], delim) || !is(str[pos + 1], delim)){
 				str.erase(pos, 1);
+				specialassignmentstr.erase(pos, 1);
 				pos = str.find(' ', pos);
 			}else{
 				pos = str.find(' ', pos + 1);
@@ -952,7 +428,7 @@ bool check(const string& String){
 				if(now == '*' || now == '/' || now == '%' || now == ')' || now == '=' || now == '^'){
 					alert(i, 1, 0, str, "Cannot put \"*/%)=\" right after operator \"=\" !");
 					return false;
-				} //complete A07 A08 A09 A14
+				} //complete A07 A08 A09 A14 A15 A16
 			}
 		}
 		prev = now;
@@ -960,36 +436,96 @@ bool check(const string& String){
 	if(now == '+' || now == '-' || now == '*' || now == '/' || now == '%' || now == '(' || now == '=' || now == '^'){
 		alert(len - 1, 0, 0, str, "Should not put this at this position!");
 		return false;
-	} //complete A13
+	} //complete A13 A17
 	pos = str.find_last_of('='); //reuse
 	if(pos != string::npos){
-		deny = "+-*/%)";
+		deny = "+-*/%)^";
+		bool variablesignal = false;
 		for(int i = 0;i < pos;i++){
 			if(is(str[i], deny)){
 				alert(i, 0, 0, str, "This operator should NOT appear BEFORE any assignment!");
 				return false;
-			}else if(is(str[i], scalar)){
+			}else if(is(str[i], scalar) && !variablesignal){
 				alert(i, 0, 0, str, "Scalar should NOT appear BEFORE any assignment!");
 				return false;
+			}else if(is(str[i], inputOPERATOR)){
+				variablesignal = false;
+			}else if(is(str[i], variable_namespace)){
+				variablesignal = true;
+			}else if(str[i] == ' '){
+				variablesignal = false;
 			}
 		} //complete A11
 		pos = str.find_first_of('=');
 		string substr = str.substr(0, pos);
-		if(substr.find_first_of(variable_namespace) != substr.find_last_of(variable_namespace)){
-			alert(pos, 0, 0, str, "Before this assignment, ONLY 1 VARIABLE is allowed!");
+		if(substr.find(" ") != string::npos){
+			cout << "Before an assignment, ONLY 1 VARIABLE is allowed!" << endl;
 			return false;
 		}
 		size_t apos = str.find_first_of('=', pos + 1);
 		while(apos != string::npos){
 			substr = str.substr(pos, apos - pos - 1);
-			if(substr.find_first_of(variable_namespace) != substr.find_last_of(variable_namespace)){
-				alert(apos, 0, 0, str, "Before this assignment, ONLY 1 VARIABLE is allowed!");
+			if(substr.find(' ') != string::npos){
+				cout << "Before an assignment, ONLY 1 VARIABLE is allowed!" << endl;
 				return false;
 			}
 			pos = apos;
 			apos = str.find_first_of('=', pos + 1);
 		} //complete A10
 	}
+	delim = "+-*/%()^"; //reuse
+	pos = str.find_first_of(delim); //reuse
+	while(pos != string::npos){
+		str[pos] = ' ';
+		specialassignmentstr[pos] = ' ';
+		pos = str.find_first_of(delim);
+	}
+	bool variablesignal = false;
+	for(int i = 0;i < str.length();i++){
+		if(str[i] == ' ' || is(str[i], inputOPERATOR)){
+			variablesignal = false;
+		}else if(is(str[i], variable_namespace)){
+			variablesignal = true;
+		}else if(is(str[i], scalar)){
+			if(!variablesignal){
+				str[i] = ' ';
+				specialassignmentstr[i] = ' ';
+			}
+		}
+	}
+	pos = str.find_last_of("="); //reuse
+	string substr;
+	if(pos != string::npos){
+		substr = str.substr(pos + 1, str.length() - pos - 1);
+	}else{
+		substr = str;
+	}
+	stringstream ss;
+	ss << substr;
+	string buf;
+	while(ss >> buf){
+		if(is(buf[0], variable_namespace) && !variable.check_name(buf)){
+			cout << "Cannot use undefined variable in computing" << endl;
+			return false;
+		} //complete A19
+	}
+	pos = 0; //reuse
+	size_t apos = specialassignmentstr.find_first_of(additional_assignment_OPERATOR + "=");
+	while(apos != string::npos){
+		bool is_special = is(specialassignmentstr[apos], additional_assignment_OPERATOR);
+		substr = specialassignmentstr.substr(pos, apos - pos); //reuse
+		ss.clear();
+		ss.str("");
+		ss << substr;
+		while(ss >> buf){
+			if(is_special && !variable.check_name(buf)){
+				cout << "Don't put undefined variable before additional assignment operator." << endl;
+				return false;
+			}
+		}
+		pos = apos + 1;
+		apos = specialassignmentstr.find_first_of(additional_assignment_OPERATOR + "=", pos);
+	} //complete A18
 	return !CPPTYPE || Cppcheck(String);
 }
 
@@ -1031,11 +567,26 @@ int main(){
 		while(number_is_var.size() > 0){
 			number_is_var.pop();
 		}
-		pos = str.find_first_of(OPERATOR + variable_namespace);
-		while(pos != string::npos){
-			str.insert(pos + 1, " ");
-			str.insert(pos, " ");
-			pos = str.find_first_of(OPERATOR + variable_namespace, pos + 2);
+		bool variablesignal = false, scalarsignal = false;
+		for(int i = 0;i < str.length();i++){
+			if(is(str[i], inputOPERATOR)){
+				variablesignal = false;
+				scalarsignal = false;
+				str.insert(i + 1, " ");
+				str.insert(i, " ");
+				i++;
+			}else if(is(str[i], scalar)){
+				if(!variablesignal){
+					scalarsignal = true;
+				}
+			}else if(is(str[i], variable_namespace)){
+				if(scalarsignal){
+					scalarsignal = false;
+					str.insert(i, " ");
+					i++;
+				}
+				variablesignal = true;
+			}
 		}
 		//cout << str << endl;
 		ss.clear();
@@ -1046,6 +597,11 @@ int main(){
 				if(!ope){ //put * automatically
 					char now_char = '*';
 					put(now_char, postfix);
+				}
+				if(is(buf[0], variable_namespace)){ //if it is a var
+					if(!variable.check_name(buf)){
+						variable.new_var(buf, 0);
+					}
 				}
 				postfix += buf;
 				postfix += " ";
@@ -1093,7 +649,7 @@ int main(){
 					number.push(temp);
 					number_is_var.push(false);
 				}else{
-					number.push(getIndex(buf[0]));
+					number.push(variable.getIndex(buf));
 					number_is_var.push(true);
 				}
 			}else{
@@ -1107,7 +663,7 @@ int main(){
 						break;
 					}
 					if(number_is_var.top()){
-						rl = variable[static_cast<int>(number.top())];
+						rl = variable[number.top()];
 					}else{
 						rl = number.top();
 					}
@@ -1127,16 +683,16 @@ int main(){
 						break;
 					}
 					if(number_is_var.top()){
-						rl = variable[static_cast<int>(number.top())];
+						rl = variable[number.top()];
 					}else{
 						rl = number.top();
 					}
 					number.pop();
 					number_is_var.pop();
-					int temp_index_for_assign = 0;
+					BtoI temp_index_for_assign = 0;
 					if(number_is_var.top()){
-						ll = variable[static_cast<int>(number.top())];
-						temp_index_for_assign = static_cast<int>(number.top());
+						ll = variable[number.top()];
+						temp_index_for_assign = number.top();
 					}else{
 						ll = number.top();
 					}
@@ -1178,7 +734,7 @@ int main(){
 						number.push(variable[temp_index_for_assign] -= rl);
 					}else if(now_char == '@'){
 						number.push(variable[temp_index_for_assign] *= rl);
-					}else if(now_char == '$'){
+					}else if(now_char == '\\'){
 						if(rl == 0){
 							cout << "Cannot divided by 0!" << endl;
 							//fout << "Cannot divided by 0!" << endl;
