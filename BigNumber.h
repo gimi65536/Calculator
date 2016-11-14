@@ -48,9 +48,6 @@ private:
 	int getSize() const;
 	const BigNumber& PURE_assignment(const BigNumber& n);
 	void PASS_BY_STRING(string str);
-public:
-	const BigNumber& operator = (const BigNumber& n);
-private:
 	const BigNumber& PURE_ADD_assignment(const BigNumber& n);
 	const BigNumber& PURE_MINUS_assignment(const BigNumber& n);
 	const BigNumber PURE_PSEUDOMULTIPLE_assignment();
@@ -60,7 +57,10 @@ public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
 	BigNumber();
-	BigNumber(string str);
+	BigNumber(const string& str);
+	BigNumber(const char& ch);
+	BigNumber(char* const n);
+	BigNumber(const char* const n);
 	template <typename T>
 	BigNumber(const T& n);
 	BigNumber(const BigNumber& n);
@@ -87,6 +87,11 @@ public:
 	bool operator >= (const T& n) const;
 	const BigNumber operator + () const;
 	const BigNumber operator - () const;
+	const BigNumber& operator = (const BigNumber& n);
+	const BigNumber& operator = (const string& str);
+	const BigNumber& operator = (const char& ch);
+	const BigNumber& operator = (char* const n);
+	const BigNumber& operator = (const char* const n);
 	template <typename T>
 	const BigNumber& operator = (const T& n);
 	const BigNumber abs() const;
@@ -269,16 +274,6 @@ void BigNumber::PASS_BY_STRING(string str){
 	ss << str;
 	ss >> a[t];
 }
-const BigNumber& BigNumber::operator = (const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
-	PURE_assignment(n);
-	positive = n.positive;
-	return (*this);
-}
 const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -363,13 +358,38 @@ BigNumber::BigNumber(){
 		a[i] = 0;
 	}
 }
-BigNumber::BigNumber(string str){
+BigNumber::BigNumber(const string& str){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	a = nullptr;
 
 	#endif
 	PASS_BY_STRING(str);
+	(*this) = str;
+}
+BigNumber::BigNumber(const char& ch){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = ch;
+}
+BigNumber::BigNumber(char* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const char* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
 }
 template <typename T>
 BigNumber::BigNumber(const T& n){
@@ -583,6 +603,32 @@ const BigNumber BigNumber::operator - () const{
 	BigNumber temp = (*this);
 	temp.positive = !temp.positive;
 	return temp;
+}
+const BigNumber& BigNumber::operator = (const BigNumber& n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	coresize(n);
+
+	#endif
+	PURE_assignment(n);
+	positive = n.positive;
+	return (*this);
+}
+const BigNumber& BigNumber::operator = (const string& str){
+	PASS_BY_STRING(str);
+}
+const BigNumber& BigNumber::operator = (const char& ch){
+	string str;
+	str += ch;
+	PASS_BY_STRING(str);
+}
+const BigNumber& BigNumber::operator = (char* const n){
+	string str = n;
+	PASS_BY_STRING(str);
+}
+const BigNumber& BigNumber::operator = (const char* const n){
+	string str = n;
+	PASS_BY_STRING(str);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
@@ -1347,5 +1393,25 @@ ostream& operator << (ostream& os, const BigBigNumber& n){
 }
 
 #endif
+
+const string& operator += (string& str, const BigNumber& n){
+	stringstream ss;
+	ss << n;
+	str += ss.str();
+	return str;
+}
+const string operator + (const string& str, const BigNumber& n){
+	stringstream ss;
+	ss << str << n;
+	return ss.str();
+}
+const string operator "" _s(const char* literal_string){ //C++14 has ""s to use.
+	string str = literal_string;
+	return str;
+}
+const BigNumber operator "" _b(const char* literal_string){
+	BigNumber temp = literal_string;
+	return temp;
+}
 
 #endif
