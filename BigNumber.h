@@ -167,8 +167,8 @@ private:
 
 #endif
 
-#ifdef _BIG_NUMBER_DYNAMIC_
 void BigNumber::resize() const{
+	#ifdef _BIG_NUMBER_DYNAMIC_
 	if(size != SIZE){
 		int* temp = new int[SIZE];
 		for(int i = 0;i < size && i < SIZE;i++){
@@ -181,13 +181,18 @@ void BigNumber::resize() const{
 		a = temp;
 		size = SIZE;
 	}
+
+	#endif
 }
 void BigNumber::coresize(const BigNumber& n) const{
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize();
 	n.resize();
+
+	#endif
 }
 
-#endif
 int BigNumber::getSize() const{
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
