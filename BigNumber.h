@@ -63,16 +63,23 @@ private:
 		resize();
 		n.resize();
 	}
-	int getSize(){
+
+	#endif
+	int getSize() const{
+
+		#ifdef _BIG_NUMBER_DYNAMIC_
 		for(int i = size - 1;i >= 0;i--){
+
+		#else
+		for(int i = SIZE - 1;i >= 0;i--){
+
+		#endif
 			if(a[i] != 0){
 				return i + 1;
 			}
 		}
 		return 1;
 	}
-
-	#endif
 	const BigNumber& PURE_assignment(const BigNumber& n){
 
 		#ifdef _BIG_NUMBER_DYNAMIC_
@@ -892,6 +899,12 @@ private:
 
 #endif
 const BigNumber& BigNumber::operator *= (const BigNumber& n){
+	if(getSize() < n.getSize()){
+		BigNumber tmp = n;
+		tmp *= (*this);
+		(*this) = tmp;
+		return (*this);
+	}
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	coresize(n);
