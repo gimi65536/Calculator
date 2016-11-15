@@ -25,6 +25,10 @@ static_assert(BASIC_SIZE >= 2, "BASIC_SIZE should >= 2.");
 typedef long long int BtoI;
 bool string_overflow = false;
 
+const string cvt_string(const string& str);
+template <typename T>
+const string cvt_string(const basic_string<T>& STR);
+
 class BigNumber;
 class BigBigNumber;
 
@@ -54,14 +58,29 @@ private:
 	const BigNumber& PURE_PSEUDOMULTIPLE_assignment();
 	const BigNumber& PURE_PSEUDODIVIDE_assignment();
 	void COMMON_DIVIDE(const BigNumber& n) const;
+	template <typename T>
+	void WIDE_CHAR_PASS(const T& ch);
+	template <typename T>
+	void WIDE_CHARARRAY_PASS(const T* C_STR);
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
 	BigNumber();
 	BigNumber(const string& str);
+	template <typename T>
+	BigNumber(const basic_string<T>& STR);
 	BigNumber(const char& ch);
 	BigNumber(char* const n);
 	BigNumber(const char* const n);
+	BigNumber(const wchar_t& ch);
+	BigNumber(wchar_t* const n);
+	BigNumber(const wchar_t* const n);
+	BigNumber(const char16_t& ch);
+	BigNumber(char16_t* const n);
+	BigNumber(const char16_t* const n);
+	BigNumber(const char32_t& ch);
+	BigNumber(char32_t* const n);
+	BigNumber(const char32_t* const n);
 	template <typename T>
 	BigNumber(const T& n);
 	BigNumber(const BigNumber& n);
@@ -90,11 +109,24 @@ public:
 	const BigNumber operator - () const;
 	const BigNumber& operator = (const BigNumber& n);
 	const BigNumber& operator = (const string& str);
+	template <typename T>
+	const BigNumber& operator = (const basic_string<T>& STR);
 	const BigNumber& operator = (const char& ch);
 	const BigNumber& operator = (char* const n);
 	const BigNumber& operator = (const char* const n);
+	const BigNumber& operator = (const wchar_t& ch);
+	const BigNumber& operator = (wchar_t* const n);
+	const BigNumber& operator = (const wchar_t* const n);
+	const BigNumber& operator = (const char16_t& ch);
+	const BigNumber& operator = (char16_t* const n);
+	const BigNumber& operator = (const char16_t* const n);
+	const BigNumber& operator = (const char32_t& ch);
+	const BigNumber& operator = (char32_t* const n);
+	const BigNumber& operator = (const char32_t* const n);
 	template <typename T>
 	const BigNumber& operator = (const T& n);
+	template <typename T>
+	const BigNumber& operator = (T* const n);
 	const BigNumber abs() const;
 	const BigNumber& operator += (const BigNumber& n);
 	template <typename T>
@@ -254,10 +286,8 @@ void BigNumber::PASS_BY_STRING(string str){
 	}
 	if(str.length() > 0 && str[0] == '-'){
 		positive = false;
-		str.erase(0, 1);
 	}else if(str.length() > 0 && str[0] == '+'){
 		positive = true;
-		str.erase(0, 1);
 	}else{
 		positive = true;
 	}
@@ -424,6 +454,17 @@ const BigNumber& BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 	(*this) = temp;
 	return (*this);
 }
+template <typename T>
+void BigNumber::WIDE_CHAR_PASS(const T& ch){
+	basic_string<T> STR;
+	STR += ch;
+	PASS_BY_STRING(cvt_string(STR));
+}
+template <typename T>
+void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
+	basic_string<T> STR = C_STR;
+	PASS_BY_STRING(cvt_string(STR));
+}
 BigNumber::BigNumber(){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -444,6 +485,15 @@ BigNumber::BigNumber(const string& str){
 	#endif
 	(*this) = str;
 }
+template <typename T>
+BigNumber::BigNumber(const basic_string<T>& STR){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = STR;
+}
 BigNumber::BigNumber(const char& ch){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -461,6 +511,78 @@ BigNumber::BigNumber(char* const n){
 	(*this) = n;
 }
 BigNumber::BigNumber(const char* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const wchar_t& ch){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = ch;
+}
+BigNumber::BigNumber(wchar_t* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const wchar_t* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const char16_t& ch){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = ch;
+}
+BigNumber::BigNumber(char16_t* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const char16_t* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const char32_t& ch){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = ch;
+}
+BigNumber::BigNumber(char32_t* const n){
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	a = nullptr;
+
+	#endif
+	(*this) = n;
+}
+BigNumber::BigNumber(const char32_t* const n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	a = nullptr;
@@ -694,6 +816,10 @@ const BigNumber& BigNumber::operator = (const BigNumber& n){
 const BigNumber& BigNumber::operator = (const string& str){
 	PASS_BY_STRING(str);
 }
+template <typename T>
+const BigNumber& BigNumber::operator = (const basic_string<T>& STR){
+	PASS_BY_STRING(cvt_string(STR));
+}
 const BigNumber& BigNumber::operator = (const char& ch){
 	string str;
 	str += ch;
@@ -706,6 +832,33 @@ const BigNumber& BigNumber::operator = (char* const n){
 const BigNumber& BigNumber::operator = (const char* const n){
 	string str = n;
 	PASS_BY_STRING(str);
+}
+const BigNumber& BigNumber::operator = (const wchar_t& ch){
+	WIDE_CHAR_PASS(ch);
+}
+const BigNumber& BigNumber::operator = (wchar_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const wchar_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char16_t& ch){
+	WIDE_CHAR_PASS(ch);
+}
+const BigNumber& BigNumber::operator = (char16_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char16_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char32_t& ch){
+	WIDE_CHAR_PASS(ch);
+}
+const BigNumber& BigNumber::operator = (char32_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char32_t* const n){
+	WIDE_CHARARRAY_PASS(n);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
@@ -740,6 +893,12 @@ const BigNumber& BigNumber::operator = (const T& n){
 		string str = ss.str();
 		PASS_BY_STRING(str);
 	}
+	return (*this);
+}
+template <typename T>
+const BigNumber& BigNumber::operator = (T* const n){
+	long long int temp = reinterpret_cast<long long int>(n);
+	(*this) = temp;
 	return (*this);
 }
 const BigNumber BigNumber::abs() const{
@@ -1515,11 +1674,11 @@ const string convert_to_utf8(const basic_string<T>& STR){ //precondition: T is w
 	return str;
 }
 
-const string to_string(const string& str){
+const string cvt_string(const string& str){
 	return str;
 }
 template <typename T>
-const string to_string(const basic_string<T>& STR){
+const string cvt_string(const basic_string<T>& STR){
 	return convert_to_utf8(STR);
 }
 
