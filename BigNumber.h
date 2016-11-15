@@ -308,11 +308,12 @@ void BigNumber::PASS_BY_STRING(string str){
 }
 void BigNumber::PASS_BY_STRING_with_notation(string str){
 	string_overflow = false;
+	bool remain_positive = false;
 	if(str[0] == '+'){
-		positive = true;
+		remain_positive = true;
 		str.erase(0, 1);
 	}else if(str[0] == '-'){
-		positive = false;
+		remain_positive = false;
 		str.erase(0, 1);
 	}
 	str.erase(0, 1);
@@ -342,6 +343,7 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 			return;
 		}
 	}
+	positive = remain_positive;
 }
 const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 
