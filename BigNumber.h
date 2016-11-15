@@ -5,6 +5,7 @@
 #include <sstream>
 #include <type_traits>
 #include <climits>
+#include <cctype>
 using namespace std;
 
 
@@ -22,6 +23,7 @@ const int BASIC_SIZE = 10;
 static_assert(BASIC_SIZE >= 2, "BASIC_SIZE should >= 2.");
 
 typedef long long int BtoI;
+bool string_overflow = false;
 
 class BigNumber;
 class BigBigNumber;
@@ -46,10 +48,11 @@ private:
 	int getSize() const;
 	const BigNumber& PURE_assignment(const BigNumber& n);
 	void PASS_BY_STRING(string str);
+	void PASS_BY_STRING_with_notation(string str);
 	const BigNumber& PURE_ADD_assignment(const BigNumber& n);
 	const BigNumber& PURE_MINUS_assignment(const BigNumber& n);
-	const BigNumber PURE_PSEUDOMULTIPLE_assignment();
-	const BigNumber PURE_PSEUDODIVIDE_assignment();
+	const BigNumber& PURE_PSEUDOMULTIPLE_assignment();
+	const BigNumber& PURE_PSEUDODIVIDE_assignment();
 	void COMMON_DIVIDE(const BigNumber& n) const;
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
@@ -165,8 +168,8 @@ private:
 	template <typename T>
 	const BigBigNumber& operator = (const T& n);
 	const BigBigNumber& PURE_ADD_assignment(const BigBigNumber& n);
-	const BigBigNumber PURE_PSEUDOMULTIPLE_assignment();
-	const BigBigNumber PURE_PSEUDODIVIDE_assignment();
+	const BigBigNumber& PURE_PSEUDOMULTIPLE_assignment();
+	const BigBigNumber& PURE_PSEUDODIVIDE_assignment();
 	void proliferate();
 
 #else
@@ -230,6 +233,25 @@ const BigNumber& BigNumber::PURE_assignment(const BigNumber& n){
 	return (*this);
 }
 void BigNumber::PASS_BY_STRING(string str){
+	//check notation
+	string test;
+	if(str.length() >= 3 && (str[0] == '+' || str[0] == '-')){
+		test = str.substr(1, 2);
+	}else if(str.length() >= 2){
+		test = str.substr(0, 2);
+	}
+	if(test.length() == 2){
+		if(test[0] == '0' && test.find_first_of("BbCcDdEeFfGgHhIiJjKkLlMmNnOoXx") != string::npos){
+			PASS_BY_STRING_with_notation(str);
+			return;
+		}
+	}
+	//end
+	size_t pos = str.find_first_not_of("0123456789+-");
+	while(pos != string::npos){
+		str.erase(pos, 1);
+		pos = str.find_first_not_of("0123456789+-");
+	}
 	if(str.length() > 0 && str[0] == '-'){
 		positive = false;
 		str.erase(0, 1);
@@ -238,6 +260,11 @@ void BigNumber::PASS_BY_STRING(string str){
 		str.erase(0, 1);
 	}else{
 		positive = true;
+	}
+	pos = str.find_first_of("+-");
+	while(pos != string::npos){
+		str.erase(pos, 1);
+		pos = str.find_first_of("+-");
 	}
 	while(str.length() > 0 && str[0] == '0'){
 		str.erase(0, 1);
@@ -279,6 +306,43 @@ void BigNumber::PASS_BY_STRING(string str){
 	ss << str;
 	ss >> a[t];
 }
+void BigNumber::PASS_BY_STRING_with_notation(string str){
+	string_overflow = false;
+	if(str[0] == '+'){
+		positive = true;
+		str.erase(0, 1);
+	}else if(str[0] == '-'){
+		positive = false;
+		str.erase(0, 1);
+	}
+	str.erase(0, 1);
+	for(int i = 0;i < str.length();i++){
+		str[i] = toupper(str[i]);
+		if(!isalpha(str[i]) && !isdigit(str[i])){
+			str.erase(i, 1);
+			i--;
+		}
+	}
+	int notation_t = (str[0] != 'X') ? (str[0] - 'A' + 1) : (16);
+	BigNumber notation = notation_t;
+	str.erase(0, 1);
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	size = SIZE;
+	delete[] a;
+	a = new int[SIZE];
+
+	#endif
+	for(int i = 0;i < SIZE;i++){
+		a[i] = 0;
+	}
+	for(int i = 0;i < str.length();i++){
+		(*this) = static_cast<BigNumber>(str[i]) + ((*this) * notation);
+		if(string_overflow){
+			return;
+		}
+	}
+}
 const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -304,6 +368,7 @@ const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 		#else
 		cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 		a[SIZE - 1] -= 1000000000;
+		string_overflow = true;
 
 		#endif
 	}
@@ -324,7 +389,7 @@ const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber& n){
 	}
 	return (*this);
 }
-const BigNumber BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
+const BigNumber& BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize();
@@ -337,7 +402,7 @@ const BigNumber BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 	(*this) = temp;
 	return (*this);
 }
-const BigNumber BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
+const BigNumber& BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize();
@@ -850,6 +915,7 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		sol.proliferate();
 		if(HI != 0){
 			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			string_overflow = true;
 		} //overflow alerk
 		(*this) = LO;
 	}else{
@@ -1350,7 +1416,7 @@ const BigBigNumber& BigBigNumber::PURE_ADD_assignment(const BigBigNumber& n){
 	}
 	return (*this);
 }
-const BigBigNumber BigBigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
+const BigBigNumber& BigBigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 	stringstream ss;
 	ss << (*this) << 0;
 	string str = ss.str();
@@ -1358,7 +1424,7 @@ const BigBigNumber BigBigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomulti
 	(*this) = temp;
 	return (*this);
 }
-const BigBigNumber BigBigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
+const BigBigNumber& BigBigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 	stringstream ss;
 	ss << (*this);
 	string str = ss.str();
