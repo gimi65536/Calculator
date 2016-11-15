@@ -5,6 +5,7 @@
 #include <sstream>
 #include <type_traits>
 #include <climits>
+#include <cctype>
 using namespace std;
 
 
@@ -22,13 +23,17 @@ const int BASIC_SIZE = 10;
 static_assert(BASIC_SIZE >= 2, "BASIC_SIZE should >= 2.");
 
 typedef long long int BtoI;
+bool string_overflow = false;
 
-#ifdef _BIG_NUMBER_STATIC_
+const string cvt_string(const string& str);
+template <typename T>
+const string cvt_string(const basic_string<T>& STR);
+
 class BigNumber;
 class BigBigNumber;
-#endif
 
 class BigNumber{
+friend class BigBigNumber;
 private:
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -39,7 +44,6 @@ private:
 	#else
 	static const int SIZE = BASIC_SIZE;
 	int a[SIZE];
-	friend class BigBigNumber;
 	
 	#endif
 	bool positive;
@@ -48,19 +52,20 @@ private:
 	int getSize() const;
 	const BigNumber& PURE_assignment(const BigNumber& n);
 	void PASS_BY_STRING(string str);
+	void PASS_BY_STRING_with_notation(string str);
 	const BigNumber& PURE_ADD_assignment(const BigNumber& n);
 	const BigNumber& PURE_MINUS_assignment(const BigNumber& n);
-	const BigNumber PURE_PSEUDOMULTIPLE_assignment();
-	const BigNumber PURE_PSEUDODIVIDE_assignment();
+	const BigNumber& PURE_PSEUDOMULTIPLE_assignment();
+	const BigNumber& PURE_PSEUDODIVIDE_assignment();
 	void COMMON_DIVIDE(const BigNumber& n) const;
+	template <typename T>
+	void WIDE_CHAR_PASS(const T& ch);
+	template <typename T>
+	void WIDE_CHARARRAY_PASS(const T* C_STR);
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
 	BigNumber();
-	BigNumber(const string& str);
-	BigNumber(const char& ch);
-	BigNumber(char* const n);
-	BigNumber(const char* const n);
 	template <typename T>
 	BigNumber(const T& n);
 	BigNumber(const BigNumber& n);
@@ -89,11 +94,24 @@ public:
 	const BigNumber operator - () const;
 	const BigNumber& operator = (const BigNumber& n);
 	const BigNumber& operator = (const string& str);
+	template <typename T>
+	const BigNumber& operator = (const basic_string<T>& STR);
 	const BigNumber& operator = (const char& ch);
 	const BigNumber& operator = (char* const n);
 	const BigNumber& operator = (const char* const n);
+	const BigNumber& operator = (const wchar_t& ch);
+	const BigNumber& operator = (wchar_t* const n);
+	const BigNumber& operator = (const wchar_t* const n);
+	const BigNumber& operator = (const char16_t& ch);
+	const BigNumber& operator = (char16_t* const n);
+	const BigNumber& operator = (const char16_t* const n);
+	const BigNumber& operator = (const char32_t& ch);
+	const BigNumber& operator = (char32_t* const n);
+	const BigNumber& operator = (const char32_t* const n);
 	template <typename T>
 	const BigNumber& operator = (const T& n);
+	template <typename T>
+	const BigNumber& operator = (T* const n);
 	const BigNumber abs() const;
 	const BigNumber& operator += (const BigNumber& n);
 	template <typename T>
@@ -133,6 +151,7 @@ public:
 	template <typename T>
 	const BigNumber operator ^ (const T& n) const;
 	friend void var_resize();
+	const string str(int notation) const;
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
@@ -146,10 +165,11 @@ BigNumber HI = 0, LO = 0;
 static BigNumber be_divided = 0;
 static BigNumber divide = 0;
 
-#ifdef _BIG_NUMBER_STATIC_
 class BigBigNumber{ //only use in overflow, user cannot access it directly
 friend class BigNumber;
 private:
+
+#ifdef _BIG_NUMBER_STATIC_
 	static const int SIZE = 2 * BASIC_SIZE;
 	int a[SIZE];
 	bool positive;
@@ -165,12 +185,17 @@ private:
 	template <typename T>
 	const BigBigNumber& operator = (const T& n);
 	const BigBigNumber& PURE_ADD_assignment(const BigBigNumber& n);
-	const BigBigNumber PURE_PSEUDOMULTIPLE_assignment();
-	const BigBigNumber PURE_PSEUDODIVIDE_assignment();
+	const BigBigNumber& PURE_PSEUDOMULTIPLE_assignment();
+	const BigBigNumber& PURE_PSEUDODIVIDE_assignment();
 	void proliferate();
-};
+
+#else
+	BigBigNumber(){}
 
 #endif
+};
+
+
 
 void BigNumber::resize() const{
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -225,14 +250,36 @@ const BigNumber& BigNumber::PURE_assignment(const BigNumber& n){
 	return (*this);
 }
 void BigNumber::PASS_BY_STRING(string str){
+	//check notation
+	string test;
+	if(str.length() >= 3 && (str[0] == '+' || str[0] == '-')){
+		test = str.substr(1, 2);
+	}else if(str.length() >= 2){
+		test = str.substr(0, 2);
+	}
+	if(test.length() == 2){
+		if(test[0] == '0' && test.find_first_of("BbCcDdEeFfGgHhIiJjKkLlMmNnOoXx") != string::npos){
+			PASS_BY_STRING_with_notation(str);
+			return;
+		}
+	}
+	//end
+	size_t pos = str.find_first_not_of("0123456789+-");
+	while(pos != string::npos){
+		str.erase(pos, 1);
+		pos = str.find_first_not_of("0123456789+-");
+	}
 	if(str.length() > 0 && str[0] == '-'){
 		positive = false;
-		str.erase(0, 1);
 	}else if(str.length() > 0 && str[0] == '+'){
 		positive = true;
-		str.erase(0, 1);
 	}else{
 		positive = true;
+	}
+	pos = str.find_first_of("+-");
+	while(pos != string::npos){
+		str.erase(pos, 1);
+		pos = str.find_first_of("+-");
 	}
 	while(str.length() > 0 && str[0] == '0'){
 		str.erase(0, 1);
@@ -274,6 +321,51 @@ void BigNumber::PASS_BY_STRING(string str){
 	ss << str;
 	ss >> a[t];
 }
+void BigNumber::PASS_BY_STRING_with_notation(string str){
+	string_overflow = false;
+	bool remain_positive = true;
+	if(str[0] == '+'){
+		remain_positive = true;
+		str.erase(0, 1);
+	}else if(str[0] == '-'){
+		remain_positive = false;
+		str.erase(0, 1);
+	}
+	str.erase(0, 1);
+	for(int i = 0;i < str.length();i++){
+		str[i] = toupper(str[i]);
+		if(!isalpha(str[i]) && !isdigit(str[i])){
+			str.erase(i, 1);
+			i--;
+		}
+	}
+	int notation_t = (str[0] != 'X') ? (str[0] - 'A' + 1) : (16);
+	BigNumber notation = notation_t;
+	str.erase(0, 1);
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	size = SIZE;
+	delete[] a;
+	a = new int[SIZE];
+
+	#endif
+	for(int i = 0;i < SIZE;i++){
+		a[i] = 0;
+	}
+	for(int i = 0;i < str.length();i++){
+		BigNumber num;
+		if(isdigit(str[i])){
+			num = str[i];
+		}else{
+			num = static_cast<BtoI>(str[i] - 'A' + 10);
+		}
+		(*this) = num + ((*this) * notation);
+		if(string_overflow){
+			return;
+		}
+	}
+	positive = remain_positive;
+}
 const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -299,6 +391,7 @@ const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 		#else
 		cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
 		a[SIZE - 1] -= 1000000000;
+		string_overflow = true;
 
 		#endif
 	}
@@ -319,7 +412,7 @@ const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber& n){
 	}
 	return (*this);
 }
-const BigNumber BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
+const BigNumber& BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize();
@@ -332,7 +425,7 @@ const BigNumber BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 	(*this) = temp;
 	return (*this);
 }
-const BigNumber BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
+const BigNumber& BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize();
@@ -346,6 +439,17 @@ const BigNumber BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 	(*this) = temp;
 	return (*this);
 }
+template <typename T>
+void BigNumber::WIDE_CHAR_PASS(const T& ch){
+	basic_string<T> STR;
+	STR += ch;
+	PASS_BY_STRING(cvt_string(STR));
+}
+template <typename T>
+void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
+	basic_string<T> STR = C_STR;
+	PASS_BY_STRING(cvt_string(STR));
+}
 BigNumber::BigNumber(){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -358,45 +462,11 @@ BigNumber::BigNumber(){
 		a[i] = 0;
 	}
 }
-BigNumber::BigNumber(const string& str){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	PASS_BY_STRING(str);
-	(*this) = str;
-}
-BigNumber::BigNumber(const char& ch){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = ch;
-}
-BigNumber::BigNumber(char* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const char* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
 template <typename T>
 BigNumber::BigNumber(const T& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	size = SIZE;
-	a = new int[SIZE];
+	a = nullptr;
 
 	#endif
 	(*this) = n;
@@ -617,6 +687,10 @@ const BigNumber& BigNumber::operator = (const BigNumber& n){
 const BigNumber& BigNumber::operator = (const string& str){
 	PASS_BY_STRING(str);
 }
+template <typename T>
+const BigNumber& BigNumber::operator = (const basic_string<T>& STR){
+	PASS_BY_STRING(cvt_string(STR));
+}
 const BigNumber& BigNumber::operator = (const char& ch){
 	string str;
 	str += ch;
@@ -630,11 +704,40 @@ const BigNumber& BigNumber::operator = (const char* const n){
 	string str = n;
 	PASS_BY_STRING(str);
 }
+const BigNumber& BigNumber::operator = (const wchar_t& ch){
+	WIDE_CHAR_PASS(ch);
+}
+const BigNumber& BigNumber::operator = (wchar_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const wchar_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char16_t& ch){
+	WIDE_CHAR_PASS(ch);
+}
+const BigNumber& BigNumber::operator = (char16_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char16_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char32_t& ch){
+	WIDE_CHAR_PASS(ch);
+}
+const BigNumber& BigNumber::operator = (char32_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
+const BigNumber& BigNumber::operator = (const char32_t* const n){
+	WIDE_CHARARRAY_PASS(n);
+}
 template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
+	size = SIZE;
+	delete[] a;
+	a = new int[SIZE];
 
 	#endif
 	if(is_scalar<T>::value){ //faster
@@ -663,6 +766,12 @@ const BigNumber& BigNumber::operator = (const T& n){
 		string str = ss.str();
 		PASS_BY_STRING(str);
 	}
+	return (*this);
+}
+template <typename T>
+const BigNumber& BigNumber::operator = (T* const n){
+	long long int temp = reinterpret_cast<long long int>(n);
+	(*this) = temp;
 	return (*this);
 }
 const BigNumber BigNumber::abs() const{
@@ -845,6 +954,7 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		sol.proliferate();
 		if(HI != 0){
 			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			string_overflow = true;
 		} //overflow alerk
 		(*this) = LO;
 	}else{
@@ -1162,19 +1272,25 @@ const T& operator /= (T& n, const BigNumber& N){
 	}
 	return n;
 }
-template <typename T>
-const T operator / (const T& n, const BigNumber& N){ //special, for floating point
-	T temp = n;
-	if(is_floating_point<T>::value){
-		temp /= static_cast<long double>(N);
-	}else{
-		if(is_signed<T>::value){
-			temp /= static_cast<long long int>(N);
-		}else{
-			temp /= static_cast<unsigned long long int>(N);
-		}
-	}
+const float operator / (const float& n, const BigNumber& N){ //special, for floating point
+	float temp = n;
+	temp /= static_cast<long double>(N);
 	return temp;
+}
+const double operator / (const double& n, const BigNumber& N){ //special, for floating point
+	double temp = n;
+	temp /= static_cast<long double>(N);
+	return temp;
+}
+const long double operator / (const long double& n, const BigNumber& N){ //special, for floating point
+	long double temp = n;
+	temp /= static_cast<long double>(N);
+	return temp;
+}
+template <typename T>
+const BigNumber operator / (const T& n, const BigNumber& N){
+	BigNumber temp = n;
+	return temp / N;
 }
 template <typename T>
 const T& operator %= (T& n, const BigNumber& N){
@@ -1345,7 +1461,7 @@ const BigBigNumber& BigBigNumber::PURE_ADD_assignment(const BigBigNumber& n){
 	}
 	return (*this);
 }
-const BigBigNumber BigBigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
+const BigBigNumber& BigBigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 	stringstream ss;
 	ss << (*this) << 0;
 	string str = ss.str();
@@ -1353,7 +1469,7 @@ const BigBigNumber BigBigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomulti
 	(*this) = temp;
 	return (*this);
 }
-const BigBigNumber BigBigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
+const BigBigNumber& BigBigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 	stringstream ss;
 	ss << (*this);
 	string str = ss.str();
@@ -1394,23 +1510,166 @@ ostream& operator << (ostream& os, const BigBigNumber& n){
 
 #endif
 
+const BigNumber abs(const BigNumber& n){
+	return n.abs();
+}
+
+const string convert_to_utf8(const string& str){
+	return str;
+}
+template <typename T>
+const string convert_to_utf8(const basic_string<T>& STR){ //precondition: T is wchar_t, char16_t, or char32_t
+	size_t len = STR.length();
+	string str;
+	for(int i = 0;i < len;i++){
+		char s1 = 0, s2 = 0, s3 = 0, s4 = 0;
+		unsigned int ch = static_cast<unsigned int>(STR[i]);
+		if(ch < 128){
+			s4 = ch;
+			str += s4;
+		}else if(ch < 2048){
+			s3 = -64 + (ch / 64);
+			s4 = -128 + (ch % 64);
+			str += s3;
+			str += s4;
+		}else if(ch < 65536){
+			s2 = -32 + (ch / 4096);
+			s3 = -128 + (ch % 4096 / 64);
+			s4 = -128 + (ch % 4096 % 64);
+			str += s2;
+			str += s3;
+			str += s4;
+		}else if(ch < 1114112){
+			s1 = -16 + (ch / 262144);
+			s2 = -128 + (ch % 262144 / 4096);
+			s3 = -128 + (ch % 262144 % 4096 / 64);
+			s4 = -128 + (ch % 262144 % 4096 % 64);
+			str += s1;
+			str += s2;
+			str += s3;
+			str += s4;
+		}
+	}
+	return str;
+}
+
+const string cvt_string(const string& str){
+	return str;
+}
+template <typename T>
+const string cvt_string(const basic_string<T>& STR){
+	return convert_to_utf8(STR);
+}
+
+const string BigNumber::str(int notation = 10) const{
+	stringstream ss;
+	if(notation == 10){
+		ss << (*this);
+		return ss.str();
+	}
+	if(!positive && (*this) != 0){
+		ss << '-';
+	}
+	ss << 0;
+	char note = (notation != 16) ? ('a' - 1 + notation) : ('x');
+	ss << note;
+	string temp;
+	BigNumber n = abs();
+	do{
+		BtoI t = n % notation;
+		if(t < 10){
+			temp += static_cast<char>('0' + t);
+		}else{
+			temp += static_cast<char>('A' + (t - 10));
+		}
+		n /= notation;
+	}while(n != 0);
+	for(int i = temp.length() - 1;i >= 0;i--){
+		ss << temp[i];
+	}
+	return ss.str();
+}
+
 const string& operator += (string& str, const BigNumber& n){
 	stringstream ss;
 	ss << n;
 	str += ss.str();
 	return str;
 }
-const string operator + (const string& str, const BigNumber& n){
-	stringstream ss;
-	ss << str << n;
-	return ss.str();
+const string operator "" _s(const char literal){
+	string str;
+	str += literal;
+	return str;
 }
-const string operator "" _s(const char* literal_string){ //C++14 has ""s to use.
+const string operator "" _s(const char* literal_string){
 	string str = literal_string;
 	return str;
 }
+const string operator "" _s(const char* string_values, size_t num_chars){ //C++14 has ""s to use.
+	string str = string_values;
+	return str;
+}
+const string operator "" _s(const wchar_t literal){
+	wstring STR;
+	STR += literal;
+	return cvt_string(STR);
+}
+const string operator "" _s(const wchar_t* string_values, size_t num_chars){ //C++14 has ""s to use.
+	wstring STR = string_values;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char16_t literal){
+	u16string STR;
+	STR += literal;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char16_t* string_values, size_t num_chars){ //C++14 has ""s to use.
+	u16string STR = string_values;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char32_t literal){
+	u32string STR;
+	STR += literal;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char32_t* string_values, size_t num_chars){ //C++14 has ""s to use.
+	u32string STR = string_values;
+	return cvt_string(STR);
+}
+const BigNumber operator "" _b(const char literal){
+	BigNumber temp = literal;
+	return temp;
+}
 const BigNumber operator "" _b(const char* literal_string){
 	BigNumber temp = literal_string;
+	return temp;
+}
+const BigNumber operator "" _b(const char* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _b(const wchar_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _b(const wchar_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _b(const char16_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _b(const char16_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _b(const char32_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _b(const char32_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
 	return temp;
 }
 
