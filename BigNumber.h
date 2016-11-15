@@ -1272,19 +1272,25 @@ const T& operator /= (T& n, const BigNumber& N){
 	}
 	return n;
 }
-template <typename T>
-const T operator / (const T& n, const BigNumber& N){ //special, for floating point
-	T temp = n;
-	if(is_floating_point<T>::value){
-		temp /= static_cast<long double>(N);
-	}else{
-		if(is_signed<T>::value){
-			temp /= static_cast<long long int>(N);
-		}else{
-			temp /= static_cast<unsigned long long int>(N);
-		}
-	}
+const float operator / (const float& n, const BigNumber& N){ //special, for floating point
+	float temp = n;
+	temp /= static_cast<long double>(N);
 	return temp;
+}
+const double operator / (const double& n, const BigNumber& N){ //special, for floating point
+	double temp = n;
+	temp /= static_cast<long double>(N);
+	return temp;
+}
+const long double operator / (const long double& n, const BigNumber& N){ //special, for floating point
+	long double temp = n;
+	temp /= static_cast<long double>(N);
+	return temp;
+}
+template <typename T>
+const BigNumber operator / (const T& n, const BigNumber& N){
+	BigNumber temp = n;
+	return temp / N;
 }
 template <typename T>
 const T& operator %= (T& n, const BigNumber& N){
