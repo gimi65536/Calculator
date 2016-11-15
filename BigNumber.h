@@ -23,12 +23,11 @@ static_assert(BASIC_SIZE >= 2, "BASIC_SIZE should >= 2.");
 
 typedef long long int BtoI;
 
-#ifdef _BIG_NUMBER_STATIC_
 class BigNumber;
 class BigBigNumber;
-#endif
 
 class BigNumber{
+friend class BigBigNumber;
 private:
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -39,7 +38,6 @@ private:
 	#else
 	static const int SIZE = BASIC_SIZE;
 	int a[SIZE];
-	friend class BigBigNumber;
 	
 	#endif
 	bool positive;
@@ -133,6 +131,7 @@ public:
 	template <typename T>
 	const BigNumber operator ^ (const T& n) const;
 	friend void var_resize();
+	const string str(int notation) const;
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
@@ -146,10 +145,11 @@ BigNumber HI = 0, LO = 0;
 static BigNumber be_divided = 0;
 static BigNumber divide = 0;
 
-#ifdef _BIG_NUMBER_STATIC_
 class BigBigNumber{ //only use in overflow, user cannot access it directly
 friend class BigNumber;
 private:
+
+#ifdef _BIG_NUMBER_STATIC_
 	static const int SIZE = 2 * BASIC_SIZE;
 	int a[SIZE];
 	bool positive;
@@ -168,9 +168,14 @@ private:
 	const BigBigNumber PURE_PSEUDOMULTIPLE_assignment();
 	const BigBigNumber PURE_PSEUDODIVIDE_assignment();
 	void proliferate();
-};
+
+#else
+	BigBigNumber(){}
 
 #endif
+};
+
+
 
 void BigNumber::resize() const{
 	#ifdef _BIG_NUMBER_DYNAMIC_
@@ -1393,6 +1398,86 @@ ostream& operator << (ostream& os, const BigBigNumber& n){
 }
 
 #endif
+
+const BigNumber abs(const BigNumber& n){
+	return n.abs();
+}
+
+const string convert_to_utf8(const string& str){
+	return str;
+}
+template <typename T>
+const string convert_to_utf8(const basic_string<T>& STR){ //precondition: T is wchar_t, char16_t, or char32_t
+	size_t len = STR.length();
+	string str;
+	for(int i = 0;i < len;i++){
+		char s1 = 0, s2 = 0, s3 = 0, s4 = 0;
+		unsigned int ch = static_cast<unsigned int>(STR[i]);
+		if(ch < 128){
+			s4 = ch;
+			str += s4;
+		}else if(ch < 2048){
+			s3 = -64 + (ch / 64);
+			s4 = -128 + (ch % 64);
+			str += s3;
+			str += s4;
+		}else if(ch < 65536){
+			s2 = -32 + (ch / 4096);
+			s3 = -128 + (ch % 4096 / 64);
+			s4 = -128 + (ch % 4096 % 64);
+			str += s2;
+			str += s3;
+			str += s4;
+		}else if(ch < 1114112){
+			s1 = -16 + (ch / 262144);
+			s2 = -128 + (ch % 262144 / 4096);
+			s3 = -128 + (ch % 262144 % 4096 / 64);
+			s4 = -128 + (ch % 262144 % 4096 % 64);
+			str += s1;
+			str += s2;
+			str += s3;
+			str += s4;
+		}
+	}
+	return str;
+}
+
+const string to_string(const string& str){
+	return str;
+}
+template <typename T>
+const string to_string(const basic_string<T>& STR){
+	return convert_to_utf8(STR);
+}
+
+const string BigNumber::str(int notation = 10) const{
+	stringstream ss;
+	if(notation == 10){
+		ss << (*this);
+		return ss.str();
+	}
+	if(!positive && (*this) != 0){
+		ss << '-';
+	}
+	ss << 0;
+	char note = (notation != 16) ? ('a' - 1 + notation) : ('x');
+	ss << note;
+	string temp;
+	BigNumber n = abs();
+	while(n != 0){
+		BtoI t = n % notation;
+		if(t < 10){
+			temp += static_cast<char>('0' + t);
+		}else{
+			temp += static_cast<char>('A' + (t - 10));
+		}
+		n /= notation;
+	}
+	for(int i = temp.length() - 1;i >= 0;i--){
+		ss << temp[i];
+	}
+	return ss.str();
+}
 
 const string& operator += (string& str, const BigNumber& n){
 	stringstream ss;
