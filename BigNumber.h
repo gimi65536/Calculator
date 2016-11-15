@@ -1596,6 +1596,11 @@ const string& operator += (string& str, const BigNumber& n){
 	str += ss.str();
 	return str;
 }
+const string operator "" _s(const char literal){
+	string str;
+	str += literal;
+	return str;
+}
 const string operator "" _s(const char* literal_string){
 	string str = literal_string;
 	return str;
@@ -1604,11 +1609,66 @@ const string operator "" _s(const char* string_values, size_t num_chars){ //C++1
 	string str = string_values;
 	return str;
 }
+const string operator "" _s(const wchar_t literal){
+	wstring STR;
+	STR += literal;
+	return cvt_string(STR);
+}
+const string operator "" _s(const wchar_t* string_values, size_t num_chars){ //C++14 has ""s to use.
+	wstring STR = string_values;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char16_t literal){
+	u16string STR;
+	STR += literal;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char16_t* string_values, size_t num_chars){ //C++14 has ""s to use.
+	u16string STR = string_values;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char32_t literal){
+	u32string STR;
+	STR += literal;
+	return cvt_string(STR);
+}
+const string operator "" _s(const char32_t* string_values, size_t num_chars){ //C++14 has ""s to use.
+	u32string STR = string_values;
+	return cvt_string(STR);
+}
+const BigNumber operator "" _b(const char literal){
+	BigNumber temp = literal;
+	return temp;
+}
 const BigNumber operator "" _b(const char* literal_string){
 	BigNumber temp = literal_string;
 	return temp;
 }
 const BigNumber operator "" _b(const char* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _b(const wchar_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _b(const wchar_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _b(const char16_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _b(const char16_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _b(const char32_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _b(const char32_t* string_values, size_t num_chars){
 	BigNumber temp = string_values;
 	return temp;
 }
