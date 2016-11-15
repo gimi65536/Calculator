@@ -1464,7 +1464,7 @@ const string BigNumber::str(int notation = 10) const{
 	ss << note;
 	string temp;
 	BigNumber n = abs();
-	while(n != 0){
+	do{
 		BtoI t = n % notation;
 		if(t < 10){
 			temp += static_cast<char>('0' + t);
@@ -1472,7 +1472,7 @@ const string BigNumber::str(int notation = 10) const{
 			temp += static_cast<char>('A' + (t - 10));
 		}
 		n /= notation;
-	}
+	}while(n != 0);
 	for(int i = temp.length() - 1;i >= 0;i--){
 		ss << temp[i];
 	}
