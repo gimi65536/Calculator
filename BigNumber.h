@@ -66,21 +66,6 @@ public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
 	BigNumber();
-	BigNumber(const string& str);
-	template <typename T>
-	BigNumber(const basic_string<T>& STR);
-	BigNumber(const char& ch);
-	BigNumber(char* const n);
-	BigNumber(const char* const n);
-	BigNumber(const wchar_t& ch);
-	BigNumber(wchar_t* const n);
-	BigNumber(const wchar_t* const n);
-	BigNumber(const char16_t& ch);
-	BigNumber(char16_t* const n);
-	BigNumber(const char16_t* const n);
-	BigNumber(const char32_t& ch);
-	BigNumber(char32_t* const n);
-	BigNumber(const char32_t* const n);
 	template <typename T>
 	BigNumber(const T& n);
 	BigNumber(const BigNumber& n);
@@ -477,125 +462,11 @@ BigNumber::BigNumber(){
 		a[i] = 0;
 	}
 }
-BigNumber::BigNumber(const string& str){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = str;
-}
-template <typename T>
-BigNumber::BigNumber(const basic_string<T>& STR){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = STR;
-}
-BigNumber::BigNumber(const char& ch){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = ch;
-}
-BigNumber::BigNumber(char* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const char* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const wchar_t& ch){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = ch;
-}
-BigNumber::BigNumber(wchar_t* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const wchar_t* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const char16_t& ch){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = ch;
-}
-BigNumber::BigNumber(char16_t* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const char16_t* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const char32_t& ch){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = ch;
-}
-BigNumber::BigNumber(char32_t* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
-BigNumber::BigNumber(const char32_t* const n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	a = nullptr;
-
-	#endif
-	(*this) = n;
-}
 template <typename T>
 BigNumber::BigNumber(const T& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	size = SIZE;
-	a = new int[SIZE];
+	a = nullptr;
 
 	#endif
 	(*this) = n;
@@ -864,7 +735,9 @@ template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
+	size = SIZE;
+	delete[] a;
+	a = new int[SIZE];
 
 	#endif
 	if(is_scalar<T>::value){ //faster
