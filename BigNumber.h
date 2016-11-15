@@ -1400,17 +1400,20 @@ const string& operator += (string& str, const BigNumber& n){
 	str += ss.str();
 	return str;
 }
-const string operator + (const string& str, const BigNumber& n){
-	stringstream ss;
-	ss << str << n;
-	return ss.str();
-}
-const string operator "" _s(const char* literal_string){ //C++14 has ""s to use.
+const string operator "" _s(const char* literal_string){
 	string str = literal_string;
+	return str;
+}
+const string operator "" _s(const char* string_values, size_t num_chars){ //C++14 has ""s to use.
+	string str = string_values;
 	return str;
 }
 const BigNumber operator "" _b(const char* literal_string){
 	BigNumber temp = literal_string;
+	return temp;
+}
+const BigNumber operator "" _b(const char* string_values, size_t num_chars){
+	BigNumber temp = string_values;
 	return temp;
 }
 
