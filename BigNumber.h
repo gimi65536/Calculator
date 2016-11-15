@@ -308,7 +308,7 @@ void BigNumber::PASS_BY_STRING(string str){
 }
 void BigNumber::PASS_BY_STRING_with_notation(string str){
 	string_overflow = false;
-	bool remain_positive = false;
+	bool remain_positive = true;
 	if(str[0] == '+'){
 		remain_positive = true;
 		str.erase(0, 1);
@@ -338,7 +338,13 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 		a[i] = 0;
 	}
 	for(int i = 0;i < str.length();i++){
-		(*this) = static_cast<BigNumber>(str[i]) + ((*this) * notation);
+		BigNumber num;
+		if(isdigit(str[i])){
+			num = str[i];
+		}else{
+			num = static_cast<BtoI>(str[i] - 'A' + 10);
+		}
+		(*this) = num + ((*this) * notation);
 		if(string_overflow){
 			return;
 		}
@@ -436,7 +442,6 @@ BigNumber::BigNumber(const string& str){
 	a = nullptr;
 
 	#endif
-	PASS_BY_STRING(str);
 	(*this) = str;
 }
 BigNumber::BigNumber(const char& ch){
