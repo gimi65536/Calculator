@@ -195,8 +195,6 @@ private:
 #endif
 };
 
-
-
 void BigNumber::resize() const{
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	if(size != SIZE){
@@ -741,21 +739,18 @@ const BigNumber& BigNumber::operator = (const T& n){
 
 	#endif
 	if(is_scalar<T>::value){ //faster
+		for(int i = SIZE - 1;i > 2;i--){
+			a[i] = 0;
+		}
 		if(is_signed<T>::value){
 			long long int temp = static_cast<long long int>(n);
 			positive = (n >= 0);
-			for(int i = SIZE - 1;i > 2;i--){
-				a[i] = 0;
-			}
 			a[2] = static_cast<int>((temp / 1000000000000000000) * (temp < 0 ? -1 : 1));
 			a[1] = static_cast<int>((temp % 1000000000000000000 / 1000000000) * (temp < 0 ? -1 : 1));
 			a[0] = static_cast<int>((temp % 1000000000) * (temp < 0 ? -1 : 1));
 		}else{
 			unsigned long long int temp = static_cast<long long int>(n);
 			positive = true;
-			for(int i = SIZE - 1;i > 2;i--){
-				a[i] = 0;
-			}
 			a[2] = static_cast<int>(temp / 1000000000000000000);
 			a[1] = static_cast<int>(temp % 1000000000000000000 / 1000000000);
 			a[0] = static_cast<int>(temp % 1000000000);
