@@ -63,6 +63,7 @@ private:
 	void WIDE_CHAR_PASS(const T& ch);
 	template <typename T>
 	void WIDE_CHARARRAY_PASS(const T* C_STR);
+	int is_ten(const BigNumber& n, bool strict);
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
@@ -151,7 +152,7 @@ public:
 	const BigNumber operator ^ (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator ^ (const T& n) const;
-	const string str(int notation) const;
+	const string str(int notation = 10) const;
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
@@ -462,6 +463,31 @@ template <typename T>
 void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
 	basic_string<T> STR = C_STR;
 	PASS_BY_STRING(cvt_string(STR));
+}
+int BigNumber::is_ten(const BigNumber& n, bool strict = false){
+	string str = n.str();
+	if(str[0] == '-'){
+		str.erase(0, 1);
+	}
+	if(strict){
+		if(str.find_last_not_of("0") != 0 || str[0] != 1){
+			return -1;
+		}
+		return str.length() - 1;
+	}else{
+		int count = 0;
+		for(int i = str.length() - 1;i >= 0;i--){
+			if(str[i] == '0'){
+				count ++;
+			}else{
+				break;
+			}
+		}
+		if(count == 0){
+			return -1;
+		}
+		return count;
+	}
 }
 BigNumber::BigNumber(){
 
@@ -856,6 +882,16 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		(*this) = tmp;
 		return (*this);
 	}
+	if(is_ten(n) != -1){
+		int time = is_ten(n);
+		BigNumber tmp = n;
+		for(int i = 1;i <= time;i++){
+			PURE_PSEUDOMULTIPLE_assignment();
+			tmp.PURE_PSEUDODIVIDE_assignment();
+		}
+		(*this) *= tmp;
+		return (*this);
+	}
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	coresize(n);
@@ -974,6 +1010,16 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 const BigNumber& BigNumber::operator /= (const BigNumber& n){
 	if(divide == n && be_divided == (*this)){
 		(*this) = LO;
+		return (*this);
+	}
+	if(is_ten(n, true) != -1){
+		int time = is_ten(n, true);
+		for(int i = 1;i <= time;i++){
+			PURE_PSEUDODIVIDE_assignment();
+		}
+		if(!n.positive){
+			positive = !positive;
+		}
 		return (*this);
 	}
 	COMMON_DIVIDE(n);
@@ -1421,7 +1467,7 @@ const string cvt_string(const basic_string<T>& STR){
 	return convert_to_utf8(STR);
 }
 
-const string BigNumber::str(int notation = 10) const{
+const string BigNumber::str(int notation) const{
 	stringstream ss;
 	if(notation == 10){
 		ss << (*this);
