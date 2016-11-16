@@ -663,20 +663,10 @@ int main(){
 			}
 		}
 		if(error){
-
-			#ifdef _BIG_NUMBER_DYNAMIC_
-			var_resize();
-
-			#endif
 			continue;
 		}
 		if(number.size() != 1){
 			wout << "An unknown error happened!" << wendl;
-
-			#ifdef _BIG_NUMBER_DYNAMIC_
-			var_resize();
-
-			#endif
 			continue;
 		}
 		if(number_is_var.top()){
@@ -686,11 +676,6 @@ int main(){
 		}
 		number.pop();
 		number_is_var.pop();
-
-		#ifdef _BIG_NUMBER_DYNAMIC_
-		var_resize();
-
-		#endif
 	}
 	return 0;
 }

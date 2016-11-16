@@ -120,21 +120,5 @@ Variable_ADT variable(false);
 Variable_ADT variable(true);
 #endif
 
-void var_resize(){
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	int max = 0;
-	for(BigNumber i = 0;i < variable.getCount();++i){
-		int tmp = variable[i].getSize();
-		if(tmp > max){max = tmp;}
-	}
-	if(max < BASIC_SIZE){max = BASIC_SIZE;}
-	BigNumber::SIZE = max;
-	for(BigNumber i = 0;i < variable.getCount();++i){
-		variable[i].resize();
-	}
-
-	#endif
-}
-
 #endif
 #endif
