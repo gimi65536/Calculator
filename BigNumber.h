@@ -226,7 +226,8 @@ void BigNumber::resize(size_t n) const{ //large
 void BigNumber::coresize(const BigNumber& n) const{
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	size_t target_size = (getSize() > n.getSize()) ? getSize() : n.getSize();
+	cofit(n);
+	size_t target_size = (SIZE > n.SIZE) ? SIZE : n.SIZE;
 	resize(target_size);
 	n.resize(target_size);
 
@@ -438,7 +439,7 @@ const BigNumber& BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
 	stringstream ss;
 	ss << (*this) << 0;
 	string str = ss.str();
-	BigNumber temp(str);
+	BigNumber temp = str;
 	(*this) = temp;
 	return (*this);
 }
@@ -447,7 +448,7 @@ const BigNumber& BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
 	ss << (*this);
 	string str = ss.str();
 	str.pop_back();
-	BigNumber temp(str);
+	BigNumber temp = str;
 	(*this) = temp;
 	return (*this);
 }
@@ -1043,7 +1044,7 @@ const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
 template <typename T>
 const BigNumber BigNumber::operator ^ (const T& n) const{
 	BigNumber temp = n;
-	return (*this) ^ n;
+	return (*this) ^ temp;
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;
