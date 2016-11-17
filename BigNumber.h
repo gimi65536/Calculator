@@ -153,6 +153,8 @@ public:
 	template <typename T>
 	const BigNumber operator ^ (const T& n) const;
 	const string str(int notation = 10) const;
+	size_t Sizeof() const{return SIZE;}
+	void print() const{cout << (*this);}
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
@@ -896,8 +898,6 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	coresize(n);
-	be_divided = 0;
-	divide = 0;
 	bool solution_positive = (positive == n.positive);
 	if(digit() + n.digit() > 9 * SIZE){
 		resize(getSize() + n.getSize());
@@ -1419,6 +1419,18 @@ ostream& operator << (ostream& os, const BigBigNumber& n){
 
 const BigNumber abs(const BigNumber& n){
 	return n.abs();
+}
+
+size_t Sizeof(const BigNumber& n){
+	return n.Sizeof();
+}
+
+void print(const BigNumber& n){
+	cout << n;
+}
+
+void Typeof(const BigNumber& n){
+	cout << "BigNumber";
 }
 
 const string convert_to_utf8(const string& str){
