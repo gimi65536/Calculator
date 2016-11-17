@@ -876,13 +876,8 @@ const BigNumber BigNumber::operator - (const T& tmp) const{
 	return temp;
 }
 const BigNumber& BigNumber::operator *= (const BigNumber& n){
-	if(getSize() < n.getSize()){
-		BigNumber tmp = n;
-		tmp *= (*this);
-		(*this) = tmp;
-		return (*this);
-	}
-	if(is_ten(n) != -1){
+	static const int inteval = 700;
+	if(is_ten(n) != -1 && n.getSize() - getSize() < inteval){
 		int time = is_ten(n);
 		BigNumber tmp = n;
 		for(int i = 1;i <= time;i++){
@@ -890,6 +885,12 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 			tmp.PURE_PSEUDODIVIDE_assignment();
 		}
 		(*this) *= tmp;
+		return (*this);
+	}
+	if(getSize() < n.getSize()){
+		BigNumber tmp = n;
+		tmp *= (*this);
+		(*this) = tmp;
 		return (*this);
 	}
 
