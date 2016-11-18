@@ -25,8 +25,6 @@ private:
 	bnint numerator;
 	bnint denominator;
 	bool positive;
-	void reduce();
-	void reduce() const;
 	template <typename T>
 	typename enable_if<is_floating_point<T>::value, void>::type PASS_BY_IEEE(T r, int byte, int exp);
 	template <typename T>
@@ -36,6 +34,8 @@ private:
 	void PASS_BY_STRING_with_notation(string str);
 public:
 	friend ostream& operator << (ostream& os, const RatioNumber r);
+	void reduce();
+	void reduce() const;
 	RatioNumber();
 	RatioNumber(const bnint& num, const bnint& den);
 	RatioNumber(const RatioNumber& r);
@@ -66,12 +66,16 @@ public:
 	const RatioNumber abs() const;
 	const RatioNumber& operator += (const RatioNumber& r);
 	const RatioNumber operator + (const RatioNumber& r) const;
+	void fast_add(const RatioNumber& r);
 	const RatioNumber& operator -= (const RatioNumber& r);
 	const RatioNumber operator - (const RatioNumber& r) const;
+	void fast_minus(const RatioNumber& r);
 	const RatioNumber& operator *= (const RatioNumber& r);
 	const RatioNumber operator * (const RatioNumber& r) const;
+	void fast_multiply(const RatioNumber& r);
 	const RatioNumber& operator /= (const RatioNumber& r);
 	const RatioNumber operator / (const RatioNumber& r) const;
+	void fast_divide(const RatioNumber& r);
 	const RatioNumber& operator ^= (const bnint& n);
 	const RatioNumber operator ^ (const bnint& n) const;
 	void print() const;
@@ -683,21 +687,31 @@ const RatioNumber RatioNumber::abs() const{
 	return tmp;
 }
 const RatioNumber& RatioNumber::operator += (const RatioNumber& r){
+	fast_add(r);
+	reduce();
+	return (*this);
+}
+const RatioNumber RatioNumber::operator + (const RatioNumber& r) const{
+	RatioNumber tmp = (*this);
+	tmp += r;
+	return tmp;
+}
+void RatioNumber::fast_add(const RatioNumber& r){
 	if(is_NaN() || r.is_NaN()){
 		positive = true;
 		denominator = 0;
 		numerator = 0;
-		return (*this);
+		return;
 	}else if(is_INF() || r.is_INF()){
 		if(is_positive_INF() && r.is_positive_INF()){
-			return (*this);
+			return;
 		}else if(is_negative_INF() && r.is_negative_INF()){
-			return (*this);
+			return;
 		}else{
 			positive = true;
 			denominator = 0;
 			numerator = 0;
-			return (*this);
+			return;
 		}
 	}
 	bnint Lcm = lcm(denominator, r.denominator);
@@ -712,30 +726,33 @@ const RatioNumber& RatioNumber::operator += (const RatioNumber& r){
 	}
 	numerator += be_add;
 	denominator = Lcm;
+}
+const RatioNumber& RatioNumber::operator -= (const RatioNumber& r){
+	fast_minus(r);
 	reduce();
 	return (*this);
 }
-const RatioNumber RatioNumber::operator + (const RatioNumber& r) const{
+const RatioNumber RatioNumber::operator - (const RatioNumber& r) const{
 	RatioNumber tmp = (*this);
-	tmp += r;
+	tmp -= r;
 	return tmp;
 }
-const RatioNumber& RatioNumber::operator -= (const RatioNumber& r){
+void RatioNumber::fast_minus(const RatioNumber& r){
 	if(is_NaN() || r.is_NaN()){
 		positive = true;
 		denominator = 0;
 		numerator = 0;
-		return (*this);
+		return;
 	}else if(is_INF() || r.is_INF()){
 		if(is_positive_INF() && r.is_negative_INF()){
-			return (*this);
+			return;
 		}else if(is_negative_INF() && r.is_positive_INF()){
-			return (*this);
+			return;
 		}else{
 			positive = true;
 			denominator = 0;
 			numerator = 0;
-			return (*this);
+			return;
 		}
 	}
 	bnint Lcm = lcm(denominator, r.denominator);
@@ -750,20 +767,9 @@ const RatioNumber& RatioNumber::operator -= (const RatioNumber& r){
 	}
 	numerator -= be_add;
 	denominator = Lcm;
-	reduce();
-	return (*this);
-}
-const RatioNumber RatioNumber::operator - (const RatioNumber& r) const{
-	RatioNumber tmp = (*this);
-	tmp -= r;
-	return tmp;
 }
 const RatioNumber& RatioNumber::operator *= (const RatioNumber& r){
-	numerator *= r.numerator;
-	denominator *= r.denominator;
-	if(!r.positive){
-		positive = !positive;
-	}
+	fast_multiply(r);
 	reduce();
 }
 const RatioNumber RatioNumber::operator * (const RatioNumber& r) const{
@@ -771,18 +777,28 @@ const RatioNumber RatioNumber::operator * (const RatioNumber& r) const{
 	tmp *= r;
 	return tmp;
 }
-const RatioNumber& RatioNumber::operator /= (const RatioNumber& r){
-	numerator *= r.denominator;
-	denominator *= r.numerator;
+void RatioNumber::fast_multiply(const RatioNumber& r){
+	numerator *= r.numerator;
+	denominator *= r.denominator;
 	if(!r.positive){
 		positive = !positive;
 	}
+}
+const RatioNumber& RatioNumber::operator /= (const RatioNumber& r){
+	fast_divide(r);
 	reduce();
 }
 const RatioNumber RatioNumber::operator / (const RatioNumber& r) const{
 	RatioNumber tmp = (*this);
 	tmp /= r;
 	return tmp;
+}
+void RatioNumber::fast_divide(const RatioNumber& r){
+	numerator *= r.denominator;
+	denominator *= r.numerator;
+	if(!r.positive){
+		positive = !positive;
+	}
 }
 const RatioNumber& RatioNumber::operator ^= (const bnint& n){
 	if(n == 0){
@@ -915,6 +931,20 @@ ostream& operator << (ostream& os, const RatioNumber r){
 
 void print(const RatioNumber& r){
 	r.print();
+}
+
+RatioNumber pi_generator(int t){
+	RatioNumber pi;
+	for(int i = 0, j = 1;i < t;i++, j += 2){
+		int base = 4;
+		if(i % 2 != 0){
+			base = -4;
+		}
+		RatioNumber added(base, j);
+		pi.fast_add(added);
+	}
+	pi.reduce();
+	return pi;
 }
 
 #endif
