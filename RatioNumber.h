@@ -52,6 +52,8 @@ public:
 	void to_positive_INF();
 	void to_negative_INF();
 	void to_NaN();
+	bnint get_numerator() const{return numerator * (positive ? 1 : -1);}
+	bnint get_denominator() const{return denominator;}
 	bool operator == (const RatioNumber& r) const;
 	bool operator != (const RatioNumber& r) const;
 	bool operator < (const RatioNumber& r) const;
@@ -432,7 +434,50 @@ void RatioNumber::PASS_BY_STRING(string str){
 	}
 }
 
-void RatioNumber::PASS_BY_STRING_with_notation(string str){}
+void RatioNumber::PASS_BY_STRING_with_notation(string str){
+	if(str[0] == '+'){
+		positive = true;
+		str.erase(0, 1);
+	}else if(str[0] == '-'){
+		positive = false;
+		str.erase(0, 1);
+	}else{
+		positive = true;
+	}
+	string Nota = str.substr(0, 2);
+	str.erase(0, 1);
+	for(int i = 0;i < str.length();i++){
+		str[i] = toupper(str[i]);
+		if(!isalpha(str[i]) && !isdigit(str[i]) && str[i] != '.'){
+			str.erase(i, 1);
+			i--;
+		}
+	}
+	int notation_t = (str[0] != 'X') ? (str[0] - 'A' + 1) : (16);
+	bnint notation = notation_t;
+	str.erase(0, 1);
+	size_t pos = str.find('.');
+	if(pos != string::npos){
+		bnint integer_part = Nota + str.substr(0, pos);
+		str.erase(0, pos + 1);
+		pos = str.find('.');
+		while(pos != string::npos){
+			str.erase(pos, 1);
+			pos = str.find('.');
+		}
+		while(str.length() > 0 && str[str.length() - 1] == '0'){
+			str.erase(str.length() - 1, 1);
+		}
+		int times = str.length();
+		bnint fraction_part = Nota + str;
+		denominator = notation ^ times;
+		numerator = integer_part * denominator + fraction_part;
+		reduce();
+	}else{
+		numerator = Nota + str;
+		denominator = 1;
+	}
+}
 
 RatioNumber::RatioNumber(){
 	numerator = 0;
