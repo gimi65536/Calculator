@@ -399,39 +399,12 @@ void RatioNumber::PASS_BY_STRING(string str){
 		str.erase(pos, 1);
 		pos = str.find_first_not_of("0123456789+-.");
 	}
-	if(str.length() > 0 && str[0] == '-'){
-		positive = false;
-	}else if(str.length() > 0 && str[0] == '+'){
-		positive = true;
+	if(str.length() > 0 && (str[0] == '-' || str[0] == '+')){
+		str.insert(1, "0J");
 	}else{
-		positive = true;
+		str.insert(0, "0J");
 	}
-	pos = str.find_first_of("+-");
-	while(pos != string::npos){
-		str.erase(pos, 1);
-		pos = str.find_first_of("+-");
-	}
-	pos = str.find('.');
-	if(pos != string::npos){
-		bnint integer_part = str.substr(0, pos);
-		str.erase(0, pos + 1);
-		pos = str.find('.');
-		while(pos != string::npos){
-			str.erase(pos, 1);
-			pos = str.find('.');
-		}
-		while(str.length() > 0 && str[str.length() - 1] == '0'){
-			str.erase(str.length() - 1, 1);
-		}
-		int times = str.length();
-		bnint fraction_part = str;
-		denominator = 10_b ^ times;
-		numerator = integer_part * denominator + fraction_part;
-		reduce();
-	}else{
-		numerator = str;
-		denominator = 1;
-	}
+	PASS_BY_STRING_with_notation(str);
 }
 
 void RatioNumber::PASS_BY_STRING_with_notation(string str){
