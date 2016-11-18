@@ -19,8 +19,8 @@ using namespace std;
 #define _BIG_NUMBER_DYNAMIC_
 #endif
 
-const int BASIC_SIZE = 10;
-static_assert(BASIC_SIZE >= 2, "BASIC_SIZE should >= 2.");
+const int BASIC_SIZE = 4;
+static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should >= 3.");
 
 typedef long long int BtoI;
 bool string_overflow = false;
@@ -32,23 +32,26 @@ const string cvt_string(const basic_string<T>& STR);
 class BigNumber;
 class BigBigNumber;
 
+typedef BigNumber bnint;
+
 class BigNumber{
 friend class BigBigNumber;
 private:
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	static int SIZE;
-	mutable int size;
+	mutable int SIZE;
 	mutable int* a;
 
 	#else
 	static const int SIZE = BASIC_SIZE;
 	int a[SIZE];
-	
+
 	#endif
 	bool positive;
 	void resize() const;
+	void resize(size_t n) const;
 	void coresize(const BigNumber& n) const;
+	void cofit(const BigNumber& n) const;
 	int getSize() const;
 	const BigNumber& PURE_assignment(const BigNumber& n);
 	void PASS_BY_STRING(string str);
@@ -62,6 +65,7 @@ private:
 	void WIDE_CHAR_PASS(const T& ch);
 	template <typename T>
 	void WIDE_CHARARRAY_PASS(const T* C_STR);
+	int is_ten(const BigNumber& n, bool strict);
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
@@ -147,19 +151,19 @@ public:
 	const BigNumber operator % (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator % (const T& n) const;
+	const BigNumber& operator ^= (const BigNumber& n);
+	template <typename T>
+	const BigNumber& operator ^= (const T& n);
 	const BigNumber operator ^ (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator ^ (const T& n) const;
-	friend void var_resize();
-	const string str(int notation) const;
+	const string str(int notation = 10) const;
+	size_t Sizeof() const{return SIZE;}
+	void print() const{cout << (*this);}
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
 };
-
-#ifdef _BIG_NUMBER_DYNAMIC_
-int BigNumber::SIZE = BASIC_SIZE;
-#endif
 
 BigNumber HI = 0, LO = 0;
 static BigNumber be_divided = 0;
@@ -195,19 +199,34 @@ private:
 #endif
 };
 
-void BigNumber::resize() const{
+void BigNumber::resize() const{ //fit
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	if(size != SIZE){
-		int* temp = new int[SIZE];
-		for(int i = 0;i < size && i < SIZE;i++){
-			temp[i] = a[i];
-		}
-		for(int i = size;i < SIZE;i++){
-			temp[i] = 0;
+	if(getSize() < SIZE && getSize() > BASIC_SIZE){
+		size_t target_size = getSize();
+		int* tmp = new int[target_size];
+		for(int i = 0;i < target_size;i++){
+			tmp[i] = a[i];
 		}
 		delete[] a;
-		a = temp;
-		size = SIZE;
+		SIZE = target_size;
+		a = tmp;
+	}
+
+	#endif
+}
+void BigNumber::resize(size_t n) const{ //large
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	if(n > BASIC_SIZE && n > SIZE){
+		int* tmp = new int[n];
+		for(int i = 0;i < SIZE;i++){
+			tmp[i] = a[i];
+		}
+		for(int i = SIZE;i < n;i++){
+			tmp[i] = 0;
+		}
+		delete[] a;
+		SIZE = n;
+		a = tmp;
 	}
 
 	#endif
@@ -215,21 +234,23 @@ void BigNumber::resize() const{
 void BigNumber::coresize(const BigNumber& n) const{
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
+	cofit(n);
+	size_t target_size = (SIZE > n.SIZE) ? SIZE : n.SIZE;
+	resize(target_size);
+	n.resize(target_size);
+
+	#endif
+}
+void BigNumber::cofit(const BigNumber& n) const{
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize();
 	n.resize();
 
 	#endif
 }
-
 int BigNumber::getSize() const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	for(int i = size - 1;i >= 0;i--){
-
-	#else
 	for(int i = SIZE - 1;i >= 0;i--){
-
-	#endif
 		if(a[i] != 0){
 			return i + 1;
 		}
@@ -237,14 +258,17 @@ int BigNumber::getSize() const{
 	return 1;
 }
 const BigNumber& BigNumber::PURE_assignment(const BigNumber& n){
-
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
+	resize(n.SIZE);
 
 	#endif
-	for(int i = 0;i < SIZE;i++){
+	for(int i = 0;i < SIZE && i < n.SIZE;i++){
 		a[i] = n.a[i];
 	}
+	for(int i = n.SIZE;i < SIZE;i++){
+		a[i] = 0;
+	}
+	resize();
 	return (*this);
 }
 void BigNumber::PASS_BY_STRING(string str){
@@ -284,10 +308,10 @@ void BigNumber::PASS_BY_STRING(string str){
 	}
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	while(str.length() > 9 * SIZE){
-		SIZE *= 2;
+	SIZE = BASIC_SIZE;
+	if(str.length() > 9 * SIZE){
+		SIZE = (str.length() - 1) / 9 + 1;
 	}
-	size = SIZE;
 	delete[] a;
 	a = new int[SIZE];
 
@@ -342,7 +366,7 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 	str.erase(0, 1);
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	size = SIZE;
+	SIZE = BASIC_SIZE;
 	delete[] a;
 	a = new int[SIZE];
 
@@ -381,8 +405,7 @@ const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 
 		#ifdef _BIG_NUMBER_DYNAMIC_
 		int temp = SIZE;
-		SIZE *= 2;
-		coresize(n);
+		resize(SIZE + 1);
 		a[temp - 1] -= 1000000000;
 		a[temp] ++;
 
@@ -393,6 +416,11 @@ const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 
 		#endif
 	}
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	cofit(n);
+
+	#endif
 	return (*this);
 }
 const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber& n){
@@ -408,32 +436,27 @@ const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber& n){
 			a[i] += 1000000000;
 		}
 	}
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	cofit(n);
+
+	#endif
 	return (*this);
 }
 const BigNumber& BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	stringstream ss;
 	ss << (*this) << 0;
 	string str = ss.str();
-	BigNumber temp(str);
+	BigNumber temp = str;
 	(*this) = temp;
 	return (*this);
 }
 const BigNumber& BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-	
-	#endif
 	stringstream ss;
 	ss << (*this);
 	string str = ss.str();
 	str.pop_back();
-	BigNumber temp(str);
+	BigNumber temp = str;
 	(*this) = temp;
 	return (*this);
 }
@@ -448,10 +471,35 @@ void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
 	basic_string<T> STR = C_STR;
 	PASS_BY_STRING(cvt_string(STR));
 }
+int BigNumber::is_ten(const BigNumber& n, bool strict = false){
+	string str = n.str();
+	if(str[0] == '-'){
+		str.erase(0, 1);
+	}
+	if(strict){
+		if(str.find_last_not_of("0") != 0 || str[0] != 1){
+			return -1;
+		}
+		return str.length() - 1;
+	}else{
+		int count = 0;
+		for(int i = str.length() - 1;i >= 0;i--){
+			if(str[i] == '0'){
+				count ++;
+			}else{
+				break;
+			}
+		}
+		if(count == 0){
+			return -1;
+		}
+		return count;
+	}
+}
 BigNumber::BigNumber(){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	size = SIZE;
+	SIZE = BASIC_SIZE;
 	a = new int[SIZE];
 
 	#endif
@@ -472,8 +520,7 @@ BigNumber::BigNumber(const T& n){
 BigNumber::BigNumber(const BigNumber& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	n.resize();
-	size = SIZE;
+	SIZE = n.SIZE;
 	a = new int[SIZE];
 
 	#endif
@@ -492,11 +539,6 @@ BigNumber::~BigNumber(){
 }
 
 size_t BigNumber::digit() const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	stringstream ss;
 	ss << (*this);
 	string str = ss.str();
@@ -524,11 +566,6 @@ int BigNumber::getDigit(int n) const{
 }
 template <typename T>
 bool BigNumber::operator == (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
 	return (*this) == temp;
 }
@@ -541,12 +578,22 @@ bool BigNumber::operator == (const BigNumber& n) const{
 	bool zero = true;
 	for(int i = 0;i < SIZE;i++){
 		if(a[i] != n.a[i]){
+
+			#ifdef _BIG_NUMBER_DYNAMIC_
+			cofit(n);
+
+			#endif
 			return false;
 		}
 		if(a[i] != 0){
 			zero = false;
 		}
 	}
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	cofit(n);
+
+	#endif
 	return zero || (positive == n.positive); //if 0, don't ask +-
 }
 template <typename T>
@@ -577,6 +624,11 @@ bool BigNumber::operator < (const BigNumber& n) const{
 			break;
 		}
 	}
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	cofit(n);
+
+	#endif
 	if(!same_number){ //impossibly be 0
 		if(positive && !n.positive){return false;}
 		else if(!positive && n.positive){return true;}
@@ -590,11 +642,6 @@ bool BigNumber::operator < (const BigNumber& n) const{
 }
 template <typename T>
 bool BigNumber::operator < (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
 	return (*this) < temp;
 }
@@ -626,6 +673,11 @@ bool BigNumber::operator > (const BigNumber& n) const{
 			break;
 		}
 	}
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	cofit(n);
+
+	#endif
 	if(!same_number){ //impossibly be 0
 		if(positive && !n.positive){return true;}
 		else if(!positive && n.positive){return false;}
@@ -639,11 +691,6 @@ bool BigNumber::operator > (const BigNumber& n) const{
 }
 template <typename T>
 bool BigNumber::operator > (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
 	return (*this) > temp;
 }
@@ -655,29 +702,14 @@ bool BigNumber::operator >= (const T& n) const{
 	return (*this) > n || (*this) == n;
 }
 const BigNumber BigNumber::operator + () const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	return (*this);
 }
 const BigNumber BigNumber::operator - () const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp.positive = !temp.positive;
 	return temp;
 }
 const BigNumber& BigNumber::operator = (const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
 	PURE_assignment(n);
 	positive = n.positive;
 	return (*this);
@@ -733,7 +765,7 @@ template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
-	size = SIZE;
+	SIZE = BASIC_SIZE;
 	delete[] a;
 	a = new int[SIZE];
 
@@ -770,21 +802,11 @@ const BigNumber& BigNumber::operator = (T* const n){
 	return (*this);
 }
 const BigNumber BigNumber::abs() const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp.positive = true;
 	return temp;
 }
 const BigNumber& BigNumber::operator += (const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
 	if(positive == n.positive){ //straightly add
 		PURE_ADD_assignment(n);
 	}else if(abs() >= n.abs()){
@@ -798,11 +820,6 @@ const BigNumber& BigNumber::operator += (const BigNumber& n){
 }
 template <typename T>
 const BigNumber& BigNumber::operator += (const T& temp){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber n = temp;
 	(*this) += n;
 	return (*this);
@@ -817,32 +834,17 @@ const BigNumber BigNumber::operator ++ (int null){
 	return tmp;
 }
 const BigNumber BigNumber::operator + (const BigNumber& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp += n;
 	return temp;
 }
 template<typename T>
 const BigNumber BigNumber::operator + (const T& tmp) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this), n = tmp;
 	temp += n;
 	return temp;
 }
 const BigNumber& BigNumber::operator -= (const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
 	if(positive != n.positive){ //straightly add
 		PURE_ADD_assignment(n);
 	}else if(abs() >= n.abs()){
@@ -856,11 +858,6 @@ const BigNumber& BigNumber::operator -= (const BigNumber& n){
 }
 template <typename T>
 const BigNumber& BigNumber::operator -= (const T& temp){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber n = temp;
 	(*this) -= n;
 	return (*this);
@@ -875,27 +872,28 @@ const BigNumber BigNumber::operator -- (int null){
 	return tmp;
 }
 const BigNumber BigNumber::operator - (const BigNumber& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp -= n;
 	return temp;
 }
 template <typename T>
 const BigNumber BigNumber::operator - (const T& tmp) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this), n = tmp;
 	temp -= n;
 	return temp;
 }
 const BigNumber& BigNumber::operator *= (const BigNumber& n){
+	static const int inteval = 700;
+	if(is_ten(n) != -1 && n.getSize() - getSize() < inteval){
+		int time = is_ten(n);
+		BigNumber tmp = n;
+		for(int i = 1;i <= time;i++){
+			PURE_PSEUDOMULTIPLE_assignment();
+			tmp.PURE_PSEUDODIVIDE_assignment();
+		}
+		(*this) *= tmp;
+		return (*this);
+	}
 	if(getSize() < n.getSize()){
 		BigNumber tmp = n;
 		tmp *= (*this);
@@ -905,12 +903,9 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	coresize(n);
-	be_divided = 0;
-	divide = 0;
 	bool solution_positive = (positive == n.positive);
 	if(digit() + n.digit() > 9 * SIZE){
-		SIZE *= 2;
-		coresize(n);
+		resize(getSize() + n.getSize());
 	}
 	BigNumber base = (*this);
 	(*this) = 0;
@@ -925,7 +920,8 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		}
 		base.PURE_PSEUDODIVIDE_assignment();
 	}
-		positive = solution_positive;
+	positive = solution_positive;
+	resize();
 
 	#else
 	be_divided = 0;
@@ -974,32 +970,17 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 }
 template <typename T>
 const BigNumber& BigNumber::operator *= (const T& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
 	(*this) *= temp;
 	return (*this);
 }
 const BigNumber BigNumber::operator * (const BigNumber& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp *= n;
 	return temp;
 }
 template <typename T>
 const BigNumber BigNumber::operator * (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n, tmp = (*this);
 	tmp *= temp;
 	return tmp;
@@ -1030,15 +1011,21 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 	quo.positive = solution_positive;
 	HI = module;
 	LO = quo;
+	HI.coresize(LO);
 }
 const BigNumber& BigNumber::operator /= (const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
 	if(divide == n && be_divided == (*this)){
 		(*this) = LO;
+		return (*this);
+	}
+	if(is_ten(n, true) != -1){
+		int time = is_ten(n, true);
+		for(int i = 1;i <= time;i++){
+			PURE_PSEUDODIVIDE_assignment();
+		}
+		if(!n.positive){
+			positive = !positive;
+		}
 		return (*this);
 	}
 	COMMON_DIVIDE(n);
@@ -1047,42 +1034,22 @@ const BigNumber& BigNumber::operator /= (const BigNumber& n){
 }
 template <typename T>
 const BigNumber& BigNumber::operator /= (const T& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
 	(*this) /= temp;
 	return (*this);
 }
 const BigNumber BigNumber::operator / (const BigNumber& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp /= n;
 	return temp;
 }
 template <typename T>
 const BigNumber BigNumber::operator / (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n, tmp = (*this);
 	tmp /= temp;
 	return tmp;
 }
 const BigNumber& BigNumber::operator %= (const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
 	if(divide == n && be_divided == (*this)){
 		(*this) = HI;
 		return (*this);
@@ -1093,68 +1060,61 @@ const BigNumber& BigNumber::operator %= (const BigNumber& n){
 }
 template <typename T>
 const BigNumber& BigNumber::operator %= (const T& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
 	(*this) %= temp;
 	return (*this);
 }
 const BigNumber BigNumber::operator % (const BigNumber& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = (*this);
 	temp %= n;
 	return temp;
 }
 template <typename T>
 const BigNumber BigNumber::operator % (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n, tmp = (*this);
 	tmp %= temp;
 	return tmp;
 }
-const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	coresize(n);
-
-	#endif
-	BigNumber temp;
+const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 	if(n < 0){
-		temp = 0;
-	}else{
-		temp = 1;
-		HI = 0, LO = 0;
-		for(BigNumber i = 1;i <= n;i++){
-			temp *= (*this);
-			if(HI != 0){
-				//overflow
-				cout << "Stop the power calculation." << endl;
-				break;
-			}
-		}
+		(*this) = 0;
+		return (*this);
+	}else if(n == 0){
+		(*this) = 1;
+		return (*this);
+	}else if(n == 1){
+		return (*this);
 	}
+	BigNumber base = (*this);
+	for(BigNumber i = 2;i <= n;i++){
+		(*this) *= base;
+
+		#ifdef _BIG_NUMBER_STATIC_
+		if(HI != 0){
+			//overflow
+			cout << "Stop the power calculation." << endl;
+			break;
+		}
+
+		#endif
+	}
+	return (*this);
+}
+template <typename T>
+const BigNumber& BigNumber::operator ^= (const T& n){
+	BigNumber temp = n;
+	(*this) ^= n;
+	return (*this);
+}
+const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
+	BigNumber temp = (*this);
+	temp ^= n;
 	return temp;
 }
 template <typename T>
 const BigNumber BigNumber::operator ^ (const T& n) const{
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	resize();
-
-	#endif
 	BigNumber temp = n;
-	return (*this) ^ n;
+	return (*this) ^ temp;
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;
@@ -1294,12 +1254,7 @@ const BigNumber operator ^ (const T& n, const BigNumber& N){
 }
 
 ostream& operator << (ostream& os, const BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	n.resize();
-
-	#endif
-	for(int i = BigNumber::SIZE - 1;i >= 0;i--){
+	for(int i = n.SIZE - 1;i >= 0;i--){
 		if(n.a[i] != 0){
 			if(!n.positive){
 				os << '-';
@@ -1319,11 +1274,6 @@ ostream& operator << (ostream& os, const BigNumber& n){
 }
 
 istream& operator >> (istream& is, BigNumber& n){
-
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	n.resize();
-
-	#endif
 	string str;
 	is >> str;
 	BigNumber temp(str);
@@ -1494,6 +1444,18 @@ const BigNumber abs(const BigNumber& n){
 	return n.abs();
 }
 
+size_t Sizeof(const BigNumber& n){
+	return n.Sizeof();
+}
+
+void print(const BigNumber& n){
+	cout << n;
+}
+
+void Typeof(const BigNumber& n){
+	cout << "BigNumber";
+}
+
 const string convert_to_utf8(const string& str){
 	return str;
 }
@@ -1541,7 +1503,7 @@ const string cvt_string(const basic_string<T>& STR){
 	return convert_to_utf8(STR);
 }
 
-const string BigNumber::str(int notation = 10) const{
+const string BigNumber::str(int notation) const{
 	stringstream ss;
 	if(notation == 10){
 		ss << (*this);
