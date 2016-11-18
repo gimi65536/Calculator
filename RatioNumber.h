@@ -37,6 +37,7 @@ public:
 	void reduce();
 	void reduce() const;
 	RatioNumber();
+	RatioNumber(const bnint& num);
 	RatioNumber(const bnint& num, const bnint& den);
 	RatioNumber(const RatioNumber& r);
 	RatioNumber(float f);
@@ -63,6 +64,7 @@ public:
 	const RatioNumber operator + () const;
 	const RatioNumber operator - () const;
 	const RatioNumber& operator = (const RatioNumber& r);
+	void fast_assign(const RatioNumber& r);
 	const RatioNumber abs() const;
 	const RatioNumber& operator += (const RatioNumber& r);
 	const RatioNumber operator + (const RatioNumber& r) const;
@@ -79,6 +81,7 @@ public:
 	const RatioNumber& operator ^= (const bnint& n);
 	const RatioNumber operator ^ (const bnint& n) const;
 	void print() const;
+	string str() const;
 	const bnint getNumerator() const{return numerator;}
 	const bnint gerDenominator() const{return denominator;}
 	static void Setprecision(){precision = -1;}
@@ -91,6 +94,9 @@ public:
 	static void SetRoundDown(){mode = -1;}
 	static void SetRoundUp(){mode = 1;}
 	static void unSetRound(){mode = 0;}
+	friend RatioNumber sin(const RatioNumber& r, int pre);
+	friend RatioNumber arctan(const RatioNumber& r, int pre);
+	friend RatioNumber fast_arctan(const RatioNumber& r, int pre, int precis);
 };
 
 int RatioNumber::precision = -1;
@@ -172,7 +178,7 @@ const bnint gerDenominator(const RatioNumber& r){return r.gerDenominator();}
 void Setprecision(){RatioNumber::Setprecision();}
 void Setprecision(int n){RatioNumber::Setprecision(n);}
 void unSetprecision(){RatioNumber::unSetprecision();}
-void Set_autoprecision(int n){RatioNumber::Set_autoprecision();}
+void Set_autoprecision(int n){RatioNumber::Set_autoprecision(n);}
 void Set_autoprecision(){RatioNumber::Set_autoprecision();}
 void unSet_autoprecision(){RatioNumber::unSet_autoprecision();}
 void SetRound(){RatioNumber::SetRound();}
@@ -460,6 +466,17 @@ RatioNumber::RatioNumber(){
 	numerator = 0;
 	denominator = 1;
 	positive = true;
+}
+
+RatioNumber::RatioNumber(const bnint& num){
+	numerator = num;
+	denominator = 1;
+	if(num < 0){
+		positive = false;
+		numerator *= -1_b;
+	}else{
+		positive = true;
+	}
 }
 
 RatioNumber::RatioNumber(const bnint& num, const bnint& den){
@@ -851,6 +868,12 @@ void RatioNumber::print() const{
 	cout << (*this);
 }
 
+string RatioNumber::str() const{
+	stringstream ss;
+	ss << (*this);
+	return ss.str();
+}
+
 ostream& operator << (ostream& os, const RatioNumber r){
 	if(r.is_positive_INF()){
 		os << "Inf";
@@ -933,18 +956,81 @@ void print(const RatioNumber& r){
 	r.print();
 }
 
-RatioNumber pi_generator(int t){
-	RatioNumber pi;
-	for(int i = 0, j = 1;i < t;i++, j += 2){
-		int base = 4;
+RatioNumber sin(const RatioNumber& r, int pre){
+	RatioNumber sol, sol1;
+	sol = sol1 = r;
+	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
+	bnint base = 1, now_n = r.numerator, now_d = r.denominator;
+	for(int i = 1;i < pre;i++){
+		RatioNumber added;
+		base *= (2 * i + 1) * 2 * i;
+		now_n *= base_n;
+		now_d *= base_d;
+		added.numerator = now_n;
+		added.denominator = base * now_d;
 		if(i % 2 != 0){
-			base = -4;
+			added.positive = false;
 		}
-		RatioNumber added(base, j);
-		pi.fast_add(added);
+		sol.fast_add(added);
+		if(i == pre - 2){
+			sol1 = sol;
+		}
 	}
-	pi.reduce();
-	return pi;
+	sol.fast_add(sol1);
+	sol.denominator *= 2;
+	sol.reduce();
+	return sol;
+}
+
+RatioNumber arctan(const RatioNumber& r, int pre){
+	RatioNumber sol, sol1;
+	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
+	bnint now_n = r.numerator, now_d = r.denominator;
+	for(int i = 0, j = 1;i < pre;i++, j += 2, now_n *= base_n, now_d *= base_d){
+		RatioNumber added;
+		added.numerator = now_n;
+		added.denominator = now_d * j;
+		if(i % 2 != 0){
+			added.positive = false;
+		}
+		sol.fast_add(added);
+		if(i == pre - 2){
+			sol1 = sol;
+		}
+	}
+	sol.fast_add(sol1);
+	sol.denominator *= 2;
+	sol.reduce();
+	return sol;
+}
+
+RatioNumber fast_arctan(const RatioNumber& r, int pre, int precis = DEFAULT_endure_precision){
+	int ori_pre = RatioNumber::precision, ori_mode = RatioNumber::mode;
+	RatioNumber::precision = precis, RatioNumber::mode = 0;
+	bnint sol, sol1;
+	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
+	bnint now_n = r.numerator, now_d = r.denominator;
+	for(int i = 0, j = 1;i < pre;i++, j += 2, now_n *= base_n, now_d *= base_d){
+		RatioNumber added;
+		added.numerator = now_n;
+		added.denominator = now_d * j;
+		if(i % 2 != 0){
+			added.positive = false;;
+		}
+		sol += added.str();
+		if(i == pre - 2){
+			sol1 = sol;
+		}
+	}
+	sol = (sol + sol1) / 2;
+	string str = sol.str();
+	while(str.length() < RatioNumber::precision + 1){
+		str.insert(0, "0");
+	}
+	str.insert(str.length() - RatioNumber::precision, ".");
+	RatioNumber Sol(str);
+	RatioNumber::precision = ori_pre, RatioNumber::mode = ori_mode;
+	return Sol;
 }
 
 #endif
