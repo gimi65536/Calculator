@@ -200,7 +200,6 @@ private:
 };
 
 void BigNumber::resize() const{ //fit
-<<<<<<< HEAD
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	if(getSize() < SIZE && getSize() > BASIC_SIZE){
 		size_t target_size = getSize();
@@ -222,29 +221,6 @@ void BigNumber::resize(size_t n) const{ //large
 		for(int i = 0;i < SIZE;i++){
 			tmp[i] = a[i];
 		}
-=======
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	if(getSize() < SIZE && getSize() > BASIC_SIZE){
-		size_t target_size = getSize();
-		int* tmp = new int[target_size];
-		for(int i = 0;i < target_size;i++){
-			tmp[i] = a[i];
-		}
-		delete[] a;
-		SIZE = target_size;
-		a = tmp;
-	}
-
-	#endif
-}
-void BigNumber::resize(size_t n) const{ //large
-	#ifdef _BIG_NUMBER_DYNAMIC_
-	if(n > BASIC_SIZE && n > SIZE){
-		int* tmp = new int[n];
-		for(int i = 0;i < SIZE;i++){
-			tmp[i] = a[i];
-		}
->>>>>>> fraction
 		for(int i = SIZE;i < n;i++){
 			tmp[i] = 0;
 		}
@@ -1099,12 +1075,7 @@ const BigNumber BigNumber::operator % (const T& n) const{
 	tmp %= temp;
 	return tmp;
 }
-<<<<<<< HEAD
-const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
-	BigNumber temp;
-=======
 const BigNumber& BigNumber::operator ^= (const BigNumber& n){
->>>>>>> fraction
 	if(n < 0){
 		(*this) = 0;
 		return (*this);
