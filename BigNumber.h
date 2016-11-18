@@ -32,6 +32,8 @@ const string cvt_string(const basic_string<T>& STR);
 class BigNumber;
 class BigBigNumber;
 
+typedef BigNumber bnint;
+
 class BigNumber{
 friend class BigBigNumber;
 private:
@@ -149,6 +151,9 @@ public:
 	const BigNumber operator % (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator % (const T& n) const;
+	const BigNumber& operator ^= (const BigNumber& n);
+	template <typename T>
+	const BigNumber& operator ^= (const T& n);
 	const BigNumber operator ^ (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator ^ (const T& n) const;
@@ -195,6 +200,7 @@ private:
 };
 
 void BigNumber::resize() const{ //fit
+<<<<<<< HEAD
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	if(getSize() < SIZE && getSize() > BASIC_SIZE){
 		size_t target_size = getSize();
@@ -216,6 +222,29 @@ void BigNumber::resize(size_t n) const{ //large
 		for(int i = 0;i < SIZE;i++){
 			tmp[i] = a[i];
 		}
+=======
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	if(getSize() < SIZE && getSize() > BASIC_SIZE){
+		size_t target_size = getSize();
+		int* tmp = new int[target_size];
+		for(int i = 0;i < target_size;i++){
+			tmp[i] = a[i];
+		}
+		delete[] a;
+		SIZE = target_size;
+		a = tmp;
+	}
+
+	#endif
+}
+void BigNumber::resize(size_t n) const{ //large
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	if(n > BASIC_SIZE && n > SIZE){
+		int* tmp = new int[n];
+		for(int i = 0;i < SIZE;i++){
+			tmp[i] = a[i];
+		}
+>>>>>>> fraction
 		for(int i = SIZE;i < n;i++){
 			tmp[i] = 0;
 		}
@@ -1070,22 +1099,45 @@ const BigNumber BigNumber::operator % (const T& n) const{
 	tmp %= temp;
 	return tmp;
 }
+<<<<<<< HEAD
 const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
 	BigNumber temp;
+=======
+const BigNumber& BigNumber::operator ^= (const BigNumber& n){
+>>>>>>> fraction
 	if(n < 0){
-		temp = 0;
-	}else{
-		temp = 1;
-		HI = 0, LO = 0;
-		for(BigNumber i = 1;i <= n;i++){
-			temp *= (*this);
-			if(HI != 0){
-				//overflow
-				cout << "Stop the power calculation." << endl;
-				break;
-			}
-		}
+		(*this) = 0;
+		return (*this);
+	}else if(n == 0){
+		(*this) = 1;
+		return (*this);
+	}else if(n == 1){
+		return (*this);
 	}
+	BigNumber base = (*this);
+	for(BigNumber i = 2;i <= n;i++){
+		(*this) *= base;
+
+		#ifdef _BIG_NUMBER_STATIC_
+		if(HI != 0){
+			//overflow
+			cout << "Stop the power calculation." << endl;
+			break;
+		}
+
+		#endif
+	}
+	return (*this);
+}
+template <typename T>
+const BigNumber& BigNumber::operator ^= (const T& n){
+	BigNumber temp = n;
+	(*this) ^= n;
+	return (*this);
+}
+const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
+	BigNumber temp = (*this);
+	temp ^= n;
 	return temp;
 }
 template <typename T>
