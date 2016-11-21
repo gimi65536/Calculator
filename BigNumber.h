@@ -160,6 +160,9 @@ public:
 	const string str(int notation = 10) const;
 	size_t Sizeof() const{return SIZE;}
 	void print() const{cout << (*this);}
+	bool is_zero() const;
+	bool get_positive() const{return positive;}
+	void negate(){positive = !positive;}
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
@@ -1115,6 +1118,14 @@ template <typename T>
 const BigNumber BigNumber::operator ^ (const T& n) const{
 	BigNumber temp = n;
 	return (*this) ^ temp;
+}
+bool BigNumber::is_zero() const{
+	for(int i = 0;i < SIZE;i++){
+		if(a[i] != 0){
+			return false;
+		}
+	}
+	return true;
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;
