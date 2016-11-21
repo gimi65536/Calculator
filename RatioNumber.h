@@ -1,5 +1,7 @@
 #define _DYNAMIC_ 1
 #include "BigNumber.h"
+#include <tuple>
+#include <vector>
 
 #ifndef _RATIO_NUMBER_
 #define _RATIO_NUMBER_
@@ -17,14 +19,21 @@ int ld_exp = 0;
 void judge_endian();
 void judge_ldtype();
 
+class RatioNumber;
+typedef tuple<string, RatioNumber&, bnint, int, int, int, vector<bnint> > Package_thread;
+
 class RatioNumber{
 private:
 	static int precision;
 	static int endure_precision;
 	static int mode;
+	static vector<Package_thread> fast_thread;
+	static int now_thread;
+	enum _INDECATE{NAME, SOLUTION, PUT_IN, SOL_PRECISION, PRO_PRECISION, ROUND_MODE, MIDWAY_BN_VECTOR};
 	bnint numerator;
 	bnint denominator;
 	bool positive;
+	mutable bool lock;
 	template <typename T>
 	typename enable_if<is_floating_point<T>::value, void>::type PASS_BY_IEEE(T r, int byte, int exp);
 	template <typename T>
@@ -33,9 +42,10 @@ private:
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
 public:
-	friend ostream& operator << (ostream& os, const RatioNumber r);
+	friend ostream& operator << (ostream& os, const RatioNumber& r);
 	void reduce();
 	void reduce() const;
+	void correct_positive();
 	RatioNumber();
 	RatioNumber(const bnint& num);
 	RatioNumber(const bnint& num, const bnint& den);
@@ -64,22 +74,23 @@ public:
 	const RatioNumber operator + () const;
 	const RatioNumber operator - () const;
 	const RatioNumber& operator = (const RatioNumber& r);
-	void fast_assign(const RatioNumber& r);
+	void assign_without_reduction(const RatioNumber& r);
 	const RatioNumber abs() const;
 	const RatioNumber& operator += (const RatioNumber& r);
 	const RatioNumber operator + (const RatioNumber& r) const;
-	void fast_add(const RatioNumber& r);
+	void add_without_reduction(const RatioNumber& r);
 	const RatioNumber& operator -= (const RatioNumber& r);
 	const RatioNumber operator - (const RatioNumber& r) const;
-	void fast_minus(const RatioNumber& r);
+	void minus_without_reduction(const RatioNumber& r);
 	const RatioNumber& operator *= (const RatioNumber& r);
 	const RatioNumber operator * (const RatioNumber& r) const;
-	void fast_multiply(const RatioNumber& r);
+	void multiply_without_reduction(const RatioNumber& r);
 	const RatioNumber& operator /= (const RatioNumber& r);
 	const RatioNumber operator / (const RatioNumber& r) const;
-	void fast_divide(const RatioNumber& r);
+	void divide_without_reduction(const RatioNumber& r);
 	const RatioNumber& operator ^= (const bnint& n);
 	const RatioNumber operator ^ (const bnint& n) const;
+	void print();
 	void print() const;
 	string str() const;
 	const bnint getNumerator() const{return numerator;}
@@ -94,6 +105,17 @@ public:
 	static void SetRoundDown(){mode = -1;}
 	static void SetRoundUp(){mode = 1;}
 	static void unSetRound(){mode = 0;}
+	static bool fast_start(string str, RatioNumber& sol, int sol_precis, int process_precis = -1, int round = 0);
+	static bool fast_switch(string str);
+	static bool fast_switch(const RatioNumber& sol);
+	static void fast_add(const RatioNumber& r);
+	static void fast_add(const bnint& num, const bnint& den);
+	static void fast_minus(const RatioNumber& r);
+	static void fast_minus(const bnint& num, const bnint& den);
+	static void fast_putin_temp();
+	static bool fast_end();
+	static bool fast_end(string str);
+	static bool fast_end(RatioNumber& sol);
 	friend RatioNumber sin(const RatioNumber& r, int pre);
 	friend RatioNumber arctan(const RatioNumber& r, int pre);
 	friend RatioNumber fast_arctan(const RatioNumber& r, int pre, int precis);
@@ -102,15 +124,17 @@ public:
 int RatioNumber::precision = -1;
 int RatioNumber::endure_precision = DEFAULT_endure_precision;
 int RatioNumber::mode = 0;
+vector<Package_thread> RatioNumber::fast_thread;
+int RatioNumber::now_thread = -1;
 
 bnint gcd(bnint a, bnint b){
 	bnint tmp;
-	while(a != 0 && b != 0){
+	while(!a.is_zero() && !b.is_zero()){
 		tmp = a % b;
 		a = b;
 		b = tmp;
 	}
-	if(b == 0){
+	if(b.is_zero()){
 		return a;
 	}else{
 		return b;
@@ -187,28 +211,39 @@ void SetRoundUp(){RatioNumber::SetRoundUp();}
 void unSetRound(){RatioNumber::unSetRound();}
 
 void RatioNumber::reduce(){
-	if(numerator < 0){
+	if(!numerator.get_positive()){
 		positive = !positive;
-		numerator *= -1;
+		numerator.negate();
 	}
-	if(denominator < 0){
+	if(!denominator.get_positive()){
 		positive = !positive;
-		denominator *= -1;
+		denominator.negate();
 	}
 	bnint tmp = gcd(numerator, denominator);
-	if(tmp == 0){ //NaN
+	if(tmp.is_zero()){ //NaN
 		positive = true;
 		return;
 	}else{
 		numerator /= tmp;
 		denominator /= tmp;
-		if(numerator == 0){
+		if(numerator.is_zero()){
 			positive = true;
 		}
 	}
 }
 
 void RatioNumber::reduce() const{}
+
+void RatioNumber::correct_positive(){
+	if(!numerator.get_positive() && !numerator.is_zero()){
+		positive = !positive;
+		numerator.negate();
+	}
+	if(!denominator.get_positive() && !denominator.is_zero()){
+		positive = !positive;
+		denominator.negate();
+	}
+}
 
 template <typename T>
 typename enable_if<is_floating_point<T>::value, void>::type RatioNumber::PASS_BY_IEEE(T r, int byte, int exp){
@@ -466,6 +501,7 @@ RatioNumber::RatioNumber(){
 	numerator = 0;
 	denominator = 1;
 	positive = true;
+	lock = false;
 }
 
 RatioNumber::RatioNumber(const bnint& num){
@@ -477,12 +513,14 @@ RatioNumber::RatioNumber(const bnint& num){
 	}else{
 		positive = true;
 	}
+	lock = false;
 }
 
 RatioNumber::RatioNumber(const bnint& num, const bnint& den){
 	numerator = num;
 	denominator = den;
 	positive = true;
+	lock = false;
 	reduce();
 }
 
@@ -492,10 +530,12 @@ RatioNumber::RatioNumber(const RatioNumber& r){
 
 RatioNumber::RatioNumber(float f){
 	PASS_BY_IEEE(f, 4, 8);
+	lock = false;
 }
 
 RatioNumber::RatioNumber(double d){
 	PASS_BY_IEEE(d, 8, 11);
+	lock = false;
 }
 
 RatioNumber::RatioNumber(long double ld){
@@ -507,10 +547,12 @@ RatioNumber::RatioNumber(long double ld){
 	}else{
 		PASS_BY_80_bits(ld);
 	}
+	lock = false;
 }
 
 RatioNumber::RatioNumber(string str){
 	PASS_BY_STRING(str);
+	lock = false;
 }
 
 bool RatioNumber::is_INF() const{
@@ -547,7 +589,7 @@ bool is_negative_INF(const RatioNumber& r){
 }
 
 bool RatioNumber::is_NaN() const{
-	if(numerator == 0 && denominator == 0){
+	if(numerator.is_zero() && denominator.is_zero()){
 		return true;
 	}
 	return false;
@@ -566,11 +608,17 @@ bool is_fraction(const RatioNumber& r){
 }
 
 void RatioNumber::to_INF(){
+	if(lock){
+		return;
+	}
 	numerator = 1;
 	denominator = 0;
 }
 
 void RatioNumber::to_positive_INF(){
+	if(lock){
+		return;
+	}
 	numerator = 1;
 	denominator = 0;
 	positive = true;
@@ -582,6 +630,9 @@ RatioNumber positive_INF_generator(){
 }
 
 void RatioNumber::to_negative_INF(){
+	if(lock){
+		return;
+	}
 	numerator = 1;
 	denominator = 0;
 	positive = false;
@@ -593,6 +644,9 @@ RatioNumber negative_INF_generator(){
 }
 
 void RatioNumber::to_NaN(){
+	if(lock){
+		return;
+	}
 	numerator = 0;
 	denominator = 0;
 	positive = true;
@@ -689,11 +743,22 @@ const RatioNumber RatioNumber::operator - () const{
 		return tmp;
 	}
 }
-
-const RatioNumber& RatioNumber::operator = (const RatioNumber& r){
+void RatioNumber::assign_without_reduction(const RatioNumber& r){
+	if(lock){
+		return;
+	}
 	numerator = r.numerator;
 	denominator = r.denominator;
 	positive = r.positive;
+	lock = false;
+}
+const RatioNumber& RatioNumber::operator = (const RatioNumber& r){
+	if(lock){
+		return (*this);
+	}
+	assign_without_reduction(r);
+	reduce();
+	return (*this);
 }
 const RatioNumber RatioNumber::abs() const{
 	if(is_NaN()){
@@ -704,7 +769,10 @@ const RatioNumber RatioNumber::abs() const{
 	return tmp;
 }
 const RatioNumber& RatioNumber::operator += (const RatioNumber& r){
-	fast_add(r);
+	if(lock){
+		return (*this);
+	}
+	add_without_reduction(r);
 	reduce();
 	return (*this);
 }
@@ -713,7 +781,10 @@ const RatioNumber RatioNumber::operator + (const RatioNumber& r) const{
 	tmp += r;
 	return tmp;
 }
-void RatioNumber::fast_add(const RatioNumber& r){
+void RatioNumber::add_without_reduction(const RatioNumber& r){
+	if(lock){
+		return;
+	}
 	if(is_NaN() || r.is_NaN()){
 		positive = true;
 		denominator = 0;
@@ -733,19 +804,22 @@ void RatioNumber::fast_add(const RatioNumber& r){
 	}
 	bnint Lcm = lcm(denominator, r.denominator);
 	if(!positive){
-		numerator *= -1;
+		numerator.negate();
 		positive = true;
 	}
 	numerator *= Lcm / denominator;
 	bnint be_add = r.numerator * (Lcm / r.denominator);
 	if(!r.positive){
-		be_add *= -1;
+		be_add.negate();
 	}
 	numerator += be_add;
 	denominator = Lcm;
 }
 const RatioNumber& RatioNumber::operator -= (const RatioNumber& r){
-	fast_minus(r);
+	if(lock){
+		return (*this);
+	}
+	minus_without_reduction(r);
 	reduce();
 	return (*this);
 }
@@ -754,7 +828,10 @@ const RatioNumber RatioNumber::operator - (const RatioNumber& r) const{
 	tmp -= r;
 	return tmp;
 }
-void RatioNumber::fast_minus(const RatioNumber& r){
+void RatioNumber::minus_without_reduction(const RatioNumber& r){
+	if(lock){
+		return;
+	}
 	if(is_NaN() || r.is_NaN()){
 		positive = true;
 		denominator = 0;
@@ -774,19 +851,22 @@ void RatioNumber::fast_minus(const RatioNumber& r){
 	}
 	bnint Lcm = lcm(denominator, r.denominator);
 	if(!positive){
-		numerator *= -1;
+		numerator.negate();
 		positive = true;
 	}
 	numerator *= Lcm / denominator;
 	bnint be_add = r.numerator * (Lcm / r.denominator);
 	if(!r.positive){
-		be_add *= -1;
+		be_add.negate();
 	}
 	numerator -= be_add;
 	denominator = Lcm;
 }
 const RatioNumber& RatioNumber::operator *= (const RatioNumber& r){
-	fast_multiply(r);
+	if(lock){
+		return (*this);
+	}
+	multiply_without_reduction(r);
 	reduce();
 }
 const RatioNumber RatioNumber::operator * (const RatioNumber& r) const{
@@ -794,7 +874,10 @@ const RatioNumber RatioNumber::operator * (const RatioNumber& r) const{
 	tmp *= r;
 	return tmp;
 }
-void RatioNumber::fast_multiply(const RatioNumber& r){
+void RatioNumber::multiply_without_reduction(const RatioNumber& r){
+	if(lock){
+		return;
+	}
 	numerator *= r.numerator;
 	denominator *= r.denominator;
 	if(!r.positive){
@@ -802,7 +885,10 @@ void RatioNumber::fast_multiply(const RatioNumber& r){
 	}
 }
 const RatioNumber& RatioNumber::operator /= (const RatioNumber& r){
-	fast_divide(r);
+	if(lock){
+		return (*this);
+	}
+	divide_without_reduction(r);
 	reduce();
 }
 const RatioNumber RatioNumber::operator / (const RatioNumber& r) const{
@@ -810,7 +896,10 @@ const RatioNumber RatioNumber::operator / (const RatioNumber& r) const{
 	tmp /= r;
 	return tmp;
 }
-void RatioNumber::fast_divide(const RatioNumber& r){
+void RatioNumber::divide_without_reduction(const RatioNumber& r){
+	if(lock){
+		return;
+	}
 	numerator *= r.denominator;
 	denominator *= r.numerator;
 	if(!r.positive){
@@ -818,6 +907,9 @@ void RatioNumber::fast_divide(const RatioNumber& r){
 	}
 }
 const RatioNumber& RatioNumber::operator ^= (const bnint& n){
+	if(lock){
+		return (*this);
+	}
 	if(n == 0){
 		numerator = 1;
 		denominator = 1;
@@ -864,6 +956,11 @@ const RatioNumber RatioNumber::operator ^ (const bnint& n) const{
 	return temp;
 }
 
+void RatioNumber::print(){
+	correct_positive();
+	cout << (*this);
+}
+
 void RatioNumber::print() const{
 	cout << (*this);
 }
@@ -874,7 +971,7 @@ string RatioNumber::str() const{
 	return ss.str();
 }
 
-ostream& operator << (ostream& os, const RatioNumber r){
+ostream& operator << (ostream& os, const RatioNumber& r){
 	if(r.is_positive_INF()){
 		os << "Inf";
 	}else if(r.is_negative_INF()){
@@ -882,7 +979,17 @@ ostream& operator << (ostream& os, const RatioNumber r){
 	}else if(r.is_NaN()){
 		os << "NaN";
 	}else{
+		int n = 0;
 		if(!r.positive){
+			n++;
+		}
+		if(!r.numerator.get_positive() && !r.numerator.is_zero()){
+			n++;
+		}
+		if(!r.denominator.get_positive() && !r.denominator.is_zero()){
+			n++;
+		}
+		if(n % 2 == 1){
 			os << '-';
 		}
 		bnint base = 10;
@@ -895,14 +1002,14 @@ ostream& operator << (ostream& os, const RatioNumber r){
 			static int space = 1000; //to optimize the searching process
 			for(int i = space;i < RatioNumber::endure_precision;i += space){
 				num *= base ^ space;
-				if(num % r.denominator == 0){
+				if((num % r.denominator).is_zero()){
 					precision = i - space;
 					break;
 				}
 			}
 			num = r.numerator * (base ^ precision);
 			while(precision < RatioNumber::endure_precision){
-				if(num % r.denominator == 0){
+				if((num % r.denominator).is_zero()){
 					num *= base;
 					break;
 				}
@@ -937,11 +1044,11 @@ ostream& operator << (ostream& os, const RatioNumber r){
 			os << num;
 		}else{
 			base = base ^ precision;
-			os << num / base;
+			os << abs(num / base);
 			bnint rem = num % base;
-			if(RatioNumber::precision > 0 || rem != 0){
+			if(RatioNumber::precision > 0 || !rem.is_zero()){
 				os << '.';
-				string str = rem.str();
+				string str = rem.abs().str();
 				while(str.length() != precision){
 					str.insert(0, 1, '0');
 				}
@@ -956,12 +1063,112 @@ void print(const RatioNumber& r){
 	r.print();
 }
 
-RatioNumber sin(const RatioNumber& r, int pre){
+bool RatioNumber::fast_start(string str, RatioNumber& sol, int sol_precis, int process_precis, int round){
+	if(round < -1){
+		round = 0;
+	}else if(round > 1){
+		round = 0;
+	}
+	if(process_precis < sol_precis){
+		process_precis = sol_precis;
+	}
+	if(sol.lock){
+		return false;
+	}
+	for(int i = 0;i < fast_thread.size();i++){
+		if(get<NAME>(fast_thread[i]) == str){
+			return false;
+		}
+	}
+	int ori_pre = RatioNumber::precision, ori_mode = RatioNumber::mode;
+	RatioNumber::precision = process_precis, RatioNumber::mode = round;
+	now_thread = fast_thread.size();
+	vector<bnint> vec;
+	Package_thread tmp(str, sol, sol.str(), sol_precis, process_precis, round, vec);
+	fast_thread.push_back(tmp);
+	sol.lock = true;
+	RatioNumber::precision = ori_pre, RatioNumber::mode = ori_mode;
+	return true;
+}
+bool RatioNumber::fast_switch(string str){
+	for(int i = 0;i < fast_thread.size();i++){
+		if(get<NAME>(fast_thread[i]) == str){
+			now_thread = i;
+			return true;
+		}
+	}
+	return false;
+}
+bool RatioNumber::fast_switch(const RatioNumber& sol){
+	for(int i = 0;i < fast_thread.size();i++){
+		if(&get<SOLUTION>(fast_thread[i]) == &sol){
+			now_thread = i;
+			return true;
+		}
+	}
+	return false;
+}
+void RatioNumber::fast_add(const RatioNumber& r){}
+void RatioNumber::fast_add(const bnint& num, const bnint& den){}
+void RatioNumber::fast_minus(const RatioNumber& r){}
+void RatioNumber::fast_minus(const bnint& num, const bnint& den){}
+void RatioNumber::fast_putin_temp(){
+	if(now_thread < 0 || now_thread >= fast_thread.size()){
+		return;
+	}
+	get<MIDWAY_BN_VECTOR>(fast_thread[now_thread]).push_back(get<PUT_IN>(fast_thread[now_thread]));
+}
+bool RatioNumber::fast_end(){
+	if(now_thread < 0 || now_thread >= fast_thread.size()){
+		return false;
+	}
+	bnint& sol = get<PUT_IN>(fast_thread[now_thread]);
+	RatioNumber& ratio_sol = get<SOLUTION>(fast_thread[now_thread]);
+	vector<bnint>& midway = get<MIDWAY_BN_VECTOR>(fast_thread[now_thread]);
+	int sol_precis = get<SOL_PRECISION>(fast_thread[now_thread]);
+	int process_precis = get<PRO_PRECISION>(fast_thread[now_thread]);
+	ratio_sol.lock = false;
+	for(int i = 0;i < midway.size();i++){
+		sol += midway[i];
+	}
+	sol /= midway.size() + 1;
+	string str = sol.str();
+	while(str.length() < process_precis + 1){
+		str.insert(0, "0");
+	}
+	str.insert(str.length() - process_precis, ".");
+	if(process_precis > sol_precis){
+		str.erase(str.length() - (process_precis - sol_precis));
+	}
+	ratio_sol = str;
+	fast_thread.erase(fast_thread.begin() + now_thread);
+	now_thread = fast_thread.size() - 1;
+}
+bool RatioNumber::fast_end(string str){
+	string temp = get<NAME>(fast_thread[now_thread]);
+	if(fast_switch(str)){
+		fast_end();
+		fast_switch(temp);
+		return true;
+	}
+	return false;
+}
+bool RatioNumber::fast_end(RatioNumber& sol){
+	RatioNumber& temp = get<SOLUTION>(fast_thread[now_thread]);
+	if(fast_switch(sol)){
+		fast_end();
+		fast_switch(temp);
+		return true;
+	}
+	return false;
+}
+
+RatioNumber sin(const RatioNumber& r, int time){
 	RatioNumber sol, sol1;
 	sol = sol1 = r;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
 	bnint base = 1, now_n = r.numerator, now_d = r.denominator;
-	for(int i = 1;i < pre;i++){
+	for(int i = 1;i < time;i++){
 		RatioNumber added;
 		base *= (2 * i + 1) * 2 * i;
 		now_n *= base_n;
@@ -971,54 +1178,57 @@ RatioNumber sin(const RatioNumber& r, int pre){
 		if(i % 2 != 0){
 			added.positive = false;
 		}
-		sol.fast_add(added);
-		if(i == pre - 2){
+		sol.add_without_reduction(added);
+		if(i == time - 2){
 			sol1 = sol;
 		}
 	}
-	sol.fast_add(sol1);
+	sol.add_without_reduction(sol1);
 	sol.denominator *= 2;
 	sol.reduce();
 	return sol;
 }
 
-RatioNumber arctan(const RatioNumber& r, int pre){
+RatioNumber arctan(const RatioNumber& r, int time){
 	RatioNumber sol, sol1;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
 	bnint now_n = r.numerator, now_d = r.denominator;
-	for(int i = 0, j = 1;i < pre;i++, j += 2, now_n *= base_n, now_d *= base_d){
+	if(!r.positive){
+		now_n.negate();
+	}
+	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
 		RatioNumber added;
 		added.numerator = now_n;
 		added.denominator = now_d * j;
 		if(i % 2 != 0){
 			added.positive = false;
 		}
-		sol.fast_add(added);
-		if(i == pre - 2){
+		cout << added << endl;
+		sol.add_without_reduction(added);
+		cout<< "sol: "<<sol<<endl;
+		if(i == time - 2){
 			sol1 = sol;
 		}
 	}
-	sol.fast_add(sol1);
+	sol.add_without_reduction(sol1);
 	sol.denominator *= 2;
 	sol.reduce();
 	return sol;
 }
 
-RatioNumber fast_arctan(const RatioNumber& r, int pre, int precis = DEFAULT_endure_precision){
-	int ori_pre = RatioNumber::precision, ori_mode = RatioNumber::mode;
-	RatioNumber::precision = precis, RatioNumber::mode = 0;
+RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
 	bnint sol, sol1;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
 	bnint now_n = r.numerator, now_d = r.denominator;
-	for(int i = 0, j = 1;i < pre;i++, j += 2, now_n *= base_n, now_d *= base_d){
+	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
 		RatioNumber added;
 		added.numerator = now_n;
 		added.denominator = now_d * j;
 		if(i % 2 != 0){
-			added.positive = false;;
+			added.positive = false;
 		}
 		sol += added.str();
-		if(i == pre - 2){
+		if(i == time - 2){
 			sol1 = sol;
 		}
 	}
@@ -1029,7 +1239,6 @@ RatioNumber fast_arctan(const RatioNumber& r, int pre, int precis = DEFAULT_endu
 	}
 	str.insert(str.length() - RatioNumber::precision, ".");
 	RatioNumber Sol(str);
-	RatioNumber::precision = ori_pre, RatioNumber::mode = ori_mode;
 	return Sol;
 }
 
