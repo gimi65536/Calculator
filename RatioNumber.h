@@ -96,7 +96,7 @@ public:
 	void print() const;
 	string str() const;
 	const bnint getNumerator() const{return numerator;}
-	const bnint gerDenominator() const{return denominator;}
+	const bnint getDenominator() const{return denominator;}
 	static void Setprecision(){precision = -1;}
 	static void Setprecision(int n){if(n >= 0){precision = n;}else{precision = -1;}}
 	static void unSetprecision(){precision = -1;}
@@ -198,7 +198,7 @@ void judge_ldtype(){
 }
 
 const bnint getNumerator(const RatioNumber& r){return r.getNumerator();}
-const bnint gerDenominator(const RatioNumber& r){return r.gerDenominator();}
+const bnint getDenominator(const RatioNumber& r){return r.getDenominator();}
 
 void Setprecision(){RatioNumber::Setprecision();}
 void Setprecision(int n){RatioNumber::Setprecision(n);}
@@ -1332,6 +1332,12 @@ RatioNumber fast_cos(const RatioNumber& r, int time, int precis = DEFAULT_endure
 		}
 	}
 	RatioNumber::fast_end();
+	return sol;
+}
+
+RatioNumber fast_tan(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
+	RatioNumber sol = fast_sin(r, time, precis + 10), sol1 = fast_cos(r, time, precis + 10);
+	sol /= sol1;
 	return sol;
 }
 
