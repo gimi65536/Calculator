@@ -893,6 +893,10 @@ const BigNumber BigNumber::operator - (const T& tmp) const{
 }
 const BigNumber& BigNumber::operator *= (const BigNumber& n){
 	static const int inteval = 700;
+	if(n.is_zero()){
+		(*this) = n;
+		return (*this);
+	}
 	if(is_ten(n) != -1 && n.getSize() - getSize() < inteval){
 		int time = is_ten(n);
 		BigNumber tmp = n;

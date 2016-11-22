@@ -1268,6 +1268,7 @@ RatioNumber sin(const RatioNumber& r, int time){
 }
 
 RatioNumber fast_sin(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
+	fast_zero_signal = false;
 	RatioNumber sol;
 	int plus = 0, tmp = precis, continuous_zero = 0;
 	while(tmp >= 2){
@@ -1278,6 +1279,40 @@ RatioNumber fast_sin(const RatioNumber& r, int time, int precis = DEFAULT_endure
 	bnint base = 1, now_n = r.get_numerator(), now_d = r.get_denominator();
 	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
 	for(int i = 0;i < time;i++, now_n *= base_n, now_d *= base_d, base *= (2 * i + 1) * 2 * i){
+		if(i % 2 != 0){
+			RatioNumber::fast_add(-now_n, now_d * base);
+		}else{
+			RatioNumber::fast_add(now_n, now_d * base);
+		}
+		if(fast_zero_signal){
+			fast_zero_signal = false;
+			if(continuous_zero >= 1){
+				break;
+			}
+			continuous_zero ++;
+		}else{
+			continuous_zero = 0;
+		}
+		if(i == time - 2){
+			RatioNumber::fast_putin_temp();
+		}
+	}
+	RatioNumber::fast_end();
+	return sol;
+}
+
+RatioNumber fast_cos(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
+	fast_zero_signal = false;
+	RatioNumber sol;
+	int plus = 0, tmp = precis, continuous_zero = 0;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
+	}
+	RatioNumber::fast_start("COS", sol, precis, precis + plus, 0);
+	bnint base = 1, now_n = 1, now_d = 1;
+	const bnint base_n = r.get_numerator() ^ 2, base_d = r.get_denominator() ^ 2;
+	for(int i = 0;i < time;i++, now_n *= base_n, now_d *= base_d, base *= (2 * i - 1) * 2 * i){
 		if(i % 2 != 0){
 			RatioNumber::fast_add(-now_n, now_d * base);
 		}else{
@@ -1327,8 +1362,9 @@ RatioNumber arctan(const RatioNumber& r, int time){
 }
 
 RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
+	fast_zero_signal = false;
 	RatioNumber sol;
-	int plus = 0, tmp = precis;
+	int plus = 0, tmp = precis, continuous_zero = 0;
 	while(tmp >= 2){
 		plus ++;
 		tmp /= 10;
@@ -1341,6 +1377,15 @@ RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_end
 			RatioNumber::fast_add(-now_n, now_d * j);
 		}else{
 			RatioNumber::fast_add(now_n, now_d * j);
+		}
+		if(fast_zero_signal){
+			fast_zero_signal = false;
+			if(continuous_zero >= 1){
+				break;
+			}
+			continuous_zero ++;
+		}else{
+			continuous_zero = 0;
 		}
 		if(i == time - 2){
 			RatioNumber::fast_putin_temp();
