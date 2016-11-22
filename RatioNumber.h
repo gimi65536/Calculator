@@ -18,6 +18,7 @@ int ld_byte = 0;
 int ld_exp = 0;
 void judge_endian();
 void judge_ldtype();
+bool fast_zero_signal = false;
 
 class RatioNumber;
 typedef tuple<string, RatioNumber&, bnint, int, int, int, vector<bnint> > Package_thread;
@@ -1130,7 +1131,12 @@ void RatioNumber::fast_add(const RatioNumber& r){
 	int ori_pre = RatioNumber::precision, ori_mode = RatioNumber::mode;
 	RatioNumber::precision = get<PRO_PRECISION>(fast_thread[now_thread]);
 	RatioNumber::mode = get<ROUND_MODE>(fast_thread[now_thread]);
-	get<PUT_IN>(fast_thread[now_thread]) += r.str();
+	bnint tmp = r.str();
+	if(tmp.is_zero()){
+		fast_zero_signal = true;
+	}else{
+		get<PUT_IN>(fast_thread[now_thread]) += tmp;
+	}
 	RatioNumber::precision = ori_pre, RatioNumber::mode = ori_mode;
 }
 void RatioNumber::fast_add(const bnint& num, const bnint& den){
@@ -1261,7 +1267,38 @@ RatioNumber sin(const RatioNumber& r, int time){
 	return sol;
 }
 
-RatioNumber fast_sin(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision);
+RatioNumber fast_sin(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
+	RatioNumber sol;
+	int plus = 0, tmp = precis, continuous_zero = 0;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
+	}
+	RatioNumber::fast_start("SIN", sol, precis, precis + plus, 0);
+	bnint base = 1, now_n = r.get_numerator(), now_d = r.get_denominator();
+	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
+	for(int i = 0;i < time;i++, now_n *= base_n, now_d *= base_d, base *= (2 * i + 1) * 2 * i){
+		if(i % 2 != 0){
+			RatioNumber::fast_add(-now_n, now_d * base);
+		}else{
+			RatioNumber::fast_add(now_n, now_d * base);
+		}
+		if(fast_zero_signal){
+			fast_zero_signal = false;
+			if(continuous_zero >= 1){
+				break;
+			}
+			continuous_zero ++;
+		}else{
+			continuous_zero = 0;
+		}
+		if(i == time - 2){
+			RatioNumber::fast_putin_temp();
+		}
+	}
+	RatioNumber::fast_end();
+	return sol;
+}
 
 RatioNumber arctan(const RatioNumber& r, int time){
 	RatioNumber sol, sol1;
@@ -1296,7 +1333,7 @@ RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_end
 		plus ++;
 		tmp /= 10;
 	}
-	RatioNumber::fast_start("ARCTANGENT", sol, precis, precis + 5, 0);
+	RatioNumber::fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
 	bnint now_n = r.get_numerator(), now_d = r.get_denominator();
 	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
 	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
