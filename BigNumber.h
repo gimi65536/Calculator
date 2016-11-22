@@ -117,6 +117,7 @@ public:
 	template <typename T>
 	const BigNumber& operator = (T* const n);
 	const BigNumber abs() const;
+	const BigNumber abs_inverse() const;
 	const BigNumber& operator += (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator += (const T& temp);
@@ -809,6 +810,11 @@ const BigNumber BigNumber::abs() const{
 	temp.positive = true;
 	return temp;
 }
+const BigNumber BigNumber::abs_inverse() const{
+	BigNumber temp = (*this);
+	temp.positive = false;
+	return temp;
+}
 const BigNumber& BigNumber::operator += (const BigNumber& n){
 	if(positive == n.positive){ //straightly add
 		PURE_ADD_assignment(n);
@@ -1455,12 +1461,28 @@ const BigNumber abs(const BigNumber& n){
 	return n.abs();
 }
 
+const BigNumber abs_inverse(const BigNumber& n){
+	return n.abs_inverse();
+}
+
 size_t Sizeof(const BigNumber& n){
 	return n.Sizeof();
 }
 
 void print(const BigNumber& n){
 	cout << n;
+}
+
+bool is_zero(const BigNumber& n){
+	return n.is_zero();
+}
+
+bool get_positive(const BigNumber& n){
+	return n.get_positive();
+}
+
+void negate(BigNumber& n){
+	n.negate();
 }
 
 void Typeof(const BigNumber& n){
