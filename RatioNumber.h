@@ -74,6 +74,7 @@ public:
 	const RatioNumber operator + () const;
 	const RatioNumber operator - () const;
 	const RatioNumber& operator = (const RatioNumber& r);
+	const RatioNumber& operator = (string str);
 	void assign_without_reduction(const RatioNumber& r);
 	const RatioNumber abs() const;
 	const RatioNumber& operator += (const RatioNumber& r);
@@ -556,7 +557,7 @@ RatioNumber::RatioNumber(string str){
 }
 
 bool RatioNumber::is_INF() const{
-	if(numerator != 0 && denominator == 0){
+	if(!numerator.is_zero() && denominator.is_zero()){
 		return true;
 	}
 	return false;
@@ -600,7 +601,7 @@ bool is_NaN(const RatioNumber& r){
 }
 
 bool RatioNumber::is_fraction() const{
-	return !is_INF() && !is_NaN();
+	return !denominator.is_zero();
 }
 
 bool is_fraction(const RatioNumber& r){
@@ -757,6 +758,14 @@ const RatioNumber& RatioNumber::operator = (const RatioNumber& r){
 		return (*this);
 	}
 	assign_without_reduction(r);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (string str){
+	if(lock){
+		return (*this);
+	}
+	PASS_BY_STRING(str);
 	reduce();
 	return (*this);
 }
@@ -983,14 +992,15 @@ ostream& operator << (ostream& os, const RatioNumber& r){
 		if(!r.positive){
 			n++;
 		}
-		if(!r.numerator.get_positive() && !r.numerator.is_zero()){
-			n++;
-		}
-		if(!r.denominator.get_positive() && !r.denominator.is_zero()){
-			n++;
-		}
-		if(n % 2 == 1){
-			os << '-';
+		if(r.numerator.is_zero()){
+			n = 0;
+		}else{
+			if(!r.numerator.get_positive()){
+				n++;
+			}
+			if(!r.denominator.get_positive()){
+				n++;
+			}
 		}
 		bnint base = 10;
 		bnint num = r.numerator;
@@ -1040,6 +1050,9 @@ ostream& operator << (ostream& os, const RatioNumber& r){
 			}
 		}
 		num /= base;
+		if(n % 2 == 1){
+			os << '-';
+		}
 		if(precision == 0){
 			os << num;
 		}else{
@@ -1100,6 +1113,9 @@ bool RatioNumber::fast_switch(string str){
 	return false;
 }
 bool RatioNumber::fast_switch(const RatioNumber& sol){
+	if(!sol.lock){
+		return false;
+	}
 	for(int i = 0;i < fast_thread.size();i++){
 		if(&get<SOLUTION>(fast_thread[i]) == &sol){
 			now_thread = i;
@@ -1127,19 +1143,31 @@ bool RatioNumber::fast_end(){
 	vector<bnint>& midway = get<MIDWAY_BN_VECTOR>(fast_thread[now_thread]);
 	int sol_precis = get<SOL_PRECISION>(fast_thread[now_thread]);
 	int process_precis = get<PRO_PRECISION>(fast_thread[now_thread]);
+	int rounding_mode = get<ROUND_MODE>(fast_thread[now_thread]);
 	ratio_sol.lock = false;
 	for(int i = 0;i < midway.size();i++){
 		sol += midway[i];
 	}
 	sol /= midway.size() + 1;
+	if(process_precis != sol_precis){
+		bnint base = 10_b ^ (precision - sol_precis - 1);
+		sol /= base;
+		if(rounding_mode == 1 && sol.get_positive() && sol.getDigit(1) > 0){
+			sol += 10;
+		}else if(rounding_mode == -1 && !sol.get_positive() && sol.getDigit(1) > 0){
+			sol += 10;
+		}else if(rounding_mode == 0 && sol.getDigit(1) > 5){
+			sol += 10;
+		}else if(rounding_mode == 0 && sol.get_positive() && sol.getDigit(1) == 5){
+			sol += 10;
+		}
+		sol /= 10;
+	}
 	string str = sol.str();
-	while(str.length() < process_precis + 1){
+	while(str.length() < sol_precis + 1){
 		str.insert(0, "0");
 	}
-	str.insert(str.length() - process_precis, ".");
-	if(process_precis > sol_precis){
-		str.erase(str.length() - (process_precis - sol_precis));
-	}
+	str.insert(str.length() - sol_precis, ".");
 	ratio_sol = str;
 	fast_thread.erase(fast_thread.begin() + now_thread);
 	now_thread = fast_thread.size() - 1;
@@ -1154,6 +1182,9 @@ bool RatioNumber::fast_end(string str){
 	return false;
 }
 bool RatioNumber::fast_end(RatioNumber& sol){
+	if(!sol.lock){
+		return false;
+	}
 	RatioNumber& temp = get<SOLUTION>(fast_thread[now_thread]);
 	if(fast_switch(sol)){
 		fast_end();
@@ -1168,6 +1199,9 @@ RatioNumber sin(const RatioNumber& r, int time){
 	sol = sol1 = r;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
 	bnint base = 1, now_n = r.numerator, now_d = r.denominator;
+	if(!r.positive){
+		now_n.negate();
+	}
 	for(int i = 1;i < time;i++){
 		RatioNumber added;
 		base *= (2 * i + 1) * 2 * i;
@@ -1203,9 +1237,7 @@ RatioNumber arctan(const RatioNumber& r, int time){
 		if(i % 2 != 0){
 			added.positive = false;
 		}
-		cout << added << endl;
 		sol.add_without_reduction(added);
-		cout<< "sol: "<<sol<<endl;
 		if(i == time - 2){
 			sol1 = sol;
 		}
@@ -1220,6 +1252,9 @@ RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_end
 	bnint sol, sol1;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
 	bnint now_n = r.numerator, now_d = r.denominator;
+	if(!r.positive){
+		now_n.negate();
+	}
 	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
 		RatioNumber added;
 		added.numerator = now_n;
