@@ -1183,14 +1183,27 @@ bool RatioNumber::fast_end(){
 			sol += 10;
 		}else if(rounding_mode == 0 && sol.getDigit(1) > 5){
 			sol += 10;
+			if(sol.get_positive()){
+				sol += 10;
+			}else{
+				sol -= 10;
+			}
 		}else if(rounding_mode == 0 && sol.get_positive() && sol.getDigit(1) == 5){
 			sol += 10;
 		}
 		sol /= 10;
 	}
 	string str = sol.str();
+	bool remain = false;
+	if(str[0] == '-'){
+		str.erase(0, 1);
+		remain = true;
+	}
 	while(str.length() < sol_precis + 1){
 		str.insert(0, "0");
+	}
+	if(remain){
+		str.insert(0, "-");
 	}
 	str.insert(str.length() - sol_precis, ".");
 	ratio_sol = str;
@@ -1283,7 +1296,7 @@ RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_end
 		plus ++;
 		tmp /= 10;
 	}
-	RatioNumber::fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
+	RatioNumber::fast_start("ARCTANGENT", sol, precis, precis + 5, 0);
 	bnint now_n = r.get_numerator(), now_d = r.get_denominator();
 	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
 	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
