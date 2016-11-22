@@ -119,7 +119,6 @@ public:
 	static bool fast_end(RatioNumber& sol);
 	friend RatioNumber sin(const RatioNumber& r, int pre);
 	friend RatioNumber arctan(const RatioNumber& r, int pre);
-	friend RatioNumber fast_arctan(const RatioNumber& r, int pre, int precis);
 };
 
 int RatioNumber::precision = -1;
@@ -1124,10 +1123,36 @@ bool RatioNumber::fast_switch(const RatioNumber& sol){
 	}
 	return false;
 }
-void RatioNumber::fast_add(const RatioNumber& r){}
-void RatioNumber::fast_add(const bnint& num, const bnint& den){}
-void RatioNumber::fast_minus(const RatioNumber& r){}
-void RatioNumber::fast_minus(const bnint& num, const bnint& den){}
+void RatioNumber::fast_add(const RatioNumber& r){
+	if(now_thread < 0 || now_thread >= fast_thread.size()){
+		return;
+	}
+	int ori_pre = RatioNumber::precision, ori_mode = RatioNumber::mode;
+	RatioNumber::precision = get<PRO_PRECISION>(fast_thread[now_thread]);
+	RatioNumber::mode = get<ROUND_MODE>(fast_thread[now_thread]);
+	get<PUT_IN>(fast_thread[now_thread]) += r.str();
+	RatioNumber::precision = ori_pre, RatioNumber::mode = ori_mode;
+}
+void RatioNumber::fast_add(const bnint& num, const bnint& den){
+	RatioNumber tmp(1, 1);
+	tmp.numerator = num;
+	tmp.denominator = den;
+	fast_add(tmp);
+}
+void RatioNumber::fast_minus(const RatioNumber& r){
+	RatioNumber tmp(1, 1);
+	tmp.numerator = r.numerator;
+	tmp.denominator = r.denominator;
+	tmp.positive = !r.positive;
+	fast_add(tmp);
+}
+void RatioNumber::fast_minus(const bnint& num, const bnint& den){
+	RatioNumber tmp(1, 1);
+	tmp.numerator = num;
+	tmp.denominator = den;
+	tmp.positive = false;
+	fast_add(tmp);
+}
 void RatioNumber::fast_putin_temp(){
 	if(now_thread < 0 || now_thread >= fast_thread.size()){
 		return;
@@ -1150,7 +1175,7 @@ bool RatioNumber::fast_end(){
 	}
 	sol /= midway.size() + 1;
 	if(process_precis != sol_precis){
-		bnint base = 10_b ^ (precision - sol_precis - 1);
+		bnint base = 10_b ^ (process_precis - sol_precis - 1);
 		sol /= base;
 		if(rounding_mode == 1 && sol.get_positive() && sol.getDigit(1) > 0){
 			sol += 10;
@@ -1223,6 +1248,8 @@ RatioNumber sin(const RatioNumber& r, int time){
 	return sol;
 }
 
+RatioNumber fast_sin(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision);
+
 RatioNumber arctan(const RatioNumber& r, int time){
 	RatioNumber sol, sol1;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
@@ -1238,6 +1265,7 @@ RatioNumber arctan(const RatioNumber& r, int time){
 			added.positive = false;
 		}
 		sol.add_without_reduction(added);
+		//sol += added;
 		if(i == time - 2){
 			sol1 = sol;
 		}
@@ -1249,32 +1277,27 @@ RatioNumber arctan(const RatioNumber& r, int time){
 }
 
 RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
-	bnint sol, sol1;
-	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
-	bnint now_n = r.numerator, now_d = r.denominator;
-	if(!r.positive){
-		now_n.negate();
+	RatioNumber sol;
+	int plus = 0, tmp = precis;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
 	}
+	RatioNumber::fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
+	bnint now_n = r.get_numerator(), now_d = r.get_denominator();
+	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
 	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
-		RatioNumber added;
-		added.numerator = now_n;
-		added.denominator = now_d * j;
 		if(i % 2 != 0){
-			added.positive = false;
+			RatioNumber::fast_add(-now_n, now_d * j);
+		}else{
+			RatioNumber::fast_add(now_n, now_d * j);
 		}
-		sol += added.str();
 		if(i == time - 2){
-			sol1 = sol;
+			RatioNumber::fast_putin_temp();
 		}
 	}
-	sol = (sol + sol1) / 2;
-	string str = sol.str();
-	while(str.length() < RatioNumber::precision + 1){
-		str.insert(0, "0");
-	}
-	str.insert(str.length() - RatioNumber::precision, ".");
-	RatioNumber Sol(str);
-	return Sol;
+	RatioNumber::fast_end();
+	return sol;
 }
 
 #endif
