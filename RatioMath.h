@@ -159,7 +159,6 @@ numeric fast_arctan2(const numeric& r, int time, int precis = DEFAULT_endure_pre
 	bnint now_n = r.get_numerator() * one_plus_r_r.get_denominator(), now_d = r.get_denominator() * one_plus_r_r.get_numerator();
 	const bnint base_n = (r.get_numerator() ^ 2) * one_plus_r_r.get_denominator(), base_d = (r.get_denominator() ^ 2) * one_plus_r_r.get_numerator();
 	for(int i = 0;i < time;i++, now_n *= base_n * 4 * i * i, now_d *= base_d * 2 * i * (2 * i + 1)){
-		//cout<< now_n << endl << now_d <<endl<<endl;
 		fast_add(now_n, now_d);
 		if(fast_zero_signal){
 			fast_zero_signal = false;

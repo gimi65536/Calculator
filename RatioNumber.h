@@ -1252,7 +1252,6 @@ bool RatioNumber::fast_end(){
 		}else if(rounding_mode == -1 && !sol.get_positive() && sol.getDigit(1) > 0){
 			sol += 10;
 		}else if(rounding_mode == 0 && sol.getDigit(1) > 5){
-			sol += 10;
 			if(sol.get_positive()){
 				sol += 10;
 			}else{
