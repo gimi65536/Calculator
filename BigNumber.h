@@ -476,6 +476,9 @@ void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
 	PASS_BY_STRING(cvt_string(STR));
 }
 int BigNumber::is_ten(const BigNumber& n, bool strict = false){
+	if(is_zero()){
+		return -1;
+	}
 	string str = n.str();
 	if(str[0] == '-'){
 		str.erase(0, 1);

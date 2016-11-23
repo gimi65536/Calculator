@@ -22,6 +22,7 @@ bool fast_zero_signal = false;
 
 class RatioNumber;
 typedef tuple<string, RatioNumber&, bnint, int, int, int, vector<bnint> > Package_thread;
+typedef RatioNumber numeric;
 
 class RatioNumber{
 private:
@@ -78,6 +79,7 @@ public:
 	const RatioNumber& operator = (string str);
 	void assign_without_reduction(const RatioNumber& r);
 	const RatioNumber abs() const;
+	const RatioNumber abs_inverse() const;
 	const RatioNumber& operator += (const RatioNumber& r);
 	const RatioNumber operator + (const RatioNumber& r) const;
 	void add_without_reduction(const RatioNumber& r);
@@ -95,6 +97,7 @@ public:
 	void print();
 	void print() const;
 	string str() const;
+	void negate(){if(!is_NaN()){positive = !positive;}}
 	const bnint getNumerator() const{return numerator;}
 	const bnint getDenominator() const{return denominator;}
 	static void Setprecision(){precision = -1;}
@@ -121,6 +124,40 @@ public:
 	friend RatioNumber sin(const RatioNumber& r, int pre);
 	friend RatioNumber arctan(const RatioNumber& r, int pre);
 };
+
+bool fast_start(string str, RatioNumber& sol, int sol_precis, int process_precis = -1, int round = 0){
+	return RatioNumber::fast_start(str, sol, sol_precis, process_precis, round);
+}
+bool fast_switch(string str){
+	return RatioNumber::fast_switch(str);
+}
+bool fast_switch(const RatioNumber& sol){
+	return RatioNumber::fast_switch(sol);
+}
+void fast_add(const RatioNumber& r){
+	RatioNumber::fast_add(r);
+}
+void fast_add(const bnint& num, const bnint& den){
+	RatioNumber::fast_add(num, den);
+}
+void fast_minus(const RatioNumber& r){
+	RatioNumber::fast_minus(r);
+}
+void fast_minus(const bnint& num, const bnint& den){
+	RatioNumber::fast_minus(num, den);
+}
+void fast_putin_temp(){
+	RatioNumber::fast_putin_temp();
+}
+bool fast_end(){
+	return RatioNumber::fast_end();
+}
+bool fast_end(string str){
+	return RatioNumber::fast_end(str);
+}
+bool fast_end(RatioNumber& sol){
+	return RatioNumber::fast_end(sol);
+}
 
 int RatioNumber::precision = -1;
 int RatioNumber::endure_precision = DEFAULT_endure_precision;
@@ -774,7 +811,27 @@ const RatioNumber RatioNumber::abs() const{
 		return (*this);
 	}
 	RatioNumber tmp = (*this);
+	if(!tmp.numerator.get_positive()){
+		tmp.numerator.negate();
+	}
+	if(!tmp.denominator.get_positive()){
+		tmp.denominator.negate();
+	}
 	tmp.positive = true;
+	return tmp;
+}
+const RatioNumber RatioNumber::abs_inverse() const{
+	if(is_NaN()){
+		return (*this);
+	}
+	RatioNumber tmp = (*this);
+	if(!tmp.numerator.get_positive()){
+		tmp.numerator.negate();
+	}
+	if(!tmp.denominator.get_positive()){
+		tmp.denominator.negate();
+	}
+	tmp.positive = false;
 	return tmp;
 }
 const RatioNumber& RatioNumber::operator += (const RatioNumber& r){
@@ -1267,80 +1324,6 @@ RatioNumber sin(const RatioNumber& r, int time){
 	return sol;
 }
 
-RatioNumber fast_sin(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
-	fast_zero_signal = false;
-	RatioNumber sol;
-	int plus = 0, tmp = precis, continuous_zero = 0;
-	while(tmp >= 2){
-		plus ++;
-		tmp /= 10;
-	}
-	RatioNumber::fast_start("SIN", sol, precis, precis + plus, 0);
-	bnint base = 1, now_n = r.get_numerator(), now_d = r.get_denominator();
-	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
-	for(int i = 0;i < time;i++, now_n *= base_n, now_d *= base_d, base *= (2 * i + 1) * 2 * i){
-		if(i % 2 != 0){
-			RatioNumber::fast_add(-now_n, now_d * base);
-		}else{
-			RatioNumber::fast_add(now_n, now_d * base);
-		}
-		if(fast_zero_signal){
-			fast_zero_signal = false;
-			if(continuous_zero >= 1){
-				break;
-			}
-			continuous_zero ++;
-		}else{
-			continuous_zero = 0;
-		}
-		if(i == time - 2){
-			RatioNumber::fast_putin_temp();
-		}
-	}
-	RatioNumber::fast_end();
-	return sol;
-}
-
-RatioNumber fast_cos(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
-	fast_zero_signal = false;
-	RatioNumber sol;
-	int plus = 0, tmp = precis, continuous_zero = 0;
-	while(tmp >= 2){
-		plus ++;
-		tmp /= 10;
-	}
-	RatioNumber::fast_start("COS", sol, precis, precis + plus, 0);
-	bnint base = 1, now_n = 1, now_d = 1;
-	const bnint base_n = r.get_numerator() ^ 2, base_d = r.get_denominator() ^ 2;
-	for(int i = 0;i < time;i++, now_n *= base_n, now_d *= base_d, base *= (2 * i - 1) * 2 * i){
-		if(i % 2 != 0){
-			RatioNumber::fast_add(-now_n, now_d * base);
-		}else{
-			RatioNumber::fast_add(now_n, now_d * base);
-		}
-		if(fast_zero_signal){
-			fast_zero_signal = false;
-			if(continuous_zero >= 1){
-				break;
-			}
-			continuous_zero ++;
-		}else{
-			continuous_zero = 0;
-		}
-		if(i == time - 2){
-			RatioNumber::fast_putin_temp();
-		}
-	}
-	RatioNumber::fast_end();
-	return sol;
-}
-
-RatioNumber fast_tan(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
-	RatioNumber sol = fast_sin(r, time, precis + 10), sol1 = fast_cos(r, time, precis + 10);
-	sol /= sol1;
-	return sol;
-}
-
 RatioNumber arctan(const RatioNumber& r, int time){
 	RatioNumber sol, sol1;
 	const bnint base_n = r.numerator ^ 2, base_d = r.denominator ^ 2;
@@ -1364,40 +1347,6 @@ RatioNumber arctan(const RatioNumber& r, int time){
 	sol.add_without_reduction(sol1);
 	sol.denominator *= 2;
 	sol.reduce();
-	return sol;
-}
-
-RatioNumber fast_arctan(const RatioNumber& r, int time, int precis = DEFAULT_endure_precision){
-	fast_zero_signal = false;
-	RatioNumber sol;
-	int plus = 0, tmp = precis, continuous_zero = 0;
-	while(tmp >= 2){
-		plus ++;
-		tmp /= 10;
-	}
-	RatioNumber::fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
-	bnint now_n = r.get_numerator(), now_d = r.get_denominator();
-	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
-	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n, now_d *= base_d){
-		if(i % 2 != 0){
-			RatioNumber::fast_add(-now_n, now_d * j);
-		}else{
-			RatioNumber::fast_add(now_n, now_d * j);
-		}
-		if(fast_zero_signal){
-			fast_zero_signal = false;
-			if(continuous_zero >= 1){
-				break;
-			}
-			continuous_zero ++;
-		}else{
-			continuous_zero = 0;
-		}
-		if(i == time - 2){
-			RatioNumber::fast_putin_temp();
-		}
-	}
-	RatioNumber::fast_end();
 	return sol;
 }
 
