@@ -77,6 +77,40 @@ numeric fast_tan(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 	return sol;
 }
 
+numeric fast_arcsin(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	fast_zero_signal = false;
+	numeric sol;
+	int plus = 0, tmp = precis, continuous_zero = 0;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
+	}
+	fast_start("ARCSINE", sol, precis, precis + plus, 0);
+	bnint now_n = r.get_numerator(), now_d = r.get_denominator();
+	const bnint base_n = now_n ^ 2, base_d = now_d ^ 2;
+	for(int i = 0, j = 1;i < time;i++, j += 2, now_n *= base_n * (2 * i - 1), now_d *= base_d * (2 * i)){
+		fast_add(now_n, now_d * j);
+		if(fast_zero_signal){
+			fast_zero_signal = false;
+			if(continuous_zero >= 1){
+				break;
+			}
+			continuous_zero ++;
+		}else{
+			continuous_zero = 0;
+		}
+		if(i % 100 == 0){
+			bnint Gcd = gcd(now_n, now_d);
+			if(!Gcd.is_zero()){
+				now_n /= Gcd;
+				now_d /= Gcd;
+			}
+		}
+	}
+	fast_end();
+	return sol;
+}
+
 numeric fast_arctan(const numeric& r, int time, int precis = DEFAULT_endure_precision){
 	fast_zero_signal = false;
 	numeric sol;
@@ -105,6 +139,43 @@ numeric fast_arctan(const numeric& r, int time, int precis = DEFAULT_endure_prec
 		}
 		if(i == time - 2){
 			fast_putin_temp();
+		}
+	}
+	fast_end();
+	return sol;
+}
+
+numeric fast_arctan2(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	fast_zero_signal = false;
+	numeric sol;
+	int plus = 0, tmp = precis, continuous_zero = 0;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
+	}
+	fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
+	numeric one(1, 1);
+	numeric one_plus_r_r = (r * r + one);
+	bnint now_n = r.get_numerator() * one_plus_r_r.get_denominator(), now_d = r.get_denominator() * one_plus_r_r.get_numerator();
+	const bnint base_n = (r.get_numerator() ^ 2) * one_plus_r_r.get_denominator(), base_d = (r.get_denominator() ^ 2) * one_plus_r_r.get_numerator();
+	for(int i = 0;i < time;i++, now_n *= base_n * 4 * i * i, now_d *= base_d * 2 * i * (2 * i + 1)){
+		//cout<< now_n << endl << now_d <<endl<<endl;
+		fast_add(now_n, now_d);
+		if(fast_zero_signal){
+			fast_zero_signal = false;
+			if(continuous_zero >= 1){
+				break;
+			}
+			continuous_zero ++;
+		}else{
+			continuous_zero = 0;
+		}
+		if(i % 100 == 0){
+			bnint Gcd = gcd(now_n, now_d);
+			if(!Gcd.is_zero()){
+				now_n /= Gcd;
+				now_d /= Gcd;
+			}
 		}
 	}
 	fast_end();

@@ -166,6 +166,12 @@ vector<Package_thread> RatioNumber::fast_thread;
 int RatioNumber::now_thread = -1;
 
 bnint gcd(bnint a, bnint b){
+	if(!a.get_positive()){
+		a.negate();
+	}
+	if(!b.get_positive()){
+		b.negate();
+	}
 	bnint tmp;
 	while(!a.is_zero() && !b.is_zero()){
 		tmp = a % b;
@@ -563,6 +569,7 @@ RatioNumber::RatioNumber(const bnint& num, const bnint& den){
 }
 
 RatioNumber::RatioNumber(const RatioNumber& r){
+	lock = false;
 	(*this) = r;
 }
 
