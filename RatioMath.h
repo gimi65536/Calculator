@@ -208,20 +208,4 @@ numeric fast_exp(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 	return sol;
 }
 
-numeric fast_exp_integer(const numeric& r, int time, int precis = DEFAULT_endure_precision){
-	numeric tmp = 1;
-	bnint integer = r.get_numerator() / r.get_denominator();
-	return fast_exp(tmp, time, 50) ^ integer;
-}
-
-numeric fast_exp2(const numeric& r, int time, int precis = DEFAULT_endure_precision){
-	bnint n = r.get_numerator(), d = r.get_denominator();
-	if(!d.get_positive()){
-		d.negate();
-		n.negate();
-	}
-	numeric inte(n / d, 1), nume(n % d, d);
-	return fast_exp_integer(inte, time, precis) * fast_exp(nume, time, precis);
-}
-
 #endif
