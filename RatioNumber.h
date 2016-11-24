@@ -43,15 +43,17 @@ private:
 	void common_pass_float(const string& str, RatioNumber& base, int& EXP);
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
+	template <typename T>
+	void WIDE_CHAR_PASS(const T& ch);
+	template <typename T>
+	void WIDE_CHARARRAY_PASS(const T* C_STR);
 public:
 	friend ostream& operator << (ostream& os, const RatioNumber& r);
 	void reduce();
 	void reduce() const;
 	void correct_positive();
 	RatioNumber();
-	RatioNumber(const bnint& num);
 	RatioNumber(const bnint& num, const bnint& den);
-	RatioNumber(const RatioNumber& r);
 	template <class T>
 	RatioNumber(const T& n);
 	RatioNumber(string str);
@@ -75,7 +77,22 @@ public:
 	const RatioNumber operator + () const;
 	const RatioNumber operator - () const;
 	const RatioNumber& operator = (const RatioNumber& r);
-	const RatioNumber& operator = (string str);
+	const RatioNumber& operator = (const bnint& n);
+	const RatioNumber& operator = (const string& str);
+	template <typename T>
+	const RatioNumber& operator = (const basic_string<T>& STR);
+	const RatioNumber& operator = (const char& ch);
+	const RatioNumber& operator = (char* const n);
+	const RatioNumber& operator = (const char* const n);
+	const RatioNumber& operator = (const wchar_t& ch);
+	const RatioNumber& operator = (wchar_t* const n);
+	const RatioNumber& operator = (const wchar_t* const n);
+	const RatioNumber& operator = (const char16_t& ch);
+	const RatioNumber& operator = (char16_t* const n);
+	const RatioNumber& operator = (const char16_t* const n);
+	const RatioNumber& operator = (const char32_t& ch);
+	const RatioNumber& operator = (char32_t* const n);
+	const RatioNumber& operator = (const char32_t* const n);
 	template <typename T>
 	typename enable_if<is_floating_point<T>::value, const RatioNumber&>::type operator = (T d);
 	template <typename T>
@@ -544,23 +561,24 @@ void RatioNumber::PASS_BY_STRING_with_notation(string str){
 	}
 }
 
+template <typename T>
+void RatioNumber::WIDE_CHAR_PASS(const T& ch){
+	basic_string<T> STR;
+	STR += ch;
+	PASS_BY_STRING(cvt_string(STR));
+}
+
+template <typename T>
+void RatioNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
+	basic_string<T> STR = C_STR;
+	PASS_BY_STRING(cvt_string(STR));
+}
+
 RatioNumber::RatioNumber(){
 	numerator = 0;
 	denominator = 1;
 	positive = true;
 	lock = false;
-}
-
-RatioNumber::RatioNumber(const bnint& num){
-	lock = false;
-	numerator = num;
-	denominator = 1;
-	if(num < 0){
-		positive = false;
-		numerator *= -1_b;
-	}else{
-		positive = true;
-	}
 }
 
 RatioNumber::RatioNumber(const bnint& num, const bnint& den){
@@ -569,11 +587,6 @@ RatioNumber::RatioNumber(const bnint& num, const bnint& den){
 	positive = true;
 	lock = false;
 	reduce();
-}
-
-RatioNumber::RatioNumber(const RatioNumber& r){
-	lock = false;
-	(*this) = r;
 }
 
 template <class T>
@@ -792,11 +805,127 @@ const RatioNumber& RatioNumber::operator = (const RatioNumber& r){
 	reduce();
 	return (*this);
 }
-const RatioNumber& RatioNumber::operator = (string str){
+const RatioNumber& RatioNumber::operator = (const bnint& n){
+	if(lock){
+		return (*this);
+	}
+	numerator = n;
+	denominator = 1;
+	if(!numerator.get_positive()){
+		positive = false;
+		numerator.negate();
+	}else{
+		positive = true;
+	}
+}
+const RatioNumber& RatioNumber::operator = (const string& str){
 	if(lock){
 		return (*this);
 	}
 	PASS_BY_STRING(str);
+	reduce();
+	return (*this);
+}
+template <typename T>
+const RatioNumber& RatioNumber::operator = (const basic_string<T>& STR){
+	if(lock){
+		return (*this);
+	}
+	PASS_BY_STRING(cvt_string(STR));
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (const char& ch){
+	if(lock){
+		return (*this);
+	}
+	string str;
+	str += ch;
+	PASS_BY_STRING(str);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (char* const n){
+	if(lock){
+		return (*this);
+	}
+	string str = n;
+	PASS_BY_STRING(str);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (const char* const n){
+	if(lock){
+		return (*this);
+	}
+	string str = n;
+	PASS_BY_STRING(str);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (const wchar_t& ch){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHAR_PASS(ch);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (wchar_t* const n){
+	if(lock){
+		return (*this);
+	}
+}
+const RatioNumber& RatioNumber::operator = (const wchar_t* const n){
+	if(lock){
+		return (*this);
+	}
+}
+const RatioNumber& RatioNumber::operator = (const char16_t& ch){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHAR_PASS(ch);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (char16_t* const n){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHARARRAY_PASS(n);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (const char16_t* const n){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHARARRAY_PASS(n);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (const char32_t& ch){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHAR_PASS(ch);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (char32_t* const n){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHARARRAY_PASS(n);
+	reduce();
+	return (*this);
+}
+const RatioNumber& RatioNumber::operator = (const char32_t* const n){
+	if(lock){
+		return (*this);
+	}
+	WIDE_CHARARRAY_PASS(n);
 	reduce();
 	return (*this);
 }

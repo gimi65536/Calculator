@@ -723,50 +723,64 @@ const BigNumber& BigNumber::operator = (const BigNumber& n){
 }
 const BigNumber& BigNumber::operator = (const string& str){
 	PASS_BY_STRING(str);
+	return (*this);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (const basic_string<T>& STR){
 	PASS_BY_STRING(cvt_string(STR));
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const char& ch){
 	string str;
 	str += ch;
 	PASS_BY_STRING(str);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (char* const n){
 	string str = n;
 	PASS_BY_STRING(str);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const char* const n){
 	string str = n;
 	PASS_BY_STRING(str);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const wchar_t& ch){
 	WIDE_CHAR_PASS(ch);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (wchar_t* const n){
 	WIDE_CHARARRAY_PASS(n);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const wchar_t* const n){
 	WIDE_CHARARRAY_PASS(n);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const char16_t& ch){
 	WIDE_CHAR_PASS(ch);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (char16_t* const n){
 	WIDE_CHARARRAY_PASS(n);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const char16_t* const n){
 	WIDE_CHARARRAY_PASS(n);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const char32_t& ch){
 	WIDE_CHAR_PASS(ch);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (char32_t* const n){
 	WIDE_CHARARRAY_PASS(n);
+	return (*this);
 }
 const BigNumber& BigNumber::operator = (const char32_t* const n){
 	WIDE_CHARARRAY_PASS(n);
+	return (*this);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
