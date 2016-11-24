@@ -96,7 +96,7 @@ public:
 	bool operator >= (const T& n) const;
 	const BigNumber operator + () const;
 	const BigNumber operator - () const;
-	const BigNumber& operator = (const BigNumber& n);
+	const BigNumber& operator = (BigNumber n);
 	const BigNumber& operator = (const string& str);
 	template <typename T>
 	const BigNumber& operator = (const basic_string<T>& STR);
@@ -118,41 +118,41 @@ public:
 	const BigNumber& operator = (T* const n);
 	const BigNumber abs() const;
 	const BigNumber abs_inverse() const;
-	const BigNumber& operator += (const BigNumber& n);
+	const BigNumber& operator += (BigNumber n);
 	template <typename T>
-	const BigNumber& operator += (const T& temp);
+	const BigNumber& operator += (const T& n);
 	const BigNumber& operator ++ ();
 	const BigNumber operator ++ (int null);
 	const BigNumber operator + (const BigNumber& n) const;
 	template<typename T>
-	const BigNumber operator + (const T& tmp) const;
-	const BigNumber& operator -= (const BigNumber& n);
+	const BigNumber operator + (const T& n) const;
+	const BigNumber& operator -= (BigNumber n);
 	template <typename T>
-	const BigNumber& operator -= (const T& temp);
+	const BigNumber& operator -= (const T& n);
 	const BigNumber& operator -- ();
 	const BigNumber operator -- (int null);
 	const BigNumber operator - (const BigNumber& n) const;
 	template <typename T>
-	const BigNumber operator - (const T& tmp) const;
-	const BigNumber& operator *= (const BigNumber& n);
+	const BigNumber operator - (const T& n) const;
+	const BigNumber& operator *= (BigNumber n);
 	template <typename T>
 	const BigNumber& operator *= (const T& n);
 	const BigNumber operator * (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator * (const T& n) const;
-	const BigNumber& operator /= (const BigNumber& n);
+	const BigNumber& operator /= (BigNumber n);
 	template <typename T>
 	const BigNumber& operator /= (const T& n);
 	const BigNumber operator / (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator / (const T& n) const;
-	const BigNumber& operator %= (const BigNumber& n);
+	const BigNumber& operator %= (BigNumber n);
 	template <typename T>
 	const BigNumber& operator %= (const T& n);
 	const BigNumber operator % (const BigNumber& n) const;
 	template <typename T>
 	const BigNumber operator % (const T& n) const;
-	const BigNumber& operator ^= (const BigNumber& n);
+	const BigNumber& operator ^= (BigNumber n);
 	template <typename T>
 	const BigNumber& operator ^= (const T& n);
 	const BigNumber operator ^ (const BigNumber& n) const;
@@ -164,6 +164,7 @@ public:
 	bool is_zero() const;
 	bool get_positive() const{return positive;}
 	void negate(){positive = !positive;}
+	void divide2();
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
@@ -716,7 +717,7 @@ const BigNumber BigNumber::operator - () const{
 	temp.positive = !temp.positive;
 	return temp;
 }
-const BigNumber& BigNumber::operator = (const BigNumber& n){
+const BigNumber& BigNumber::operator = (BigNumber n){
 	PURE_assignment(n);
 	positive = n.positive;
 	return (*this);
@@ -832,7 +833,7 @@ const BigNumber BigNumber::abs_inverse() const{
 	temp.positive = false;
 	return temp;
 }
-const BigNumber& BigNumber::operator += (const BigNumber& n){
+const BigNumber& BigNumber::operator += (BigNumber n){
 	if(positive == n.positive){ //straightly add
 		PURE_ADD_assignment(n);
 	}else if(abs() >= n.abs()){
@@ -845,9 +846,9 @@ const BigNumber& BigNumber::operator += (const BigNumber& n){
 	return (*this);
 }
 template <typename T>
-const BigNumber& BigNumber::operator += (const T& temp){
-	BigNumber n = temp;
-	(*this) += n;
+const BigNumber& BigNumber::operator += (const T& n){
+	BigNumber temp = n;
+	(*this) += temp;
 	return (*this);
 }
 const BigNumber& BigNumber::operator ++ (){
@@ -865,12 +866,12 @@ const BigNumber BigNumber::operator + (const BigNumber& n) const{
 	return temp;
 }
 template<typename T>
-const BigNumber BigNumber::operator + (const T& tmp) const{
-	BigNumber temp = (*this), n = tmp;
-	temp += n;
+const BigNumber BigNumber::operator + (const T& n) const{
+	BigNumber temp = (*this), tmp = n;
+	temp += tmp;
 	return temp;
 }
-const BigNumber& BigNumber::operator -= (const BigNumber& n){
+const BigNumber& BigNumber::operator -= (BigNumber n){
 	if(positive != n.positive){ //straightly add
 		PURE_ADD_assignment(n);
 	}else if(abs() >= n.abs()){
@@ -883,9 +884,9 @@ const BigNumber& BigNumber::operator -= (const BigNumber& n){
 	return (*this);
 }
 template <typename T>
-const BigNumber& BigNumber::operator -= (const T& temp){
-	BigNumber n = temp;
-	(*this) -= n;
+const BigNumber& BigNumber::operator -= (const T& n){
+	BigNumber temp = n;
+	(*this) -= temp;
 	return (*this);
 }
 const BigNumber& BigNumber::operator -- (){
@@ -903,12 +904,12 @@ const BigNumber BigNumber::operator - (const BigNumber& n) const{
 	return temp;
 }
 template <typename T>
-const BigNumber BigNumber::operator - (const T& tmp) const{
-	BigNumber temp = (*this), n = tmp;
-	temp -= n;
+const BigNumber BigNumber::operator - (const T& n) const{
+	BigNumber temp = (*this), tmp = n;
+	temp -= tmp;
 	return temp;
 }
-const BigNumber& BigNumber::operator *= (const BigNumber& n){
+const BigNumber& BigNumber::operator *= (BigNumber n){
 	static const int inteval = 700;
 	if(n.is_zero()){
 		(*this) = n;
@@ -1011,9 +1012,9 @@ const BigNumber BigNumber::operator * (const BigNumber& n) const{
 }
 template <typename T>
 const BigNumber BigNumber::operator * (const T& n) const{
-	BigNumber temp = n, tmp = (*this);
-	tmp *= temp;
-	return tmp;
+	BigNumber temp = (*this), tmp = n;
+	temp *= tmp;
+	return temp;
 }
 void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 	be_divided = (*this);
@@ -1043,7 +1044,7 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 	LO = quo;
 	HI.coresize(LO);
 }
-const BigNumber& BigNumber::operator /= (const BigNumber& n){
+const BigNumber& BigNumber::operator /= (BigNumber n){
 	if(divide == n && be_divided == (*this)){
 		(*this) = LO;
 		return (*this);
@@ -1075,11 +1076,11 @@ const BigNumber BigNumber::operator / (const BigNumber& n) const{
 }
 template <typename T>
 const BigNumber BigNumber::operator / (const T& n) const{
-	BigNumber temp = n, tmp = (*this);
-	tmp /= temp;
-	return tmp;
+	BigNumber temp = (*this), tmp = n;
+	temp /= tmp;
+	return temp;
 }
-const BigNumber& BigNumber::operator %= (const BigNumber& n){
+const BigNumber& BigNumber::operator %= (BigNumber n){
 	if(divide == n && be_divided == (*this)){
 		(*this) = HI;
 		return (*this);
@@ -1105,7 +1106,7 @@ const BigNumber BigNumber::operator % (const T& n) const{
 	tmp %= temp;
 	return tmp;
 }
-const BigNumber& BigNumber::operator ^= (const BigNumber& n){
+const BigNumber& BigNumber::operator ^= (BigNumber n){
 	if(n < 0){
 		(*this) = 0;
 		return (*this);
@@ -1153,6 +1154,15 @@ bool BigNumber::is_zero() const{
 		}
 	}
 	return true;
+}
+void BigNumber::divide2(){
+	a[0] /= 2;
+	for(int i = 1;i < SIZE;i++){
+		if(a[i] % 2 != 0){
+			a[i - 1] += 500000000;
+		}
+		a[i] /= 2;
+	}
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;

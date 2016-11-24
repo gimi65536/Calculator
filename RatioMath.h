@@ -181,4 +181,47 @@ numeric fast_arctan2(const numeric& r, int time, int precis = DEFAULT_endure_pre
 	return sol;
 }
 
+numeric fast_exp(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	fast_zero_signal = false;
+	numeric sol;
+	int plus = 0, tmp = precis, continuous_zero = 0;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
+	}
+	fast_start("EXPONENTIAL", sol, precis, precis + plus, 0);
+	bnint now_n = 1, now_d = 1;
+	const bnint base_n = r.get_numerator(), base_d = r.get_denominator();
+	for(int i = 0;i < time;i++, now_n *= base_n, now_d *= base_d * i){
+		fast_add(now_n, now_d);
+		if(fast_zero_signal){
+			fast_zero_signal = false;
+			if(continuous_zero >= 1){
+				break;
+			}
+			continuous_zero ++;
+		}else{
+			continuous_zero = 0;
+		}
+	}
+	fast_end();
+	return sol;
+}
+
+numeric fast_exp_integer(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	numeric tmp = 1;
+	bnint integer = r.get_numerator() / r.get_denominator();
+	return fast_exp(tmp, time, 50) ^ integer;
+}
+
+numeric fast_exp2(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	bnint n = r.get_numerator(), d = r.get_denominator();
+	if(!d.get_positive()){
+		d.negate();
+		n.negate();
+	}
+	numeric inte(n / d, 1), nume(n % d, d);
+	return fast_exp_integer(inte, time, precis) * fast_exp(nume, time, precis);
+}
+
 #endif

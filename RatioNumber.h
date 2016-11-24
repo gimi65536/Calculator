@@ -31,7 +31,7 @@ private:
 	static int mode;
 	static vector<Package_thread> fast_thread;
 	static int now_thread;
-	enum _INDECATE{NAME, SOLUTION, PUT_IN, SOL_PRECISION, PRO_PRECISION, ROUND_MODE, MIDWAY_BN_VECTOR};
+	enum _INDICATE{NAME, SOLUTION, PUT_IN, SOL_PRECISION, PRO_PRECISION, ROUND_MODE, MIDWAY_BN_VECTOR};
 	bnint numerator;
 	bnint denominator;
 	bool positive;
@@ -53,6 +53,7 @@ public:
 	void reduce() const;
 	void correct_positive();
 	RatioNumber();
+	RatioNumber(const RatioNumber& r);
 	RatioNumber(const bnint& num, const bnint& den);
 	template <class T>
 	RatioNumber(const T& n);
@@ -97,27 +98,46 @@ public:
 	typename enable_if<is_floating_point<T>::value, const RatioNumber&>::type operator = (T d);
 	template <typename T>
 	typename enable_if<is_integral<T>::value, const RatioNumber&>::type operator = (T n);
-	void assign_without_reduction(const RatioNumber& r);
+	template <typename T>
+	const RatioNumber& operator = (T* const n);
+	void assign_without_reduction(RatioNumber r);
 	const RatioNumber abs() const;
 	const RatioNumber abs_inverse() const;
 	const RatioNumber& operator += (const RatioNumber& r);
+	template <typename T>
+	const RatioNumber& operator += (const T& n);
 	const RatioNumber operator + (const RatioNumber& r) const;
-	void add_without_reduction(const RatioNumber& r);
+	template<typename T>
+	const RatioNumber operator + (const T& n) const;
+	void add_without_reduction(RatioNumber r);
 	const RatioNumber& operator -= (const RatioNumber& r);
+	template <typename T>
+	const RatioNumber& operator -= (const T& n);
 	const RatioNumber operator - (const RatioNumber& r) const;
-	void minus_without_reduction(const RatioNumber& r);
+	template<typename T>
+	const RatioNumber operator - (const T& n) const;
+	void minus_without_reduction(RatioNumber r);
 	const RatioNumber& operator *= (const RatioNumber& r);
+	template <typename T>
+	const RatioNumber& operator *= (const T& n);
 	const RatioNumber operator * (const RatioNumber& r) const;
-	void multiply_without_reduction(const RatioNumber& r);
+	template<typename T>
+	const RatioNumber operator * (const T& n) const;
+	void multiply_without_reduction(RatioNumber r);
 	const RatioNumber& operator /= (const RatioNumber& r);
+	template <typename T>
+	const RatioNumber& operator /= (const T& n);
 	const RatioNumber operator / (const RatioNumber& r) const;
-	void divide_without_reduction(const RatioNumber& r);
+	template<typename T>
+	const RatioNumber operator / (const T& n) const;
+	void divide_without_reduction(RatioNumber r);
 	const RatioNumber& operator ^= (const bnint& n);
 	const RatioNumber operator ^ (const bnint& n) const;
 	void print();
 	void print() const;
 	string str() const;
 	void negate(){if(!is_NaN()){positive = !positive;}}
+	RatioNumber reciprocal() const;
 	const bnint getNumerator() const{return numerator;}
 	const bnint getDenominator() const{return denominator;}
 	static void Setprecision(){precision = -1;}
@@ -581,6 +601,14 @@ RatioNumber::RatioNumber(){
 	lock = false;
 }
 
+RatioNumber::RatioNumber(const RatioNumber& r){
+	numerator = r.numerator;
+	denominator = r.denominator;
+	positive = r.positive;
+	lock = false;
+	reduce();
+}
+
 RatioNumber::RatioNumber(const bnint& num, const bnint& den){
 	numerator = num;
 	denominator = den;
@@ -788,7 +816,7 @@ const RatioNumber RatioNumber::operator - () const{
 		return tmp;
 	}
 }
-void RatioNumber::assign_without_reduction(const RatioNumber& r){
+void RatioNumber::assign_without_reduction(RatioNumber r){
 	if(lock){
 		return;
 	}
@@ -951,6 +979,9 @@ typename enable_if<is_floating_point<T>::value, const RatioNumber&>::type RatioN
 }
 template <typename T>
 typename enable_if<is_integral<T>::value, const RatioNumber&>::type RatioNumber::operator = (T n){
+	if(lock){
+		return (*this);
+	}
 	numerator = n;
 	denominator = 1;
 	if(!numerator.get_positive()){
@@ -959,6 +990,15 @@ typename enable_if<is_integral<T>::value, const RatioNumber&>::type RatioNumber:
 	}else{
 		positive = true;
 	}
+}
+template <typename T>
+const RatioNumber& RatioNumber::operator = (T* const n){
+	if(lock){
+		return (*this);
+	}
+	numerator = n;
+	denominator = 1;
+	positive = true;
 }
 const RatioNumber RatioNumber::abs() const{
 	if(is_NaN()){
@@ -996,12 +1036,24 @@ const RatioNumber& RatioNumber::operator += (const RatioNumber& r){
 	reduce();
 	return (*this);
 }
+template <typename T>
+const RatioNumber& RatioNumber::operator += (const T& n){
+	RatioNumber temp = n;
+	(*this) += temp;
+	return (*this);
+}
 const RatioNumber RatioNumber::operator + (const RatioNumber& r) const{
 	RatioNumber tmp = (*this);
 	tmp += r;
 	return tmp;
 }
-void RatioNumber::add_without_reduction(const RatioNumber& r){
+template<typename T>
+const RatioNumber RatioNumber::operator + (const T& n) const{
+	BigNumber temp = (*this), tmp = n;
+	temp += tmp;
+	return temp;
+}
+void RatioNumber::add_without_reduction(RatioNumber r){
 	if(lock){
 		return;
 	}
@@ -1043,12 +1095,24 @@ const RatioNumber& RatioNumber::operator -= (const RatioNumber& r){
 	reduce();
 	return (*this);
 }
+template <typename T>
+const RatioNumber& RatioNumber::operator -= (const T& n){
+	RatioNumber temp = n;
+	(*this) -= temp;
+	return (*this);
+}
 const RatioNumber RatioNumber::operator - (const RatioNumber& r) const{
 	RatioNumber tmp = (*this);
 	tmp -= r;
 	return tmp;
 }
-void RatioNumber::minus_without_reduction(const RatioNumber& r){
+template<typename T>
+const RatioNumber RatioNumber::operator - (const T& n) const{
+	BigNumber temp = (*this), tmp = n;
+	temp -= tmp;
+	return temp;
+}
+void RatioNumber::minus_without_reduction(RatioNumber r){
 	if(lock){
 		return;
 	}
@@ -1089,12 +1153,24 @@ const RatioNumber& RatioNumber::operator *= (const RatioNumber& r){
 	multiply_without_reduction(r);
 	reduce();
 }
+template <typename T>
+const RatioNumber& RatioNumber::operator *= (const T& n){
+	RatioNumber temp = n;
+	(*this) *= temp;
+	return (*this);
+}
 const RatioNumber RatioNumber::operator * (const RatioNumber& r) const{
 	RatioNumber tmp = (*this);
 	tmp *= r;
 	return tmp;
 }
-void RatioNumber::multiply_without_reduction(const RatioNumber& r){
+template<typename T>
+const RatioNumber RatioNumber::operator * (const T& n) const{
+	BigNumber temp = (*this), tmp = n;
+	temp *= tmp;
+	return temp;
+}
+void RatioNumber::multiply_without_reduction(RatioNumber r){
 	if(lock){
 		return;
 	}
@@ -1111,12 +1187,24 @@ const RatioNumber& RatioNumber::operator /= (const RatioNumber& r){
 	divide_without_reduction(r);
 	reduce();
 }
+template <typename T>
+const RatioNumber& RatioNumber::operator /= (const T& n){
+	RatioNumber temp = n;
+	(*this) /= temp;
+	return (*this);
+}
 const RatioNumber RatioNumber::operator / (const RatioNumber& r) const{
 	RatioNumber tmp = (*this);
 	tmp /= r;
 	return tmp;
 }
-void RatioNumber::divide_without_reduction(const RatioNumber& r){
+template<typename T>
+const RatioNumber RatioNumber::operator / (const T& n) const{
+	BigNumber temp = (*this), tmp = n;
+	temp /= tmp;
+	return temp;
+}
+void RatioNumber::divide_without_reduction(RatioNumber r){
 	if(lock){
 		return;
 	}
@@ -1130,7 +1218,7 @@ const RatioNumber& RatioNumber::operator ^= (const bnint& n){
 	if(lock){
 		return (*this);
 	}
-	if(n == 0){
+	if(n.is_zero()){
 		numerator = 1;
 		denominator = 1;
 		positive = true;
@@ -1153,13 +1241,15 @@ const RatioNumber& RatioNumber::operator ^= (const bnint& n){
 			positive = true;
 			return (*this);
 		}
+	}else if(numerator.is_zero()){
+		return (*this);
 	}
 	bnint times = n;
 	if(times < 0){
 		bnint tmp = numerator;
 		numerator = denominator;
 		denominator = tmp;
-		times = times.abs();
+		times.negate();
 	}
 	if(!positive){
 		numerator *= -1;
@@ -1189,6 +1279,14 @@ string RatioNumber::str() const{
 	stringstream ss;
 	ss << (*this);
 	return ss.str();
+}
+
+RatioNumber RatioNumber::reciprocal() const{
+	RatioNumber tmp(denominator, numerator);
+	if(!positive){
+		tmp.positive = !tmp.positive;
+	}
+	return tmp;
 }
 
 ostream& operator << (ostream& os, const RatioNumber& r){
