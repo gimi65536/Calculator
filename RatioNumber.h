@@ -52,9 +52,8 @@ public:
 	RatioNumber(const bnint& num);
 	RatioNumber(const bnint& num, const bnint& den);
 	RatioNumber(const RatioNumber& r);
-	RatioNumber(float f);
-	RatioNumber(double d);
-	RatioNumber(long double ld);
+	template <class T>
+	RatioNumber(const T& n);
 	RatioNumber(string str);
 	bool is_INF() const;
 	bool is_positive_INF() const;
@@ -77,6 +76,10 @@ public:
 	const RatioNumber operator - () const;
 	const RatioNumber& operator = (const RatioNumber& r);
 	const RatioNumber& operator = (string str);
+	template <typename T>
+	typename enable_if<is_floating_point<T>::value, const RatioNumber&>::type operator = (T d);
+	template <typename T>
+	typename enable_if<is_integral<T>::value, const RatioNumber&>::type operator = (T n);
 	void assign_without_reduction(const RatioNumber& r);
 	const RatioNumber abs() const;
 	const RatioNumber abs_inverse() const;
@@ -549,6 +552,7 @@ RatioNumber::RatioNumber(){
 }
 
 RatioNumber::RatioNumber(const bnint& num){
+	lock = false;
 	numerator = num;
 	denominator = 1;
 	if(num < 0){
@@ -557,7 +561,6 @@ RatioNumber::RatioNumber(const bnint& num){
 	}else{
 		positive = true;
 	}
-	lock = false;
 }
 
 RatioNumber::RatioNumber(const bnint& num, const bnint& den){
@@ -573,31 +576,15 @@ RatioNumber::RatioNumber(const RatioNumber& r){
 	(*this) = r;
 }
 
-RatioNumber::RatioNumber(float f){
-	PASS_BY_IEEE(f, 4, 8);
+template <class T>
+RatioNumber::RatioNumber(const T& n){
 	lock = false;
-}
-
-RatioNumber::RatioNumber(double d){
-	PASS_BY_IEEE(d, 8, 11);
-	lock = false;
-}
-
-RatioNumber::RatioNumber(long double ld){
-	if(ld_type == UNKNOWN_LD){
-		judge_ldtype();
-	}
-	if(ld_type == is_IEEE){
-		PASS_BY_IEEE(ld, ld_byte, ld_exp);
-	}else{
-		PASS_BY_80_bits(ld);
-	}
-	lock = false;
+	(*this) = n;
 }
 
 RatioNumber::RatioNumber(string str){
-	PASS_BY_STRING(str);
 	lock = false;
+	PASS_BY_STRING(str);
 }
 
 bool RatioNumber::is_INF() const{
@@ -812,6 +799,37 @@ const RatioNumber& RatioNumber::operator = (string str){
 	PASS_BY_STRING(str);
 	reduce();
 	return (*this);
+}
+template <typename T>
+typename enable_if<is_floating_point<T>::value, const RatioNumber&>::type RatioNumber::operator = (T d){
+	if(lock){
+		return (*this);
+	}
+	if(is_same<T, float>::value){
+		PASS_BY_IEEE(d, 4, 8);
+	}else if(is_same<T, double>::value){
+		PASS_BY_IEEE(d, 8, 11);
+	}else if(is_same<T, long double>::value){
+		if(ld_type == UNKNOWN_LD){
+			judge_ldtype();
+		}
+		if(ld_type == is_IEEE){
+			PASS_BY_IEEE(d, ld_byte, ld_exp);
+		}else{
+			PASS_BY_80_bits(d);
+		}
+	}
+}
+template <typename T>
+typename enable_if<is_integral<T>::value, const RatioNumber&>::type RatioNumber::operator = (T n){
+	numerator = n;
+	denominator = 1;
+	if(!numerator.get_positive()){
+		numerator.negate();
+		positive = false;
+	}else{
+		positive = true;
+	}
 }
 const RatioNumber RatioNumber::abs() const{
 	if(is_NaN()){
