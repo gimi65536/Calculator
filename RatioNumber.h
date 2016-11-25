@@ -1049,7 +1049,7 @@ const RatioNumber RatioNumber::operator + (const RatioNumber& r) const{
 }
 template<typename T>
 const RatioNumber RatioNumber::operator + (const T& n) const{
-	BigNumber temp = (*this), tmp = n;
+	RatioNumber temp = (*this), tmp = n;
 	temp += tmp;
 	return temp;
 }
@@ -1108,7 +1108,7 @@ const RatioNumber RatioNumber::operator - (const RatioNumber& r) const{
 }
 template<typename T>
 const RatioNumber RatioNumber::operator - (const T& n) const{
-	BigNumber temp = (*this), tmp = n;
+	RatioNumber temp = (*this), tmp = n;
 	temp -= tmp;
 	return temp;
 }
@@ -1166,7 +1166,7 @@ const RatioNumber RatioNumber::operator * (const RatioNumber& r) const{
 }
 template<typename T>
 const RatioNumber RatioNumber::operator * (const T& n) const{
-	BigNumber temp = (*this), tmp = n;
+	RatioNumber temp = (*this), tmp = n;
 	temp *= tmp;
 	return temp;
 }
@@ -1200,7 +1200,7 @@ const RatioNumber RatioNumber::operator / (const RatioNumber& r) const{
 }
 template<typename T>
 const RatioNumber RatioNumber::operator / (const T& n) const{
-	BigNumber temp = (*this), tmp = n;
+	RatioNumber temp = (*this), tmp = n;
 	temp /= tmp;
 	return temp;
 }
