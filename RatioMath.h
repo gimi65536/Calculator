@@ -294,9 +294,9 @@ numeric fast_log(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 	return sol * 2;
 }
 
-numeric sqrt(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+numeric fast_sqrt(const numeric& r, int time, int precis = DEFAULT_endure_precision){
 	numeric sol, sol1;
-	sol = sol1 = r / 2;
+	sol = sol1 = r / 2 / (10_b ^ (((r.get_numerator() / r.get_denominator()).digit() - 1) / 2));
 	int plus = 0, tmp = precis;
 	while(tmp >= 2){
 		plus ++;
