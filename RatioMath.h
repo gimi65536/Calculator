@@ -25,7 +25,7 @@ numeric Euler(int precis){
 		now_precis = precis;
 		e = fast_exp(1, 1000000, precis);
 	}
-	return e;
+	return e.approximate(precis);
 }
 
 numeric Napier(int precis){ //alia of Euler()
@@ -52,7 +52,7 @@ numeric Pi(int precis){
 		now_precis = precis;
 		pi = fast_arctan2(1, 1000000, precis);
 	}
-	return pi;
+	return pi.approximate(precis);
 }
 
 numeric fast_sin(const numeric& r, int time, int precis = DEFAULT_endure_precision){
@@ -206,8 +206,7 @@ numeric fast_arctan2(const numeric& r, int time, int precis){
 		tmp /= 10;
 	}
 	fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
-	numeric one(1, 1);
-	numeric one_plus_r_r = (r * r + one);
+	numeric one_plus_r_r = (r * r + 1);
 	bnint now_n = r.get_numerator() * one_plus_r_r.get_denominator(), now_d = r.get_denominator() * one_plus_r_r.get_numerator();
 	const bnint base_n = (r.get_numerator() ^ 2) * one_plus_r_r.get_denominator(), base_d = (r.get_denominator() ^ 2) * one_plus_r_r.get_numerator();
 	for(int i = 0;i < time;i++, now_n *= base_n * 4 * i * i, now_d *= base_d * 2 * i * (2 * i + 1)){
@@ -283,9 +282,44 @@ numeric fast_log(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 		}else{
 			continuous_zero = 0;
 		}
+		if(i % 10 == 0){
+			bnint Gcd = gcd(now_n, now_d);
+			if(!Gcd.is_zero()){
+				now_n /= Gcd;
+				now_d /= Gcd;
+			}
+		}
 	}
 	fast_end();
 	return sol * 2;
+}
+
+numeric sqrt(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	numeric sol, sol1;
+	sol = sol1 = r / 2;
+	int plus = 0, tmp = precis;
+	while(tmp >= 2){
+		plus ++;
+		tmp /= 10;
+	}
+	for(int i = 0;i < time;i++){
+		fast_start("SQRT", sol, precis, precis + plus, 0);
+		fast_putin_temp();
+
+		numeric tmp = r / sol1;
+		fast_start("SQRT1", tmp, precis, precis + plus, 0);
+		fast_minus(sol1);
+		fast_end();
+
+		fast_add(tmp);
+		//fast_add(r / sol1 - sol1);
+		fast_end();
+		if(sol == sol1){
+			return sol;
+		}
+		sol1 = sol;
+	}
+	return sol;
 }
 
 #endif
