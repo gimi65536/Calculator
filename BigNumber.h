@@ -1678,5 +1678,41 @@ const BigNumber operator "" _b(const char32_t* string_values, size_t num_chars){
 	BigNumber temp = string_values;
 	return temp;
 }
+const BigNumber operator "" _bnint(const char literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _bnint(const char* literal_string){
+	BigNumber temp = literal_string;
+	return temp;
+}
+const BigNumber operator "" _bnint(const char* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _bnint(const wchar_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _bnint(const wchar_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _bnint(const char16_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _bnint(const char16_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
+const BigNumber operator "" _bnint(const char32_t literal){
+	BigNumber temp = literal;
+	return temp;
+}
+const BigNumber operator "" _bnint(const char32_t* string_values, size_t num_chars){
+	BigNumber temp = string_values;
+	return temp;
+}
 
 #endif

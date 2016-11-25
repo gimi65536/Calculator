@@ -1546,6 +1546,79 @@ bool RatioNumber::fast_end(RatioNumber& sol){
 	return false;
 }
 
+const RatioNumber operator "" _n(const char literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _n(const char* literal_string){
+	RatioNumber temp = literal_string;
+	return temp;
+}
+const RatioNumber operator "" _n(const char* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _n(const wchar_t literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _n(const wchar_t* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _n(const char16_t literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _n(const char16_t* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _n(const char32_t literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _n(const char32_t* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char* literal_string){
+	RatioNumber temp = literal_string;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const wchar_t literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const wchar_t* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char16_t literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char16_t* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char32_t literal){
+	RatioNumber temp = literal;
+	return temp;
+}
+const RatioNumber operator "" _numeric(const char32_t* string_values, size_t num_chars){
+	RatioNumber temp = string_values;
+	return temp;
+}
+
 RatioNumber sin(const RatioNumber& r, int time){
 	RatioNumber sol, sol1;
 	sol = sol1 = r;
