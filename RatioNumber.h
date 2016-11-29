@@ -147,13 +147,18 @@ public:
 	RatioNumber approximate(int precision) const;
 	void negate(){if(!is_NaN()){positive = !positive;}}
 	RatioNumber reciprocal() const;
+	bnint get_integer() const;
+	bnint get_integer();
+	RatioNumber get_decimal() const;
+	RatioNumber get_decimal();
+	operator float() const;
+	operator double() const;
+	operator long double() const;
 	const bnint getNumerator() const{return numerator;}
 	const bnint getDenominator() const{return denominator;}
-	static void Setprecision(){precision = -1;}
-	static void Setprecision(int n){if(n >= 0){precision = n;}else{precision = -1;}}
+	static void Setprecision(int n = -1){if(n >= 0){precision = n;}else{precision = -1;}}
 	static void unSetprecision(){precision = -1;}
-	static void Set_autoprecision(int n){if(n < 0){endure_precision = DEFAULT_endure_precision;}else{endure_precision = n;}}
-	static void Set_autoprecision(){endure_precision = DEFAULT_endure_precision;}
+	static void Set_autoprecision(int n = DEFAULT_endure_precision){if(n < 0){endure_precision = DEFAULT_endure_precision;}else{endure_precision = n;}}
 	static void unSet_autoprecision(){endure_precision = DEFAULT_endure_precision;}
 	static void SetRound(){mode = 0;}
 	static void SetRoundDown(){mode = -1;}
@@ -174,9 +179,12 @@ public:
 	friend RatioNumber arctan(const RatioNumber& r, int pre);
 };
 
-bool fast_start(string str, RatioNumber& sol, int sol_precis, int process_precis = -1, int round = 0){
+
+auto fast_start = RatioNumber::fast_start;
+auto fast_putin_temp = RatioNumber::fast_putin_temp;
+/*bool fast_start(string str, RatioNumber& sol, int sol_precis, int process_precis = -1, int round = 0){
 	return RatioNumber::fast_start(str, sol, sol_precis, process_precis, round);
-}
+}*/
 bool fast_switch(string str){
 	return RatioNumber::fast_switch(str);
 }
@@ -195,9 +203,9 @@ void fast_minus(const RatioNumber& r){
 void fast_minus(const bnint& num, const bnint& den){
 	RatioNumber::fast_minus(num, den);
 }
-void fast_putin_temp(){
+/*void fast_putin_temp(){
 	RatioNumber::fast_putin_temp();
-}
+}*/
 bool fast_end(){
 	return RatioNumber::fast_end();
 }
@@ -292,16 +300,22 @@ void judge_ldtype(){
 const bnint getNumerator(const RatioNumber& r){return r.getNumerator();}
 const bnint getDenominator(const RatioNumber& r){return r.getDenominator();}
 
-void Setprecision(){RatioNumber::Setprecision();}
-void Setprecision(int n){RatioNumber::Setprecision(n);}
-void unSetprecision(){RatioNumber::unSetprecision();}
-void Set_autoprecision(int n){RatioNumber::Set_autoprecision(n);}
-void Set_autoprecision(){RatioNumber::Set_autoprecision();}
-void unSet_autoprecision(){RatioNumber::unSet_autoprecision();}
-void SetRound(){RatioNumber::SetRound();}
-void SetRoundDown(){RatioNumber::SetRoundDown();}
-void SetRoundUp(){RatioNumber::SetRoundUp();}
-void unSetRound(){RatioNumber::unSetRound();}
+auto Setprecision = RatioNumber::Setprecision;
+auto unSetprecision = RatioNumber::unSetprecision;
+auto Set_autoprecision = RatioNumber::Set_autoprecision;
+auto unSet_autoprecision = RatioNumber::unSet_autoprecision;
+auto SetRound = RatioNumber::SetRound;
+auto SetRoundDown = RatioNumber::SetRoundDown;
+auto SetRoundUp = RatioNumber::SetRoundUp;
+auto unSetRound = RatioNumber::unSetRound;
+//void Setprecision(int n){RatioNumber::Setprecision(n);}
+//void unSetprecision(){RatioNumber::unSetprecision();}
+//void Set_autoprecision(int n){RatioNumber::Set_autoprecision(n);}
+//void unSet_autoprecision(){RatioNumber::unSet_autoprecision();}
+//void SetRound(){RatioNumber::SetRound();}
+//void SetRoundDown(){RatioNumber::SetRoundDown();}
+//void SetRoundUp(){RatioNumber::SetRoundUp();}
+//void unSetRound(){RatioNumber::unSetRound();}
 
 void RatioNumber::reduce(){
 	if(!numerator.get_positive()){
@@ -1357,6 +1371,30 @@ RatioNumber RatioNumber::reciprocal() const{
 	return tmp;
 }
 
+bnint RatioNumber::get_integer() const{
+	bnint n = get_numerator();
+	return n / denominator;
+}
+bnint RatioNumber::get_integer(){
+	correct_positive();
+	const RatioNumber* tmp = this;
+	return tmp -> get_integer();
+}
+RatioNumber RatioNumber::get_decimal() const{
+	RatioNumber sol(1, denominator);
+	sol.numerator = numerator % denominator;
+	if(!sol.numerator.is_zero()){
+		sol.positive = positive;
+	}
+	return sol;
+}
+RatioNumber RatioNumber::get_decimal(){
+	correct_positive();
+	const RatioNumber* tmp = this;
+	return tmp -> get_decimal();
+}
+RatioNumber::operator long double() const{}
+
 ostream& operator << (ostream& os, const RatioNumber& r){
 	if(r.is_positive_INF()){
 		os << "Inf";
@@ -1740,6 +1778,105 @@ RatioNumber arctan(const RatioNumber& r, int time){
 	sol.denominator *= 2;
 	sol.reduce();
 	return sol;
+}
+
+bool operator == (const bnint& n, const RatioNumber& N){
+	return N == n;
+}
+template <typename T>
+bool operator == (const T& n, const RatioNumber& N){
+	return N == n;
+}
+bool operator != (const bnint& n, const RatioNumber& N){
+	return N != n;
+}
+template <typename T>
+bool operator != (const T& n, const RatioNumber& N){
+	return N != n;
+}
+bool operator < (const bnint& n, const RatioNumber& N){
+	return N > n;
+}
+template <typename T>
+bool operator < (const T& n, const RatioNumber& N){
+	return N > n;
+}
+bool operator <= (const bnint& n, const RatioNumber& N){
+	return N >= n;
+}
+template <typename T>
+bool operator <= (const T& n, const RatioNumber& N){
+	return N >= n;
+}
+bool operator > (const bnint& n, const RatioNumber& N){
+	return N < n;
+}
+template <typename T>
+bool operator > (const T& n, const RatioNumber& N){
+	return N < n;
+}
+bool operator >= (const bnint& n, const RatioNumber& N){
+	return N <= n;
+}
+template <typename T>
+bool operator >= (const T& n, const RatioNumber& N){
+	return N <= n;
+}
+template <typename T>
+const T& operator += (T& n, const RatioNumber& N){
+	n = static_cast<long double>(N + n);
+	return n;
+}
+const RatioNumber operator + (const bnint& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp + N;
+}
+template <typename T>
+const RatioNumber operator + (const T& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp + N;
+}
+template <typename T>
+const T& operator -= (T& n, const RatioNumber& N){
+	n = static_cast<long double>(-N + n);
+	return n;
+}
+const RatioNumber operator - (const bnint& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp - N;
+}
+template <typename T>
+const RatioNumber operator - (const T& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp - N;
+}
+template <typename T>
+const T& operator *= (T& n, const RatioNumber& N){
+	n = static_cast<long double>(N * n);
+	return n;
+}
+const RatioNumber operator * (const bnint& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp * N;
+}
+template <typename T>
+const RatioNumber operator * (const T& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp * N;
+}
+template <typename T>
+const T& operator /= (T& n, const RatioNumber& N){
+	n = static_cast<long double>(N.reciprocal() * n);
+	return n;
+}
+const RatioNumber operator / (const bnint& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp / N;
+}
+template <typename T>
+typename conditional<is_floating_point<T>::value, T, RatioNumber>::type operator / (const T& n, const RatioNumber& N){
+	RatioNumber temp = n;
+	return temp / N;
 }
 
 #endif
