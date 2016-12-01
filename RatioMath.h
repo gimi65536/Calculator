@@ -1,4 +1,5 @@
 #include "RatioNumber.h"
+#include <stdexcept>
 
 #ifndef _RATIOMATH_
 #define _RATIOMATH_
@@ -130,6 +131,9 @@ numeric fast_tan(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 }
 
 numeric fast_arcsin(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	if(!r.is_fraction() || r < -1 || r > 1){
+		throw domain_error("Parameter in fast_arcsin should be between -1 and 1.");
+	}
 	fast_zero_signal = false;
 	numeric sol;
 	int plus = 0, tmp = precis, continuous_zero = 0;
@@ -260,6 +264,9 @@ numeric fast_exp(const numeric& r, int time, int precis){
 }
 
 numeric fast_log(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	if(!r.is_fraction() || !(r > 0)){
+		throw domain_error("Parameter in fast_log should be large than 0.");
+	}
 	fast_zero_signal = false;
 	numeric sol;
 	int plus = 0, tmp = precis, continuous_zero = 0;
@@ -295,6 +302,9 @@ numeric fast_log(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 }
 
 numeric fast_sqrt(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+	if(!r.is_fraction() || r < 0){
+		throw domain_error("Parameter in fast_sqrt should be equal or large to 0.");
+	}
 	numeric sol, sol1;
 	sol = sol1 = r / 2 / (10_b ^ (((r.get_numerator() / r.get_denominator()).digit() - 1) / 2));
 	int plus = 0, tmp = precis;

@@ -74,11 +74,29 @@ public:
 	bnint get_numerator() const{return numerator * (positive ? 1 : -1);}
 	bnint get_denominator() const{return denominator;}
 	bool operator == (const RatioNumber& r) const;
+	bool operator == (const bnint& n) const;
+	template <typename T>
+	bool operator == (const T& n) const;
 	bool operator != (const RatioNumber& r) const;
+	bool operator != (const bnint& r) const;
+	template <typename T>
+	bool operator != (const T& n) const;
 	bool operator < (const RatioNumber& r) const;
+	bool operator < (const bnint& r) const;
+	template <typename T>
+	bool operator < (const T& n) const;
 	bool operator <= (const RatioNumber& r) const;
+	bool operator <= (const bnint& r) const;
+	template <typename T>
+	bool operator <= (const T& n) const;
 	bool operator > (const RatioNumber& r) const;
+	bool operator > (const bnint& r) const;
+	template <typename T>
+	bool operator > (const T& n) const;
 	bool operator >= (const RatioNumber& r) const;
+	bool operator >= (const bnint& r) const;
+	template <typename T>
+	bool operator >= (const T& n) const;
 	const RatioNumber operator + () const;
 	const RatioNumber operator - () const;
 	const RatioNumber& operator = (const RatioNumber& r);
@@ -627,10 +645,118 @@ template <typename T>
 T RatioNumber::TRANSTO_80bitsFLOAT() const{
 	int size = sizeof(T);
 	auto temp = new unsigned char[size];
-	int fraction = 63;
+	int fraction = 63, exp = 15;
 	BtoI hensa = 16383;
 	string str_positive, str_exp, str_one, str_fraction;
-	//...
+	if(is_NaN()){
+		str_positive += '0';
+		for(int i = 0;i < exp;i++){
+			str_exp += '1';
+		}
+		str_one += '1';
+		str_fraction += '1';
+		for(int i = 1;i < fraction;i++){
+			str_fraction += '0';
+		}
+	}else if(is_INF()){
+		if(is_positive_INF()){
+			str_positive += '0';
+		}else{
+			str_positive += '1';
+		}
+		for(int i = 0;i < exp;i++){
+			str_exp += '1';
+		}
+		str_one += '1';
+		for(int i = 0;i < fraction;i++){
+			str_fraction += '0';
+		}
+	}else if(numerator.is_zero()){
+		str_positive += '0';
+		for(int i = 0;i < exp;i++){
+			str_exp += '0';
+		}
+		str_one += '0';
+		for(int i = 0;i < fraction;i++){
+			str_fraction += '0';
+		}
+	}else{
+		bnint integer_part = get_integer();
+		RatioNumber ratio_part = get_decimal();
+		int sol_exp = 0;
+		if(integer_part.is_zero()){
+			if(!ratio_part.positive){
+				str_positive += '1';
+			}else{
+				str_positive += '0';
+			}
+			bool success = false;
+			while(sol_exp > -hensa + 1){
+				sol_exp --;
+				ratio_part.numerator *= 2;
+				if(ratio_part.numerator >= ratio_part.denominator){
+					ratio_part.numerator -= ratio_part.denominator;
+					success = true;
+					break;
+				}
+			}
+			if(!success){
+				str_one += '0';
+				sol_exp --;
+			}else{
+				str_one += '1';
+			}
+			sol_exp += hensa;
+			str_exp = static_cast<bnint>(sol_exp).str(2);
+			str_exp.erase(0, 2);
+			while(str_fraction.length() < fraction){
+				ratio_part.numerator *= 2;
+				if(ratio_part.numerator >= ratio_part.denominator){
+					str_fraction += '1';
+					ratio_part.numerator -= ratio_part.denominator;
+				}else{
+					str_fraction += '0';
+				}
+			}
+			while(str_exp.length() < exp){
+				str_exp.insert(0, 1, '0');
+			}
+		}else{
+			if(!integer_part.get_positive()){
+				str_positive += '1';
+				integer_part.negate();
+			}else{
+				str_positive += '0';
+			}
+			string binary_int = integer_part.str(2);
+			binary_int.erase(0, 2);
+			sol_exp = binary_int.length() - 1;
+			if(sol_exp > hensa){
+				sol_exp = hensa;
+			}
+			sol_exp += hensa;
+			str_exp = static_cast<bnint>(sol_exp).str(2);
+			str_exp.erase(0, 2);
+			if(binary_int.length() >= fraction + 1){
+				str_fraction += binary_int.substr(1, fraction);
+			}else{
+				binary_int.erase(0, 1);
+				str_fraction += binary_int;
+				while(str_fraction.length() < fraction){
+					ratio_part.numerator *= 2;
+					if(ratio_part.numerator >= ratio_part.denominator){
+						str_fraction += '1';
+						ratio_part.numerator -= ratio_part.denominator;
+					}else{
+						str_fraction += '0';
+					}
+				}
+			}
+			while(str_exp.length() < exp){
+				str_exp.insert(0, 1, '0');
+			}
+		}
+	}
 	string str = str_positive + str_exp + str_one + str_fraction;
 	while(str.length() < 8 * size){
 		str.insert(0, 1, '0');
@@ -922,8 +1048,26 @@ bool RatioNumber::operator == (const RatioNumber& r) const{
 	}
 	return false;
 }
+bool RatioNumber::operator == (const bnint& n) const{
+	RatioNumber temp = n;
+	return (*this) == temp;
+}
+template <typename T>
+bool RatioNumber::operator == (const T& n) const{
+	RatioNumber temp = n;
+	return (*this) == temp;
+}
 bool RatioNumber::operator != (const RatioNumber& r) const{
 	return !((*this) == r);
+}
+bool RatioNumber::operator != (const bnint& n) const{
+	RatioNumber temp = n;
+	return (*this) != temp;
+}
+template <typename T>
+bool RatioNumber::operator != (const T& n) const{
+	RatioNumber temp = n;
+	return (*this) != temp;
 }
 bool RatioNumber::operator < (const RatioNumber& r) const{
 	if(is_NaN() || r.is_NaN()){
@@ -946,8 +1090,26 @@ bool RatioNumber::operator < (const RatioNumber& r) const{
 	}
 	return false;
 }
+bool RatioNumber::operator < (const bnint& n) const{
+	RatioNumber temp = n;
+	return (*this) < temp;
+}
+template <typename T>
+bool RatioNumber::operator < (const T& n) const{
+	RatioNumber temp = n;
+	return (*this) < temp;
+}
 bool RatioNumber::operator <= (const RatioNumber& r) const{
 	return (*this) < r || (*this) == r;
+}
+bool RatioNumber::operator <= (const bnint& n) const{
+	RatioNumber temp = n;
+	return (*this) <= temp;
+}
+template <typename T>
+bool RatioNumber::operator <= (const T& n) const{
+	RatioNumber temp = n;
+	return (*this) <= temp;
 }
 bool RatioNumber::operator > (const RatioNumber& r) const{
 	if(is_NaN() || r.is_NaN()){
@@ -970,8 +1132,26 @@ bool RatioNumber::operator > (const RatioNumber& r) const{
 	}
 	return false;
 }
+bool RatioNumber::operator > (const bnint& n) const{
+	RatioNumber temp = n;
+	return (*this) > temp;
+}
+template <typename T>
+bool RatioNumber::operator > (const T& n) const{
+	RatioNumber temp = n;
+	return (*this) > temp;
+}
 bool RatioNumber::operator >= (const RatioNumber& r) const{
 	return (*this) > r || (*this) == r;
+}
+bool RatioNumber::operator >= (const bnint& n) const{
+	RatioNumber temp = n;
+	return (*this) >= temp;
+}
+template <typename T>
+bool RatioNumber::operator >= (const T& n) const{
+	RatioNumber temp = n;
+	return (*this)>= temp;
 }
 const RatioNumber RatioNumber::operator + () const{
 	return (*this);
