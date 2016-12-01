@@ -23,6 +23,8 @@ const int BASIC_SIZE = 4;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should >= 3.");
 
 typedef long long int BtoI;
+typedef unsigned long long int uBtoI;
+typedef long double BtoD;
 bool string_overflow = false;
 
 const string cvt_string(const string& str);

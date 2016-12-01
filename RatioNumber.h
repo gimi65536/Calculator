@@ -10,14 +10,14 @@ bnint gcd(bnint a, bnint b);
 bnint lcm(bnint a, bnint b);
 const int DEFAULT_endure_precision = 100;
 
-enum Endian{UNKNOWN, big_endian, little_endian};
-enum LONG_DOUBLE{UNKNOWN_LD, is_80bits, is_IEEE};
-Endian endian = UNKNOWN;
-LONG_DOUBLE ld_type = UNKNOWN_LD;
+enum Endian{big_endian, little_endian};
+enum LONG_DOUBLE{is_80bits, is_IEEE};
 int ld_byte = 0;
 int ld_exp = 0;
-void judge_endian();
-void judge_ldtype();
+Endian judge_endian();
+LONG_DOUBLE judge_ldtype();
+const Endian endian = judge_endian();
+const LONG_DOUBLE ld_type = judge_ldtype();
 bool fast_zero_signal = false;
 
 class RatioNumber;
@@ -40,6 +40,10 @@ private:
 	typename enable_if<is_floating_point<T>::value, void>::type PASS_BY_IEEE(T r, int byte, int exp);
 	template <typename T>
 	typename enable_if<is_floating_point<T>::value, void>::type PASS_BY_80_bits(T ld);
+	template <typename T>
+	T TRANSTO_FLOAT(int byte, int exp) const;
+	template <typename T>
+	T TRANSTO_80bitsFLOAT() const;
 	void common_pass_float(const string& str, RatioNumber& base, int& EXP);
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
@@ -240,23 +244,20 @@ bnint lcm(bnint a, bnint b){
 	return a * b / gcd(a, b);
 }
 
-void judge_endian(){
+Endian judge_endian(){
 	int i = 1;
 	char* ptr = reinterpret_cast<char*>(&i);
 	if(ptr[0] == 1){
-		endian = little_endian;
+		return little_endian;
 	}else{
-		endian = big_endian;
+		return big_endian;
 	}
 }
 
-void judge_ldtype(){
+LONG_DOUBLE judge_ldtype(){
 	long double t = 1.0;
 	char* j = reinterpret_cast<char*>(&t);
 	int size = sizeof(t);
-	if(endian == UNKNOWN){
-		judge_endian();
-	}
 	int i = 0, di = 0;
 	if(endian == little_endian){
 		i = size - 1;
@@ -280,15 +281,14 @@ void judge_ldtype(){
 	}
 	if(str.length() >= 80){
 		if(str.substr(str.length() - 80).find("001111111111111110") == 0){
-			ld_type = is_80bits;
-			return;
+			return is_80bits;
 		}
 	}
-	ld_type = is_IEEE;
 	size_t pos = str.find_last_of('1');
 	size_t apos = str.find_last_of('0', pos);
 	ld_exp = pos - apos + 1;
 	ld_byte = (str.length() - apos + 1) / 8;
+	return is_IEEE;
 }
 
 const bnint getNumerator(const RatioNumber& r){return r.getNumerator();}
@@ -347,9 +347,6 @@ typename enable_if<is_floating_point<T>::value, void>::type RatioNumber::PASS_BY
 	hensa -= 1;
 	char* j = reinterpret_cast<char*>(&r);
 	int size = sizeof(r);
-	if(endian == UNKNOWN){
-		judge_endian();
-	}
 	int i = 0, di = 0;
 	if(endian == little_endian){
 		i = byte - 1;
@@ -418,9 +415,6 @@ typename enable_if<is_floating_point<T>::value, void>::type RatioNumber::PASS_BY
 	int hensa = 16383, exp = 15;
 	char* j = reinterpret_cast<char*>(&ld);
 	int size = sizeof(ld);
-	if(endian == UNKNOWN){
-		judge_endian();
-	}
 	int i = 0, di = 0;
 	if(endian == little_endian){
 		i = size - 1;
@@ -492,6 +486,174 @@ typename enable_if<is_floating_point<T>::value, void>::type RatioNumber::PASS_BY
 	}
 	str.erase(0, 1);
 	common_pass_float(str, base, EXP);
+}
+
+template <typename T>
+T RatioNumber::TRANSTO_FLOAT(int byte, int exp) const{
+	int size = sizeof(T);
+	auto temp = new unsigned char[size];
+	int fraction = 8 * byte - 1 - exp;
+	BtoI hensa = static_cast<BtoI>((2_bnint ^ (exp - 1)) - 1);
+	string str_positive, str_exp, str_fraction;
+	if(is_NaN()){
+		str_positive += '0';
+		for(int i = 0;i < exp;i++){
+			str_exp += '1';
+		}
+		str_fraction += '1';
+		for(int i = 1;i < fraction;i++){
+			str_fraction += '0';
+		}
+	}else if(is_INF()){
+		if(is_positive_INF()){
+			str_positive += '0';
+		}else{
+			str_positive += '1';
+		}
+		for(int i = 0;i < exp;i++){
+			str_exp += '1';
+		}
+		for(int i = 0;i < fraction;i++){
+			str_fraction += '0';
+		}
+	}else if(numerator.is_zero()){
+		str_positive += '0';
+		for(int i = 0;i < exp;i++){
+			str_exp += '0';
+		}
+		for(int i = 0;i < fraction;i++){
+			str_fraction += '0';
+		}
+	}else{
+		bnint integer_part = get_integer();
+		RatioNumber ratio_part = get_decimal();
+		int sol_exp = 0;
+		if(integer_part.is_zero()){
+			if(!ratio_part.positive){
+				str_positive += '1';
+			}else{
+				str_positive += '0';
+			}
+			bool success = false;
+			while(sol_exp > -hensa + 1){
+				sol_exp --;
+				ratio_part.numerator *= 2;
+				if(ratio_part.numerator >= ratio_part.denominator){
+					ratio_part.numerator -= ratio_part.denominator;
+					success = true;
+					break;
+				}
+			}
+			if(!success){
+				sol_exp --;
+			}
+			sol_exp += hensa;
+			str_exp = static_cast<bnint>(sol_exp).str(2);
+			str_exp.erase(0, 2);
+			while(str_fraction.length() < fraction){
+				ratio_part.numerator *= 2;
+				if(ratio_part.numerator >= ratio_part.denominator){
+					str_fraction += '1';
+					ratio_part.numerator -= ratio_part.denominator;
+				}else{
+					str_fraction += '0';
+				}
+			}
+			while(str_exp.length() < exp){
+				str_exp.insert(0, 1, '0');
+			}
+		}else{
+			if(!integer_part.get_positive()){
+				str_positive += '1';
+				integer_part.negate();
+			}else{
+				str_positive += '0';
+			}
+			string binary_int = integer_part.str(2);
+			binary_int.erase(0, 2);
+			sol_exp = binary_int.length() - 1;
+			if(sol_exp > hensa){
+				sol_exp = hensa;
+			}
+			sol_exp += hensa;
+			str_exp = static_cast<bnint>(sol_exp).str(2);
+			str_exp.erase(0, 2);
+			if(binary_int.length() >= fraction + 1){
+				str_fraction += binary_int.substr(1, fraction);
+			}else{
+				binary_int.erase(0, 1);
+				str_fraction += binary_int;
+				while(str_fraction.length() < fraction){
+					ratio_part.numerator *= 2;
+					if(ratio_part.numerator >= ratio_part.denominator){
+						str_fraction += '1';
+						ratio_part.numerator -= ratio_part.denominator;
+					}else{
+						str_fraction += '0';
+					}
+				}
+			}
+			while(str_exp.length() < exp){
+				str_exp.insert(0, 1, '0');
+			}
+		}
+	}
+	string str = str_positive + str_exp + str_fraction;
+	while(str.length() < 8 * size){
+		str.insert(0, 1, '0');
+	}
+	for(int i = 0;i < size;i++){
+		string buf = str.substr(0, 8);
+		str.erase(0, 8);
+		buf.insert(0, "0b");
+		bnint t = buf;
+		temp[i] = static_cast<BtoI>(t);
+	}
+	if(endian == little_endian){
+		unsigned char c = 0;
+		for(int i = 0;i < size / 2;i++){
+			c = temp[i];
+			temp[i] = temp[size - 1 - i];
+			temp[size - 1 - i] = c;
+		}
+	}
+	T* tempsol = reinterpret_cast<T*>(temp);
+	T sol = *tempsol;
+	delete[] temp;
+	return sol;
+}
+
+template <typename T>
+T RatioNumber::TRANSTO_80bitsFLOAT() const{
+	int size = sizeof(T);
+	auto temp = new unsigned char[size];
+	int fraction = 63;
+	BtoI hensa = 16383;
+	string str_positive, str_exp, str_one, str_fraction;
+	//...
+	string str = str_positive + str_exp + str_one + str_fraction;
+	while(str.length() < 8 * size){
+		str.insert(0, 1, '0');
+	}
+	for(int i = 0;i < size;i++){
+		string buf = str.substr(0, 8);
+		str.erase(0, 8);
+		buf.insert(0, "0b");
+		bnint t = buf;
+		temp[i] = static_cast<BtoI>(t);
+	}
+	if(endian == little_endian){
+		unsigned char c = 0;
+		for(int i = 0;i < size / 2;i++){
+			c = temp[i];
+			temp[i] = temp[size - 1 - i];
+			temp[size - 1 - i] = c;
+		}
+	}
+	T* tempsol = reinterpret_cast<T*>(temp);
+	T sol = *tempsol;
+	delete[] temp;
+	return sol;
 }
 
 void RatioNumber::common_pass_float(const string& str, RatioNumber& base, int& EXP){
@@ -976,9 +1138,6 @@ typename enable_if<is_floating_point<T>::value, const RatioNumber&>::type RatioN
 	}else if(is_same<T, double>::value){
 		PASS_BY_IEEE(d, 8, 11);
 	}else if(is_same<T, long double>::value){
-		if(ld_type == UNKNOWN_LD){
-			judge_ldtype();
-		}
 		if(ld_type == is_IEEE){
 			PASS_BY_IEEE(d, ld_byte, ld_exp);
 		}else{
@@ -1366,6 +1525,12 @@ bnint RatioNumber::get_integer(){
 	const RatioNumber* tmp = this;
 	return tmp -> get_integer();
 }
+bnint get_integer(const RatioNumber& r){
+	return r.get_integer();
+}
+bnint get_integer(RatioNumber& r){
+	return r.get_integer();
+}
 RatioNumber RatioNumber::get_decimal() const{
 	RatioNumber sol(1, denominator);
 	sol.numerator = numerator % denominator;
@@ -1379,7 +1544,25 @@ RatioNumber RatioNumber::get_decimal(){
 	const RatioNumber* tmp = this;
 	return tmp -> get_decimal();
 }
-RatioNumber::operator long double() const{}
+RatioNumber get_decimal(const RatioNumber& r){
+	return r.get_decimal();
+}
+RatioNumber get_decimal(RatioNumber& r){
+	return r.get_decimal();
+}
+RatioNumber::operator float() const{
+	return TRANSTO_FLOAT<float>(4, 8);
+}
+RatioNumber::operator double() const{
+	return TRANSTO_FLOAT<double>(8, 11);
+}
+RatioNumber::operator long double() const{
+	if(ld_type == is_IEEE){
+		return TRANSTO_FLOAT<long double>(ld_byte, ld_exp);
+	}else if(ld_byte == is_80bits){
+		return TRANSTO_80bitsFLOAT<long double>();
+	}
+}
 
 ostream& operator << (ostream& os, const RatioNumber& r){
 	if(r.is_positive_INF()){
