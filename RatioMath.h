@@ -5,9 +5,9 @@
 #define _RATIOMATH_
 
 numeric fast_exp(const numeric& r, int time, int precis = DEFAULT_endure_precision);
-numeric fast_arctan2(const numeric& r, int time, int precis = DEFAULT_endure_precision);
+numeric fast_arctan2(const numeric& r, int time = 10000, int precis = DEFAULT_endure_precision);
 
-numeric Euler(int precis){
+numeric Euler(int precis = 1036){
 	static numeric e = "2.7182818284590452353602874713526624977572470936999595749669676277240766303535"
 	"47594571382178525166427427466391932003059921817413596629043572900334295260595630"
 	"73813232862794349076323382988075319525101901157383418793070215408914993488416750"
@@ -29,11 +29,11 @@ numeric Euler(int precis){
 	return e.approximate(precis);
 }
 
-numeric Napier(int precis){ //alia of Euler()
+numeric Napier(int precis = 1036){ //alia of Euler()
 	return Euler(precis);
 }
 
-numeric Pi(int precis){
+numeric Pi(int precis = 1089){
 	static numeric pi = "3.141592653589793238462643383279502884197169399375105820974944592307816406286"
 	"208998628034825342117067982148086513282306647093844609550582231725359408128481"
 	"117450284102701938521105559644622948954930381964428810975665933446128475648233"
@@ -56,7 +56,7 @@ numeric Pi(int precis){
 	return pi.approximate(precis);
 }
 
-numeric fast_sin(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+numeric fast_sin(const numeric& r, int time = 10000, int precis = DEFAULT_endure_precision){
 	fast_zero_signal = false;
 	numeric sol;
 	int plus = 0, tmp = precis, continuous_zero = 0;
@@ -89,8 +89,13 @@ numeric fast_sin(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 	fast_end();
 	return sol;
 }
+template <typename T>
+numeric fast_sin(const T& n, int time = 10000, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_sin(r, time, precis);
+}
 
-numeric fast_cos(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+numeric fast_cos(const numeric& r, int time = 10000, int precis = DEFAULT_endure_precision){
 	fast_zero_signal = false;
 	numeric sol;
 	int plus = 0, tmp = precis, continuous_zero = 0;
@@ -123,15 +128,25 @@ numeric fast_cos(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 	fast_end();
 	return sol;
 }
+template <typename T>
+numeric fast_cos(const T& n, int time = 10000, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_cos(r, time, precis);
+}
 
-numeric fast_tan(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+numeric fast_tan(const numeric& r, int time = 10000, int precis = DEFAULT_endure_precision){
 	numeric sol = fast_sin(r, time, precis + 10), sol1 = fast_cos(r, time, precis + 10);
 	sol /= sol1;
 	return sol;
 }
+template <typename T>
+numeric fast_tan(const T& n, int time = 10000, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_tan(r, time, precis);
+}
 
 numeric fast_arcsin(const numeric& r, int time, int precis = DEFAULT_endure_precision){
-	if(!r.is_fraction() || r < -1 || r > 1){
+	if(!r.is_fraction() || r.abs() > 1){
 		throw domain_error("Parameter in fast_arcsin should be between -1 and 1.");
 	}
 	fast_zero_signal = false;
@@ -166,6 +181,11 @@ numeric fast_arcsin(const numeric& r, int time, int precis = DEFAULT_endure_prec
 	fast_end();
 	return sol;
 }
+template <typename T>
+numeric fast_arcsin(const T& n, int time, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_arcsin(r, time, precis);
+}
 
 numeric fast_arctan(const numeric& r, int time, int precis = DEFAULT_endure_precision){
 	fast_zero_signal = false;
@@ -199,6 +219,11 @@ numeric fast_arctan(const numeric& r, int time, int precis = DEFAULT_endure_prec
 	}
 	fast_end();
 	return sol;
+}
+template <typename T>
+numeric fast_arctan(const T& n, int time, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_arctan(r, time, precis);
 }
 
 numeric fast_arctan2(const numeric& r, int time, int precis){
@@ -235,6 +260,11 @@ numeric fast_arctan2(const numeric& r, int time, int precis){
 	fast_end();
 	return sol;
 }
+template <typename T>
+numeric fast_arctan2(const T& n, int time = 10000, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_arctan2(r, time, precis);
+}
 
 numeric fast_exp(const numeric& r, int time, int precis){
 	fast_zero_signal = false;
@@ -262,10 +292,15 @@ numeric fast_exp(const numeric& r, int time, int precis){
 	fast_end();
 	return sol;
 }
+template <typename T>
+numeric fast_exp(const T& n, int time, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_exp(r, time, precis);
+}
 
 numeric fast_log(const numeric& r, int time, int precis = DEFAULT_endure_precision){
 	if(!r.is_fraction() || !(r > 0)){
-		throw domain_error("Parameter in fast_log should be large than 0.");
+		throw domain_error("Parameter in fast_log should be larger than 0.");
 	}
 	fast_zero_signal = false;
 	numeric sol;
@@ -300,10 +335,18 @@ numeric fast_log(const numeric& r, int time, int precis = DEFAULT_endure_precisi
 	fast_end();
 	return sol * 2;
 }
+template <typename T>
+numeric fast_log(const T& n, int time, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_log(r, time, precis);
+}
 
-numeric fast_sqrt(const numeric& r, int time, int precis = DEFAULT_endure_precision){
+numeric fast_sqrt(const numeric& r, int time = 10000, int precis = DEFAULT_endure_precision){
 	if(!r.is_fraction() || r < 0){
-		throw domain_error("Parameter in fast_sqrt should be equal or large to 0.");
+		cout<<r;
+		throw domain_error("Parameter in fast_sqrt should be larger or equal to 0.");
+	}else if(r.is_zero()){
+		return r;
 	}
 	numeric sol, sol1;
 	sol = sol1 = r / 2 / (10_b ^ (((r.get_numerator() / r.get_denominator()).digit() - 1) / 2));
@@ -330,6 +373,11 @@ numeric fast_sqrt(const numeric& r, int time, int precis = DEFAULT_endure_precis
 		sol1 = sol;
 	}
 	return sol;
+}
+template <typename T>
+numeric fast_sqrt(const T& n, int time = 10000, int precis = DEFAULT_endure_precision){
+	numeric r = n;
+	return fast_sqrt(r, time, precis);
 }
 
 #endif
