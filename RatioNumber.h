@@ -67,6 +67,7 @@ public:
 	bool is_negative_INF() const;
 	bool is_NaN() const;
 	bool is_fraction() const;
+	bool is_zero() const;
 	void to_INF();
 	void to_positive_INF();
 	void to_negative_INF();
@@ -806,6 +807,12 @@ void RatioNumber::common_pass_float(const string& str, RatioNumber& base, int& E
 }
 
 void RatioNumber::PASS_BY_STRING(string str){
+	if(str.find('/') != string::npos){
+		positive = true;
+		numerator = str.substr(0, str.find('/'));
+		denominator = str.substr(str.find('/') + 1);
+		return reduce();
+	}
 	//check notation
 	string test;
 	if(str.length() >= 3 && (str[0] == '+' || str[0] == '-')){
@@ -815,8 +822,7 @@ void RatioNumber::PASS_BY_STRING(string str){
 	}
 	if(test.length() == 2){
 		if(test[0] == '0' && test.find_first_of("BbCcDdEeFfGgHhIiJjKkLlMmNnOoXx") != string::npos){
-			PASS_BY_STRING_with_notation(str);
-			return;
+			return PASS_BY_STRING_with_notation(str);
 		}
 	}
 	//end
@@ -857,12 +863,53 @@ void RatioNumber::PASS_BY_STRING_with_notation(string str){
 	str.erase(0, 1);
 	size_t pos = str.find('.');
 	if(pos != string::npos){
+		bool circular = false;
+		int circulation = 0;
+		for(int i = str.length() - 1;i >= 0;i--){
+			if(i != pos && str[i] == '.'){
+				circular = true;
+				circulation ++;
+			}else{
+				break;
+			}
+		}
 		bnint integer_part = Nota + str.substr(0, pos);
 		str.erase(0, pos + 1);
 		pos = str.find('.');
 		while(pos != string::npos){
 			str.erase(pos, 1);
 			pos = str.find('.');
+		}
+		RatioNumber temp(0, 1);
+		if(circular){
+			string circle;
+			if(str.length() >= circulation){
+				circle = str.substr(str.length() - circulation);
+			}else{
+				if(notation_t == 10){
+					circle = integer_part.str() + str;
+				}else{
+					circle = integer_part.str(notation_t).substr(2) + str;
+				}
+				while(circle.length() < circulation){
+					circle.insert(0, 1, '0');
+				}
+			}
+			temp.numerator = Nota + circle;
+			string nine;
+			char Nine = '\0';
+			if(notation_t <= 10){
+				Nine = '0' + notation_t - 1;
+			}else{
+				Nine = 'A' + notation_t - 11;
+			}
+			for(int i = 1;i <= circulation;i++){
+				nine += Nine;
+			}
+			temp.denominator = Nota + nine;
+			int times = str.length();
+			temp.denominator *= notation ^ times;
+			temp.positive = positive;
 		}
 		while(str.length() > 0 && str[str.length() - 1] == '0'){
 			str.erase(str.length() - 1, 1);
@@ -871,6 +918,9 @@ void RatioNumber::PASS_BY_STRING_with_notation(string str){
 		bnint fraction_part = Nota + str;
 		denominator = notation ^ times;
 		numerator = integer_part * denominator + fraction_part;
+		if(circular){
+			add_without_reduction(temp);
+		}
 		reduce();
 	}else{
 		numerator = Nota + str;
@@ -975,6 +1025,14 @@ bool RatioNumber::is_fraction() const{
 
 bool is_fraction(const RatioNumber& r){
 	return r.is_fraction();
+}
+
+bool RatioNumber::is_zero() const{
+	return is_fraction() && numerator.is_zero();
+}
+
+bool is_zero(const RatioNumber& r){
+	return r.is_zero();
 }
 
 void RatioNumber::to_INF(){
