@@ -234,6 +234,13 @@ numeric fast_arctan2(const numeric& r, int time, int precis){
 		plus ++;
 		tmp /= 10;
 	}
+	if(r.abs() > 1){
+		auto pid2 = Pi(precis + plus) / 2;
+		if(!r.get_positive()){
+			pid2.negate();
+		}
+		return pid2 - fast_arctan2(r.reciprocal(), time, precis);
+	}
 	fast_start("ARCTANGENT", sol, precis, precis + plus, 0);
 	numeric one_plus_r_r = (r * r + 1);
 	bnint now_n = r.get_numerator() * one_plus_r_r.get_denominator(), now_d = r.get_denominator() * one_plus_r_r.get_numerator();
