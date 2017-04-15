@@ -19,12 +19,16 @@ using namespace std;
 #define _BIG_NUMBER_DYNAMIC_
 #endif
 
-const int BASIC_SIZE = 4;
+constexpr int BASIC_SIZE = 4;
+constexpr int DIGIT = 9;
+typedef int Int;
+constexpr Int IMax = 1000000000;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should >= 3.");
 
 typedef long long int BtoI;
 typedef unsigned long long int uBtoI;
 typedef long double BtoD;
+constexpr BtoI IIMax = 1000000000000000000;
 bool string_overflow = false;
 
 const string cvt_string(const string& str);
@@ -42,11 +46,11 @@ private:
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	mutable int SIZE;
-	mutable int* a;
+	mutable Int* a;
 
 	#else
-	static const int SIZE = BASIC_SIZE;
-	int a[SIZE];
+	static constexpr int SIZE = BASIC_SIZE;
+	Int a[SIZE];
 
 	#endif
 	bool positive;
@@ -96,9 +100,9 @@ public:
 	bool operator >= (const BigNumber& n) const;
 	template <typename T>
 	bool operator >= (const T& n) const;
-	const BigNumber operator + () const;
-	const BigNumber operator - () const;
-	const BigNumber& operator = (BigNumber n);
+	BigNumber operator + () const;
+	BigNumber operator - () const;
+	const BigNumber& operator = (const BigNumber& n);
 	const BigNumber& operator = (const string& str);
 	template <typename T>
 	const BigNumber& operator = (const basic_string<T>& STR);
@@ -118,48 +122,48 @@ public:
 	const BigNumber& operator = (const T& n);
 	template <typename T>
 	const BigNumber& operator = (T* const n);
-	const BigNumber abs() const;
-	const BigNumber abs_inverse() const;
-	const BigNumber& operator += (BigNumber n);
+	BigNumber abs() const;
+	BigNumber abs_inverse() const;
+	const BigNumber& operator += (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator += (const T& n);
 	const BigNumber& operator ++ ();
-	const BigNumber operator ++ (int null);
-	const BigNumber operator + (const BigNumber& n) const;
+	BigNumber operator ++ (int null);
+	BigNumber operator + (const BigNumber& n) const;
 	template<typename T>
-	const BigNumber operator + (const T& n) const;
-	const BigNumber& operator -= (BigNumber n);
+	BigNumber operator + (const T& n) const;
+	const BigNumber& operator -= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator -= (const T& n);
 	const BigNumber& operator -- ();
-	const BigNumber operator -- (int null);
-	const BigNumber operator - (const BigNumber& n) const;
+	BigNumber operator -- (int null);
+	BigNumber operator - (const BigNumber& n) const;
 	template <typename T>
-	const BigNumber operator - (const T& n) const;
-	const BigNumber& operator *= (BigNumber n);
+	BigNumber operator - (const T& n) const;
+	const BigNumber& operator *= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator *= (const T& n);
-	const BigNumber operator * (const BigNumber& n) const;
+	BigNumber operator * (const BigNumber& n) const;
 	template <typename T>
-	const BigNumber operator * (const T& n) const;
-	const BigNumber& operator /= (BigNumber n);
+	BigNumber operator * (const T& n) const;
+	const BigNumber& operator /= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator /= (const T& n);
-	const BigNumber operator / (const BigNumber& n) const;
+	BigNumber operator / (const BigNumber& n) const;
 	template <typename T>
-	const BigNumber operator / (const T& n) const;
-	const BigNumber& operator %= (BigNumber n);
+	BigNumber operator / (const T& n) const;
+	const BigNumber& operator %= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator %= (const T& n);
-	const BigNumber operator % (const BigNumber& n) const;
+	BigNumber operator % (const BigNumber& n) const;
 	template <typename T>
-	const BigNumber operator % (const T& n) const;
-	const BigNumber& operator ^= (BigNumber n);
+	BigNumber operator % (const T& n) const;
+	const BigNumber& operator ^= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator ^= (const T& n);
-	const BigNumber operator ^ (const BigNumber& n) const;
+	BigNumber operator ^ (const BigNumber& n) const;
 	template <typename T>
-	const BigNumber operator ^ (const T& n) const;
+	BigNumber operator ^ (const T& n) const;
 	const string str(int notation = 10) const;
 	size_t Sizeof() const{return SIZE;}
 	void print() const{cout << (*this);}
@@ -170,6 +174,29 @@ public:
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
+
+	#ifdef _BIG_NUMBER_DYNAMIC_
+	void coresize(const BigNumber&& n) const;
+	void cofit(const BigNumber&& n) const;
+	const BigNumber& PURE_assignment(BigNumber&& n);
+	const BigNumber& PURE_ADD_assignment(const BigNumber&& n);
+	const BigNumber& PURE_MINUS_assignment(const BigNumber&& n);
+	BigNumber(BigNumber&& n);
+	bool operator == (const BigNumber&& n) const;
+	bool operator != (const BigNumber&& n) const;
+	bool operator < (const BigNumber&& n) const;
+	bool operator <= (const BigNumber&& n) const;
+	bool operator > (const BigNumber&& n) const;
+	bool operator >= (const BigNumber&& n) const;
+	const BigNumber& operator = (BigNumber&& n);
+	const BigNumber& operator += (BigNumber&& n);
+	BigNumber operator + (BigNumber&& n) const;
+	const BigNumber& operator -= (BigNumber&& n);
+	BigNumber operator - (BigNumber&& n) const;
+	const BigNumber& operator *= (BigNumber&& n);
+	BigNumber operator * (BigNumber&& n) const;
+
+	#endif
 };
 
 BigNumber HI = 0, LO = 0;
@@ -181,8 +208,8 @@ friend class BigNumber;
 private:
 
 #ifdef _BIG_NUMBER_STATIC_
-	static const int SIZE = 2 * BASIC_SIZE;
-	int a[SIZE];
+	static constexpr int SIZE = 2 * BASIC_SIZE;
+	Int a[SIZE];
 	bool positive;
 	void PASS_BY_STRING(string str);
 	friend ostream& operator << (ostream& os, const BigBigNumber& n);
@@ -210,7 +237,7 @@ void BigNumber::resize() const{ //fit
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	if(getSize() < SIZE && getSize() > BASIC_SIZE){
 		size_t target_size = getSize();
-		int* tmp = new int[target_size];
+		Int* tmp = new Int[target_size];
 		for(int i = 0;i < target_size;i++){
 			tmp[i] = a[i];
 		}
@@ -224,7 +251,7 @@ void BigNumber::resize() const{ //fit
 void BigNumber::resize(size_t n) const{ //large
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	if(n > BASIC_SIZE && n > SIZE){
-		int* tmp = new int[n];
+		Int* tmp = new Int[n];
 		for(int i = 0;i < SIZE;i++){
 			tmp[i] = a[i];
 		}
@@ -265,6 +292,9 @@ int BigNumber::getSize() const{
 	return 1;
 }
 const BigNumber& BigNumber::PURE_assignment(const BigNumber& n){
+	if(this == &n){
+		return (*this);
+	}
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	resize(n.SIZE);
 
@@ -316,18 +346,18 @@ void BigNumber::PASS_BY_STRING(string str){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	SIZE = BASIC_SIZE;
-	if(str.length() > 9 * SIZE){
+	if(str.length() > DIGIT * SIZE){
 		SIZE = (str.length() - 1) / 9 + 1;
 	}
 	delete[] a;
-	a = new int[SIZE];
+	a = new Int[SIZE];
 
 	#else
-	if(str.length() > 9 * SIZE){
-		while(str.length() > 9 * SIZE){
+	if(str.length() > DIGIT * SIZE){
+		while(str.length() > DIGIT * SIZE){
 			str.erase(0, 1);
 		}
-		cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+		cout << "Overflow when creating a number with too more digits!" << endl << "save the last " << DIGIT * SIZE << " digit only." << endl;
 	}
 
 	#endif
@@ -338,14 +368,14 @@ void BigNumber::PASS_BY_STRING(string str){
 		return;
 	}
 	stringstream ss;
-	int t = (str.length() - 1) / 9;
+	int t = (str.length() - 1) / DIGIT;
 	for(int i = 0;i < t;i++){
-		string sub = str.substr(str.length() - 9, 9);
+		string sub = str.substr(str.length() - DIGIT, DIGIT);
 		ss << sub;
 		ss >> a[i];
 		ss.clear();
 		ss.str("");
-		str = str.erase(str.length() - 9, 9);
+		str = str.erase(str.length() - DIGIT, DIGIT);
 	}
 	ss << str;
 	ss >> a[t];
@@ -375,7 +405,7 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	SIZE = BASIC_SIZE;
 	delete[] a;
-	a = new int[SIZE];
+	a = new Int[SIZE];
 
 	#endif
 	for(int i = 0;i < SIZE;i++){
@@ -403,22 +433,22 @@ const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
 	#endif
 	for(int i = 0;i < SIZE;i++){
 		a[i] += n.a[i];
-		if(a[i] >= 1000000000 && i < SIZE - 1){
+		if(a[i] >= IMax && i < SIZE - 1){
 			a[i + 1] ++;
-			a[i] -= 1000000000;
+			a[i] -= IMax;
 		}
 	}
-	if(a[SIZE - 1] >= 1000000000){
+	if(a[SIZE - 1] >= IMax){
 
 		#ifdef _BIG_NUMBER_DYNAMIC_
 		int temp = SIZE;
 		resize(SIZE + 1);
-		a[temp - 1] -= 1000000000;
+		a[temp - 1] -= IMax;
 		a[temp] ++;
 
 		#else
-		cout << "Overflow when adding a number!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
-		a[SIZE - 1] -= 1000000000;
+		cout << "Overflow when adding a number!" << endl << "save the last " << DIGIT * SIZE << " digit only." << endl;
+		a[SIZE - 1] -= IMax;
 		string_overflow = true;
 
 		#endif
@@ -440,7 +470,7 @@ const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber& n){
 		a[i] -= n.a[i];
 		if(a[i] < 0 && i < SIZE - 1){
 			a[i + 1] --;
-			a[i] += 1000000000;
+			a[i] += IMax;
 		}
 	}
 
@@ -510,7 +540,7 @@ BigNumber::BigNumber(){
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	SIZE = BASIC_SIZE;
-	a = new int[SIZE];
+	a = new Int[SIZE];
 
 	#endif
 	positive = true;
@@ -528,10 +558,13 @@ BigNumber::BigNumber(const T& n){
 	(*this) = n;
 }
 BigNumber::BigNumber(const BigNumber& n){
+	if(this == &n){
+		return;
+	}
 
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	SIZE = n.SIZE;
-	a = new int[SIZE];
+	a = new Int[SIZE];
 
 	#endif
 	for(int i = 0;i < SIZE;i++){
@@ -563,12 +596,12 @@ int BigNumber::getDigit(int n) const{
 	resize();
 
 	#endif
-	if(n <= 0 || n > 9 * SIZE){
+	if(n <= 0 || n > DIGIT * SIZE){
 		return -1;
 	}
-	int index = (n - 1) / 9;
+	int index = (n - 1) / DIGIT;
 	int target = a[index];
-	n = (n - 1) % 9;
+	n = (n - 1) % DIGIT;
 	for(int i = 1;i <= n;i++){
 		target /= 10;
 	}
@@ -711,17 +744,19 @@ template <typename T>
 bool BigNumber::operator >= (const T& n) const{
 	return (*this) > n || (*this) == n;
 }
-const BigNumber BigNumber::operator + () const{
+BigNumber BigNumber::operator + () const{
 	return (*this);
 }
-const BigNumber BigNumber::operator - () const{
+BigNumber BigNumber::operator - () const{
 	BigNumber temp = (*this);
 	temp.positive = !temp.positive;
 	return temp;
 }
-const BigNumber& BigNumber::operator = (BigNumber n){
-	PURE_assignment(n);
-	positive = n.positive;
+const BigNumber& BigNumber::operator = (const BigNumber& n){
+	if(this != &n){
+		PURE_assignment(n);
+		positive = n.positive;
+	}
 	return (*this);
 }
 const BigNumber& BigNumber::operator = (const string& str){
@@ -791,7 +826,7 @@ const BigNumber& BigNumber::operator = (const T& n){
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	SIZE = BASIC_SIZE;
 	delete[] a;
-	a = new int[SIZE];
+	a = new Int[SIZE];
 
 	#endif
 	if(is_scalar<T>::value){ //faster
@@ -801,15 +836,15 @@ const BigNumber& BigNumber::operator = (const T& n){
 		if(is_signed<T>::value){
 			long long int temp = static_cast<long long int>(n);
 			positive = (n >= 0);
-			a[2] = static_cast<int>((temp / 1000000000000000000) * (temp < 0 ? -1 : 1));
-			a[1] = static_cast<int>((temp % 1000000000000000000 / 1000000000) * (temp < 0 ? -1 : 1));
-			a[0] = static_cast<int>((temp % 1000000000) * (temp < 0 ? -1 : 1));
+			a[2] = static_cast<int>((temp / IIMax) * (temp < 0 ? -1 : 1));
+			a[1] = static_cast<int>((temp % IIMax / IMax) * (temp < 0 ? -1 : 1));
+			a[0] = static_cast<int>((temp % IMax) * (temp < 0 ? -1 : 1));
 		}else{
 			unsigned long long int temp = static_cast<long long int>(n);
 			positive = true;
-			a[2] = static_cast<int>(temp / 1000000000000000000);
-			a[1] = static_cast<int>(temp % 1000000000000000000 / 1000000000);
-			a[0] = static_cast<int>(temp % 1000000000);
+			a[2] = static_cast<int>(temp / IIMax);
+			a[1] = static_cast<int>(temp % IIMax / IMax);
+			a[0] = static_cast<int>(temp % IMax);
 		}
 	}else{
 		stringstream ss;
@@ -821,21 +856,21 @@ const BigNumber& BigNumber::operator = (const T& n){
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (T* const n){
-	long long int temp = reinterpret_cast<long long int>(n);
+	ptrdiff_t temp = reinterpret_cast<ptrdiff_t>(n);
 	(*this) = temp;
 	return (*this);
 }
-const BigNumber BigNumber::abs() const{
+BigNumber BigNumber::abs() const{
 	BigNumber temp = (*this);
 	temp.positive = true;
 	return temp;
 }
-const BigNumber BigNumber::abs_inverse() const{
+BigNumber BigNumber::abs_inverse() const{
 	BigNumber temp = (*this);
 	temp.positive = false;
 	return temp;
 }
-const BigNumber& BigNumber::operator += (BigNumber n){
+const BigNumber& BigNumber::operator += (const BigNumber& n){
 	if(positive == n.positive){ //straightly add
 		PURE_ADD_assignment(n);
 	}else if(abs() >= n.abs()){
@@ -857,23 +892,23 @@ const BigNumber& BigNumber::operator ++ (){
 	(*this) += 1;
 	return (*this);
 }
-const BigNumber BigNumber::operator ++ (int null){
+BigNumber BigNumber::operator ++ (int null){
 	BigNumber tmp = (*this);
 	++(*this);
 	return tmp;
 }
-const BigNumber BigNumber::operator + (const BigNumber& n) const{
+BigNumber BigNumber::operator + (const BigNumber& n) const{
 	BigNumber temp = (*this);
 	temp += n;
 	return temp;
 }
 template<typename T>
-const BigNumber BigNumber::operator + (const T& n) const{
+BigNumber BigNumber::operator + (const T& n) const{
 	BigNumber temp = (*this), tmp = n;
 	temp += tmp;
 	return temp;
 }
-const BigNumber& BigNumber::operator -= (BigNumber n){
+const BigNumber& BigNumber::operator -= (const BigNumber& n){
 	if(positive != n.positive){ //straightly add
 		PURE_ADD_assignment(n);
 	}else if(abs() >= n.abs()){
@@ -895,24 +930,24 @@ const BigNumber& BigNumber::operator -- (){
 	(*this) -= 1;
 	return (*this);
 }
-const BigNumber BigNumber::operator -- (int null){
+BigNumber BigNumber::operator -- (int null){
 	BigNumber tmp = (*this);
 	--(*this);
 	return tmp;
 }
-const BigNumber BigNumber::operator - (const BigNumber& n) const{
+BigNumber BigNumber::operator - (const BigNumber& n) const{
 	BigNumber temp = (*this);
 	temp -= n;
 	return temp;
 }
 template <typename T>
-const BigNumber BigNumber::operator - (const T& n) const{
+BigNumber BigNumber::operator - (const T& n) const{
 	BigNumber temp = (*this), tmp = n;
 	temp -= tmp;
 	return temp;
 }
-const BigNumber& BigNumber::operator *= (BigNumber n){
-	static const int inteval = 700;
+const BigNumber& BigNumber::operator *= (const BigNumber& n){
+	static constexpr int inteval = 700;
 	if(n.is_zero()){
 		(*this) = n;
 		return (*this);
@@ -937,7 +972,7 @@ const BigNumber& BigNumber::operator *= (BigNumber n){
 	#ifdef _BIG_NUMBER_DYNAMIC_
 	coresize(n);
 	bool solution_positive = (positive == n.positive);
-	if(digit() + n.digit() > 9 * SIZE){
+	if(digit() + n.digit() > DIGIT * SIZE){
 		resize(getSize() + n.getSize());
 	}
 	BigNumber base = (*this);
@@ -960,7 +995,7 @@ const BigNumber& BigNumber::operator *= (BigNumber n){
 	be_divided = 0;
 	divide = 0;
 	bool solution_positive = (positive == n.positive);
-	if(digit() + n.digit() > 9 * SIZE){
+	if(digit() + n.digit() > DIGIT * SIZE){
 		BigBigNumber base = (*this);
 		BigBigNumber sol = 0;
 		int t = n.digit();
@@ -977,7 +1012,7 @@ const BigNumber& BigNumber::operator *= (BigNumber n){
 		sol.positive = solution_positive;
 		sol.proliferate();
 		if(HI != 0){
-			cout << "Overflow when multiplying!" << endl << "save the last " << 9 * SIZE << " digit only." << endl;
+			cout << "Overflow when multiplying!" << endl << "save the last " << DIGIT * SIZE << " digit only." << endl;
 			string_overflow = true;
 		} //overflow alerk
 		(*this) = LO;
@@ -1007,13 +1042,13 @@ const BigNumber& BigNumber::operator *= (const T& n){
 	(*this) *= temp;
 	return (*this);
 }
-const BigNumber BigNumber::operator * (const BigNumber& n) const{
+BigNumber BigNumber::operator * (const BigNumber& n) const{
 	BigNumber temp = (*this);
 	temp *= n;
 	return temp;
 }
 template <typename T>
-const BigNumber BigNumber::operator * (const T& n) const{
+BigNumber BigNumber::operator * (const T& n) const{
 	BigNumber temp = (*this), tmp = n;
 	temp *= tmp;
 	return temp;
@@ -1046,7 +1081,7 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 	LO = quo;
 	HI.coresize(LO);
 }
-const BigNumber& BigNumber::operator /= (BigNumber n){
+const BigNumber& BigNumber::operator /= (const BigNumber& n){
 	if(divide == n && be_divided == (*this)){
 		(*this) = LO;
 		return (*this);
@@ -1071,18 +1106,18 @@ const BigNumber& BigNumber::operator /= (const T& n){
 	(*this) /= temp;
 	return (*this);
 }
-const BigNumber BigNumber::operator / (const BigNumber& n) const{
+BigNumber BigNumber::operator / (const BigNumber& n) const{
 	BigNumber temp = (*this);
 	temp /= n;
 	return temp;
 }
 template <typename T>
-const BigNumber BigNumber::operator / (const T& n) const{
+BigNumber BigNumber::operator / (const T& n) const{
 	BigNumber temp = (*this), tmp = n;
 	temp /= tmp;
 	return temp;
 }
-const BigNumber& BigNumber::operator %= (BigNumber n){
+const BigNumber& BigNumber::operator %= (const BigNumber& n){
 	if(divide == n && be_divided == (*this)){
 		(*this) = HI;
 		return (*this);
@@ -1097,18 +1132,18 @@ const BigNumber& BigNumber::operator %= (const T& n){
 	(*this) %= temp;
 	return (*this);
 }
-const BigNumber BigNumber::operator % (const BigNumber& n) const{
+BigNumber BigNumber::operator % (const BigNumber& n) const{
 	BigNumber temp = (*this);
 	temp %= n;
 	return temp;
 }
 template <typename T>
-const BigNumber BigNumber::operator % (const T& n) const{
+BigNumber BigNumber::operator % (const T& n) const{
 	BigNumber temp = n, tmp = (*this);
 	tmp %= temp;
 	return tmp;
 }
-const BigNumber& BigNumber::operator ^= (BigNumber n){
+const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 	if(n < 0){
 		(*this) = 0;
 		return (*this);
@@ -1139,13 +1174,13 @@ const BigNumber& BigNumber::operator ^= (const T& n){
 	(*this) ^= n;
 	return (*this);
 }
-const BigNumber BigNumber::operator ^ (const BigNumber& n) const{
+BigNumber BigNumber::operator ^ (const BigNumber& n) const{
 	BigNumber temp = (*this);
 	temp ^= n;
 	return temp;
 }
 template <typename T>
-const BigNumber BigNumber::operator ^ (const T& n) const{
+BigNumber BigNumber::operator ^ (const T& n) const{
 	BigNumber temp = n;
 	return (*this) ^ temp;
 }
@@ -1161,7 +1196,7 @@ void BigNumber::divide2(){
 	a[0] /= 2;
 	for(int i = 1;i < SIZE;i++){
 		if(a[i] % 2 != 0){
-			a[i - 1] += 500000000;
+			a[i - 1] += IMax / 2;
 		}
 		a[i] /= 2;
 	}
@@ -1174,8 +1209,8 @@ BigNumber::operator long long int() const{
 		tmp = LLONG_MIN;
 	}else{
 		tmp += a[0];
-		tmp += a[1] * static_cast<long long int>(1000000000);
-		tmp += a[2] * 1000000000000000000;
+		tmp += a[1] * static_cast<long long int>(IMax);
+		tmp += a[2] * IIMax;
 		tmp *= (positive ? 1 : -1);
 	}
 	return tmp;
@@ -1188,8 +1223,8 @@ BigNumber::operator unsigned long long int() const{
 		tmp = 0;
 	}else{
 		tmp += a[0];
-		tmp += a[1] * static_cast<unsigned long long int>(1000000000);
-		tmp += a[2] * 1000000000000000000;
+		tmp += a[1] * static_cast<unsigned long long int>(IMax);
+		tmp += a[2] * IIMax;
 	}
 	return tmp;
 }
@@ -1311,7 +1346,7 @@ ostream& operator << (ostream& os, const BigNumber& n){
 			}
 			os << n.a[i];
 			for(int j = i - 1;j >= 0;j--){
-				os.width(9);
+				os.width(DIGIT);
 				os.fill('0');
 				os << n.a[j];
 			}
@@ -1342,8 +1377,8 @@ void BigBigNumber::PASS_BY_STRING(string str){
 	while(str.length() > 0 && str[0] == '0'){
 		str.erase(0, 1);
 	}
-	if(str.length() > 9 * SIZE){
-		while(str.length() > 9 * SIZE){
+	if(str.length() > DIGIT * SIZE){
+		while(str.length() > DIGIT * SIZE){
 			str.erase(0, 1);
 		}
 	}
@@ -1354,14 +1389,14 @@ void BigBigNumber::PASS_BY_STRING(string str){
 		return;
 	}
 	stringstream ss;
-	int t = (str.length() - 1) / 9;
+	int t = (str.length() - 1) / DIGIT;
 	for(int i = 0;i < t;i++){
-		string sub = str.substr(str.length() - 9, 9);
+		string sub = str.substr(str.length() - DIGIT, DIGIT);
 		ss << sub;
 		ss >> a[i];
 		ss.clear();
 		ss.str("");
-		str = str.erase(str.length() - 9, 9);
+		str = str.erase(str.length() - DIGIT, DIGIT);
 	}
 	ss << str;
 	ss >> a[t];
@@ -1410,18 +1445,18 @@ const BigBigNumber& BigBigNumber::operator = (const T& n){
 			for(int i = SIZE - 1;i > 2;i--){
 				a[i] = 0;
 			}
-			a[2] = static_cast<int>((n / 1000000000000000000) * (n < 0 ? -1 : 1));
-			a[1] = static_cast<int>((n % 1000000000000000000 / 1000000000) * (n < 0 ? -1 : 1));
-			a[0] = static_cast<int>((n % 1000000000) * (n < 0 ? -1 : 1));
+			a[2] = static_cast<int>((n / IIMax) * (n < 0 ? -1 : 1));
+			a[1] = static_cast<int>((n % IIMax / IMax) * (n < 0 ? -1 : 1));
+			a[0] = static_cast<int>((n % IMax) * (n < 0 ? -1 : 1));
 		}else{
 			unsigned long long int temp = static_cast<long long int>(n);
 			positive = true;
 			for(int i = SIZE - 1;i > 2;i--){
 				a[i] = 0;
 			}
-			a[2] = static_cast<int>(n / 1000000000000000000);
-			a[1] = static_cast<int>(n % 1000000000000000000 / 1000000000);
-			a[0] = static_cast<int>(n % 1000000000);
+			a[2] = static_cast<int>(n / IIMax);
+			a[1] = static_cast<int>(n % IIMax / IMax);
+			a[0] = static_cast<int>(n % IMax);
 		}
 	}else{
 		stringstream ss;
@@ -1434,9 +1469,9 @@ const BigBigNumber& BigBigNumber::operator = (const T& n){
 const BigBigNumber& BigBigNumber::PURE_ADD_assignment(const BigBigNumber& n){
 	for(int i = 0;i < SIZE;i++){
 		a[i] += n.a[i];
-		if(a[i] >= 1000000000 && i < SIZE - 1){
+		if(a[i] >= IMax && i < SIZE - 1){
 			a[i + 1] ++;
-			a[i] -= 1000000000;
+			a[i] -= IMax;
 		}
 	}
 	return (*this);
@@ -1476,7 +1511,7 @@ ostream& operator << (ostream& os, const BigBigNumber& n){
 			}
 			os << n.a[i];
 			for(int j = i - 1;j >= 0;j--){
-				os.width(9);
+				os.width(DIGIT);
 				os.fill('0');
 				os << n.a[j];
 			}
@@ -1521,6 +1556,235 @@ void negate(BigNumber& n){
 void Typeof(const BigNumber& n){
 	cout << "BigNumber";
 }
+
+#ifdef _BIG_NUMBER_DYNAMIC_
+void BigNumber::coresize(const BigNumber&& n) const{
+	cofit(move(n));
+}
+void BigNumber::cofit(const BigNumber&& n) const{
+	resize();
+}
+const BigNumber& BigNumber::PURE_assignment(BigNumber&& n){
+	if(this != &n){
+		a = n.a;
+		n.a = nullptr;
+	}
+	return (*this);
+}
+const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber&& n){
+	coresize(n); //as lvalue
+	for(int i = 0;i < SIZE;i++){
+		a[i] += n.a[i];
+		if(a[i] >= IMax && i < SIZE - 1){
+			a[i + 1] ++;
+			a[i] -= IMax;
+		}
+	}
+	if(a[SIZE - 1] >= IMax){
+		int temp = SIZE;
+		resize(SIZE + 1);
+		a[temp - 1] -= IMax;
+		a[temp] ++;
+	}
+	cofit(move(n));
+	return (*this);
+}
+const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber&& n){
+	coresize(n); //as lvalue
+	for(int i = 0;i < SIZE;i++){
+		a[i] -= n.a[i];
+		if(a[i] < 0 && i < SIZE - 1){
+			a[i + 1] --;
+			a[i] += IMax;
+		}
+	}
+	cofit(move(n));
+	return (*this);
+}
+BigNumber::BigNumber(BigNumber&& n){
+	if(this != &n){
+		SIZE = n.SIZE;
+		a = n.a;
+		n.a = nullptr;
+		positive = n.positive;
+	}
+}
+bool BigNumber::operator == (const BigNumber&& n) const{
+	coresize(n); //as lvalue
+	bool zero = true;
+	for(int i = 0;i < SIZE;i++){
+		if(a[i] != n.a[i]){
+			cofit(move(n));
+			return false;
+		}
+		if(a[i] != 0){
+			zero = false;
+		}
+	}
+	cofit(move(n));
+	return zero || (positive == n.positive); //if 0, don't ask +-
+}
+bool BigNumber::operator != (const BigNumber&& n) const{
+	return !(*this == move(n));
+}
+bool BigNumber::operator < (const BigNumber&& n) const{
+	coresize(n); //as lvalue
+	bool same_number = true, pure_number_smaller = false, zero = true;
+	for(int i = SIZE - 1;i >= 0;i--){
+		if(zero && (a[i] != 0 || n.a[i] != 0)){
+			zero = false;
+		}
+		if(a[i] > n.a[i]){
+			pure_number_smaller = false;
+			same_number = false;
+			break;
+		}else if(a[i] < n.a[i]){
+			pure_number_smaller = true;
+			same_number = false;
+			break;
+		}
+	}
+	cofit(move(n));
+	if(!same_number){ //impossibly be 0
+		if(positive && !n.positive){return false;}
+		else if(!positive && n.positive){return true;}
+		else if(positive){return pure_number_smaller;}
+		else{return !pure_number_smaller;}
+	}else{ //possibly be 0
+		if(zero){return false;}
+		else if(!positive && n.positive){return true;}
+		else{return false;}
+	}
+}
+bool BigNumber::operator <= (const BigNumber&& n) const{
+	return (*this) < move(n) || (*this) == move(n);
+}
+bool BigNumber::operator > (const BigNumber&& n) const{
+	coresize(n); //as lvalue
+	bool same_number = true, pure_number_larger = false, zero = true;
+	for(int i = SIZE - 1;i >= 0;i--){
+		if(zero && (a[i] != 0 || n.a[i] != 0)){
+			zero = false;
+		}
+		if(a[i] > n.a[i]){
+			pure_number_larger = true;
+			same_number = false;
+			break;
+		}else if(a[i] < n.a[i]){
+			pure_number_larger = false;
+			same_number = false;
+			break;
+		}
+	}
+	cofit(move(n));
+	if(!same_number){ //impossibly be 0
+		if(positive && !n.positive){return true;}
+		else if(!positive && n.positive){return false;}
+		else if(positive){return pure_number_larger;}
+		else{return !pure_number_larger;}
+	}else{ //possibly be 0
+		if(zero){return false;}
+		else if(positive && !n.positive){return true;}
+		else{return false;}
+	}
+}
+bool BigNumber::operator >= (const BigNumber&& n) const{
+	return (*this) > move(n) || (*this) == move(n);
+}
+const BigNumber& BigNumber::operator = (BigNumber&& n){
+	if(this != &n){
+		SIZE = n.SIZE;
+		a = n.a;
+		n.a = nullptr;
+		positive = n.positive;
+	}
+	return (*this);
+}
+const BigNumber& BigNumber::operator += (BigNumber&& n){
+	if(positive == n.positive){ //straightly add
+		PURE_ADD_assignment(move(n));
+	}else if(abs() >= n.abs()){
+		PURE_MINUS_assignment(move(n));
+	}else{
+		const BigNumber temp = (*this);
+		(*this) = move(n);
+		PURE_MINUS_assignment(temp);
+	}
+	return (*this);
+}
+BigNumber BigNumber::operator + (BigNumber&& n) const{
+	BigNumber temp = (*this);
+	temp += move(n);
+	return temp;
+}
+const BigNumber& BigNumber::operator -= (BigNumber&& n){
+	if(positive != n.positive){ //straightly add
+		PURE_ADD_assignment(move(n));
+	}else if(abs() >= n.abs()){
+		PURE_MINUS_assignment(move(n));
+	}else{
+		const BigNumber temp = (*this);
+		(*this) = -move(n);
+		PURE_MINUS_assignment(temp);
+	}
+	return (*this);
+}
+BigNumber BigNumber::operator - (BigNumber&& n) const{
+	BigNumber temp = (*this);
+	temp -= move(n);
+	return temp;
+}
+const BigNumber& BigNumber::operator *= (BigNumber&& n){
+	static constexpr int inteval = 700;
+	if(n.is_zero()){
+		(*this) = n;
+		return (*this);
+	}
+	if(is_ten(n) != -1 && n.getSize() - getSize() < inteval){
+		int time = is_ten(n);
+		BigNumber tmp = move(n);
+		for(int i = 1;i <= time;i++){
+			PURE_PSEUDOMULTIPLE_assignment();
+			tmp.PURE_PSEUDODIVIDE_assignment();
+		}
+		(*this) *= tmp;
+		return (*this);
+	}
+	if(getSize() < n.getSize()){
+		BigNumber tmp = move(n);
+		tmp *= (*this);
+		(*this) = tmp;
+		return (*this);
+	}
+	coresize(n); //as lvalue
+	bool solution_positive = (positive == n.positive);
+	if(digit() + n.digit() > DIGIT * SIZE){
+		resize(getSize() + n.getSize());
+	}
+	BigNumber base = (*this);
+	(*this) = 0;
+	int t = n.digit();
+	for(int i = 2;i <= t;i++){
+		base.PURE_PSEUDOMULTIPLE_assignment();
+	}
+	for(int i = t;i >= 1;i--){
+		int time = n.getDigit(i);
+		for(int j = 1;j <= time;j++){
+			PURE_ADD_assignment(base);
+		}
+		base.PURE_PSEUDODIVIDE_assignment();
+	}
+	positive = solution_positive;
+	resize();
+	return (*this);
+}
+BigNumber BigNumber::operator * (BigNumber&& n) const{
+	BigNumber temp = (*this);
+	temp *= move(n);
+	return temp;
+}
+
+#endif
 
 const string convert_to_utf8(const string& str){
 	return str;
