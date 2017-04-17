@@ -1,49 +1,47 @@
 #ifdef _BIG_NUMBER_DYNAMIC_
 
-constexpr int BASIC_SIZE = 4;
+constexpr size_t BASIC_SIZE = 4;
 constexpr int DIGIT = 9;
 typedef int Int;
-constexpr Int IMax = 1000000000;
-static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should >= 3.");
+constexpr Int IMax = 1'000'000'000;
+static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should larger than 3.");
 
 typedef long long int BtoI;
 typedef unsigned long long int uBtoI;
 typedef long double BtoD;
-constexpr BtoI IIMax = 1000000000000000000;
+constexpr BtoI IIMax = 1'000'000'000'000'000'000;
+static_assert(sizeof(BtoI) >= sizeof(Int) * 2, "BtoI should be 2 or more times larger than Int");
 
 const string cvt_string(const string& str);
 template <typename T>
 const string cvt_string(const basic_string<T>& STR);
 
 class BigNumber;
-class BigBigNumber;
 
 typedef BigNumber bnint;
 
 class BigNumber{
-friend class BigBigNumber;
 private:
-	mutable int SIZE;
-	mutable Int* a;
+	static BtoI m[2];
+	size_t SIZE;
+	Int* a;
 	bool positive;
-	void resize() const;
-	void resize(size_t n) const;
-	void coresize(const BigNumber& n) const;
-	void cofit(const BigNumber& n) const;
-	int getSize() const;
-	const BigNumber& PURE_assignment(const BigNumber& n);
+	void resize();
+	void resize(size_t n);
+	void simple_increment();
+	void simple_decrement();
+	void simple_add(const BigNumber& n);
+	void simple_minus(const BigNumber& n);
+	static void simple_multi(Int x, Int y);
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
-	const BigNumber& PURE_ADD_assignment(const BigNumber& n);
-	const BigNumber& PURE_MINUS_assignment(const BigNumber& n);
 	const BigNumber& PURE_PSEUDOMULTIPLE_assignment();
 	const BigNumber& PURE_PSEUDODIVIDE_assignment();
-	void COMMON_DIVIDE(const BigNumber& n) const;
+	void COMMON_DIVIDE(const BigNumber& n, bool mod);
 	template <typename T>
 	void WIDE_CHAR_PASS(const T& ch);
 	template <typename T>
 	void WIDE_CHARARRAY_PASS(const T* C_STR);
-	int is_ten(const BigNumber& n, bool strict);
 public:
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
@@ -51,9 +49,12 @@ public:
 	template <typename T>
 	BigNumber(const T& n);
 	BigNumber(const BigNumber& n);
+	BigNumber(BigNumber&& n);
 	~BigNumber();
 	size_t digit() const;
 	int getDigit(int n) const;
+	int getSize() const;
+	int getRealSize() const;
 	template <typename T>
 	bool operator == (const T& n) const;
 	bool operator == (const BigNumber& n) const;
@@ -75,6 +76,7 @@ public:
 	BigNumber operator + () const;
 	BigNumber operator - () const;
 	const BigNumber& operator = (const BigNumber& n);
+	const BigNumber& operator = (BigNumber&& n);
 	const BigNumber& operator = (const string& str);
 	template <typename T>
 	const BigNumber& operator = (const basic_string<T>& STR);
@@ -146,46 +148,24 @@ public:
 	operator long long int() const;
 	operator unsigned long long int() const;
 	operator long double() const;
-
-	void coresize(const BigNumber&& n) const;
-	void cofit(const BigNumber&& n) const;
-	const BigNumber& PURE_assignment(BigNumber&& n);
-	const BigNumber& PURE_ADD_assignment(const BigNumber&& n);
-	const BigNumber& PURE_MINUS_assignment(const BigNumber&& n);
-	BigNumber(BigNumber&& n);
-	bool operator == (const BigNumber&& n) const;
-	bool operator != (const BigNumber&& n) const;
-	bool operator < (const BigNumber&& n) const;
-	bool operator <= (const BigNumber&& n) const;
-	bool operator > (const BigNumber&& n) const;
-	bool operator >= (const BigNumber&& n) const;
-	const BigNumber& operator = (BigNumber&& n);
-	const BigNumber& operator += (BigNumber&& n);
-	BigNumber operator + (BigNumber&& n) const;
-	const BigNumber& operator -= (BigNumber&& n);
-	BigNumber operator - (BigNumber&& n) const;
-	const BigNumber& operator *= (BigNumber&& n);
-	BigNumber operator * (BigNumber&& n) const;
 };
 
+BtoI BigNumber::m[2] = {0};
 BigNumber HI = 0, LO = 0;
 static BigNumber be_divided = 0;
 static BigNumber divide = 0;
 
-void BigNumber::resize() const{ //fit
-	if(getSize() < SIZE && getSize() > BASIC_SIZE){
-		size_t target_size = getSize();
-		Int* tmp = new Int[target_size];
-		for(int i = 0;i < target_size;i++){
-			tmp[i] = a[i];
+void BigNumber::resize(){ //fit
+	for(int i = SIZE - 1;i > BASIC_SIZE;i--){
+		if(a[i] != 0){
+			SIZE = i + 1;
+			return;
 		}
-		delete[] a;
-		SIZE = target_size;
-		a = tmp;
 	}
+	SIZE = BASIC_SIZE;
 }
-void BigNumber::resize(size_t n) const{ //large
-	if(n > BASIC_SIZE && n > SIZE){
+void BigNumber::resize(size_t n){ //large
+	if(n > SIZE){
 		Int* tmp = new Int[n];
 		for(int i = 0;i < SIZE;i++){
 			tmp[i] = a[i];
@@ -198,37 +178,170 @@ void BigNumber::resize(size_t n) const{ //large
 		a = tmp;
 	}
 }
-void BigNumber::coresize(const BigNumber& n) const{
-	cofit(n);
-	size_t target_size = (SIZE > n.SIZE) ? SIZE : n.SIZE;
-	resize(target_size);
-	n.resize(target_size);
-}
-void BigNumber::cofit(const BigNumber& n) const{
-	resize();
-	n.resize();
-}
 int BigNumber::getSize() const{
-	for(int i = SIZE - 1;i >= 0;i--){
+	return SIZE;
+}
+int BigNumber::getRealSize() const{
+	for(int i = SIZE - 1;i > 0;i--){
 		if(a[i] != 0){
 			return i + 1;
 		}
 	}
 	return 1;
 }
-const BigNumber& BigNumber::PURE_assignment(const BigNumber& n){
-	if(this == &n){
-		return (*this);
+void BigNumber::simple_increment(){
+	a[0]++;
+	for(int i = 0;i < SIZE - 1;i++){
+		if(a[i] >= IMax){
+			a[i] -= IMax;
+			a[i + 1]++;
+		}else{
+			return;
+		}
 	}
-	resize(n.SIZE);
-	for(int i = 0;i < SIZE && i < n.SIZE;i++){
-		a[i] = n.a[i];
+	if(a[SIZE - 1] >= IMax){
+		a[SIZE - 1] -= IMax;
+		Int* tmp = new Int[SIZE + 1];
+		for(int i = 0;i < SIZE;i++){
+			tmp[i] = a[i];
+		}
+		tmp[SIZE++] = 1;
+		delete[] a;
+		a = tmp;
 	}
-	for(int i = n.SIZE;i < SIZE;i++){
-		a[i] = 0;
+}
+void BigNumber::simple_decrement(){
+	a[0]--;
+	for(int i = 0;i < SIZE - 1;i++){
+		if(a[i] < 0){
+			a[i] += IMax;
+			a[i + 1]--;
+		}else{
+			return;
+		}
 	}
-	resize();
-	return (*this);
+	if(a[SIZE - 1] == 0){
+		SIZE = (SIZE - 1 > BASIC_SIZE) ? (SIZE - 1) : BASIC_SIZE;
+	}else if(a[SIZE - 1] < 0){ //MUST origin 0
+		for(int i = 1;i < BASIC_SIZE;i++){
+			a[i] = 0;
+		}
+		a[0] = 1;
+		positive = false;
+	}
+}
+void BigNumber::simple_add(const BigNumber& n){
+	bool have_SIZE_plus1 = false, less_or_equal = false;
+	if(SIZE < n.SIZE){
+		resize(n.SIZE + 1);
+		SIZE--;
+		less_or_equal = true;
+		have_SIZE_plus1 = true;
+	}else if(SIZE == n.SIZE){
+		less_or_equal = true;
+	}
+	for(int i = 0;i < n.SIZE - 1;i++){
+		a[i] += n.a[i];
+		if(a[i] >= IMax){
+			a[i] -= IMax;
+			a[i + 1]++;
+		}
+	}
+	a[n.SIZE - 1] += n.a[n.SIZE - 1];
+	if(a[n.SIZE - 1] >= IMax){
+		if(!less_or_equal){
+			a[n.SIZE - 1] -= IMax;
+			a[n.SIZE]++;
+			for(int i = n.SIZE;i < SIZE - 1;i++){
+				if(a[i] < IMax){
+					return;
+				}
+				a[i] -= IMax;
+				a[i + 1]++;
+			}
+			if(a[SIZE - 1] >= IMax){
+				resize(SIZE + 1);
+				a[SIZE - 2] -= IMax;
+				a[SIZE - 1]++;
+			}
+		}else{
+			if(have_SIZE_plus1){
+				a[SIZE - 1] -= IMax;
+				a[SIZE]++;
+				SIZE++;
+			}else{
+				resize(SIZE + 1);
+				a[SIZE - 2] -= IMax;
+				a[SIZE - 1]++;
+			}
+		}
+	}
+}
+void BigNumber::simple_minus(const BigNumber& n){
+	const Int* b = nullptr;
+	size_t b_size = 0;
+	bool flag = false, equal = false;
+	if(SIZE < n.SIZE){
+		b = a;
+		b_size = SIZE;
+		a = nullptr;
+		operator = (n);
+		positive = !n.positive;
+		flag = true;
+	}else{
+		b = n.a;
+		b_size = n.SIZE;
+		if(SIZE == n.SIZE){
+			equal = true;
+		}
+	}
+	if(flag || !equal){ //SIZE > BASIC_SIZE and SIZE > b_size
+		for(int i = 0;i < b_size;i++){
+			a[i] -= b[i];
+			if(a[i] < 0){
+				a[i] += IMax;
+				a[i + 1]--;
+			}
+		}
+		for(int i = b_size;i < SIZE - 1;i++){
+			if(a[i] < 0){
+				a[i] += IMax;
+				a[i + 1]--;
+			}
+		}
+		if(a[SIZE - 1] == 0){
+			SIZE--;
+		}
+	}else{ //the most inefficient way
+		for(int i = 0;i < b_size - 1;i++){
+			a[i] -= b[i];
+			if(a[i] < 0){
+				a[i] += IMax;
+				a[i + 1]--;
+			}
+		}
+		a[b_size - 1] -= b[b_size - 1];
+		if(a[b_size - 1] < 0){
+			positive = !positive;
+			for(int i = 0;i < SIZE - 1;i++){
+				if(a[i] > 0){
+					a[i] -= IMax;
+					a[i + 1]++;
+				}
+				a[i] = -a[i];
+			}
+			a[SIZE - 1] = -a[SIZE - 1];
+		}
+		resize();
+	}
+	if(flag){
+		delete[] b;
+	}
+}
+void BigNumber::simple_multi(Int x, Int y){
+	BtoI x_ = x, y_ = y;
+	BtoI sol = x_ * y_;
+	m[0] = sol % IMax, m[1] = sol / IMax;
 }
 void BigNumber::PASS_BY_STRING(string str){
 	//check notation
@@ -267,7 +380,7 @@ void BigNumber::PASS_BY_STRING(string str){
 	}
 	SIZE = BASIC_SIZE;
 	if(str.length() > DIGIT * SIZE){
-		SIZE = (str.length() - 1) / 9 + 1;
+		SIZE = (str.length() - 1) / DIGIT + 1;
 	}
 	delete[] a;
 	a = new Int[SIZE];
@@ -327,53 +440,6 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 	}
 	positive = remain_positive;
 }
-const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber& n){
-	coresize(n);
-	for(int i = 0;i < SIZE;i++){
-		a[i] += n.a[i];
-		if(a[i] >= IMax && i < SIZE - 1){
-			a[i + 1] ++;
-			a[i] -= IMax;
-		}
-	}
-	if(a[SIZE - 1] >= IMax){
-		int temp = SIZE;
-		resize(SIZE + 1);
-		a[temp - 1] -= IMax;
-		a[temp] ++;
-	}
-	cofit(n);
-	return (*this);
-}
-const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber& n){
-	coresize(n);
-	for(int i = 0;i < SIZE;i++){
-		a[i] -= n.a[i];
-		if(a[i] < 0 && i < SIZE - 1){
-			a[i + 1] --;
-			a[i] += IMax;
-		}
-	}
-	cofit(n);
-	return (*this);
-}
-const BigNumber& BigNumber::PURE_PSEUDOMULTIPLE_assignment(){ //pseudomultiple
-	stringstream ss;
-	ss << (*this) << 0;
-	string str = ss.str();
-	BigNumber temp = str;
-	(*this) = temp;
-	return (*this);
-}
-const BigNumber& BigNumber::PURE_PSEUDODIVIDE_assignment(){ //pseudodivide
-	stringstream ss;
-	ss << (*this);
-	string str = ss.str();
-	str.pop_back();
-	BigNumber temp = str;
-	(*this) = temp;
-	return (*this);
-}
 template <typename T>
 void BigNumber::WIDE_CHAR_PASS(const T& ch){
 	basic_string<T> STR;
@@ -384,34 +450,6 @@ template <typename T>
 void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
 	basic_string<T> STR = C_STR;
 	PASS_BY_STRING(cvt_string(STR));
-}
-int BigNumber::is_ten(const BigNumber& n, bool strict = false){
-	if(is_zero()){
-		return -1;
-	}
-	string str = n.str();
-	if(str[0] == '-'){
-		str.erase(0, 1);
-	}
-	if(strict){
-		if(str.find_last_not_of("0") != 0 || str[0] != 1){
-			return -1;
-		}
-		return str.length() - 1;
-	}else{
-		int count = 0;
-		for(int i = str.length() - 1;i >= 0;i--){
-			if(str[i] == '0'){
-				count ++;
-			}else{
-				break;
-			}
-		}
-		if(count == 0){
-			return -1;
-		}
-		return count;
-	}
 }
 BigNumber::BigNumber(){
 	SIZE = BASIC_SIZE;
@@ -427,15 +465,22 @@ BigNumber::BigNumber(const T& n){
 	(*this) = n;
 }
 BigNumber::BigNumber(const BigNumber& n){
-	if(this == &n){
-		return;
+	if(this != &n){
+		SIZE = n.SIZE;
+		a = new Int[SIZE];
+		for(int i = 0;i < SIZE;i++){
+			a[i] = n.a[i];
+		}
+		positive = n.positive;
 	}
-	SIZE = n.SIZE;
-	a = new Int[SIZE];
-	for(int i = 0;i < SIZE;i++){
-		a[i] = n.a[i];
+}
+BigNumber::BigNumber(BigNumber&& n){
+	if(this != &n){
+		SIZE = n.SIZE;
+		a = n.a;
+		n.a = nullptr;
+		positive = n.positive;
 	}
-	positive = n.positive;
 }
 
 BigNumber::~BigNumber(){
@@ -443,16 +488,18 @@ BigNumber::~BigNumber(){
 }
 
 size_t BigNumber::digit() const{
-	stringstream ss;
-	ss << (*this);
-	string str = ss.str();
-	if(str[0] == '-'){
-		str.erase(0, 1);
+	size_t i = SIZE - 1;
+	for(;i > 0;i--){
+		if(a[i] != 0){
+			break;
+		}
 	}
-	return str.length();
+	size_t sol = DIGIT * i + 1;
+	Int tmp = a[i];
+	for(;tmp / 10 != 0;tmp /= 10, sol++);
+	return sol;
 }
 int BigNumber::getDigit(int n) const{
-	resize();
 	if(n <= 0 || n > DIGIT * SIZE){
 		return -1;
 	}
@@ -470,19 +517,22 @@ bool BigNumber::operator == (const T& n) const{
 	return (*this) == temp;
 }
 bool BigNumber::operator == (const BigNumber& n) const{
-	coresize(n);
+	if(SIZE != n.SIZE){
+		return false;
+	}
 	bool zero = true;
 	for(int i = 0;i < SIZE;i++){
 		if(a[i] != n.a[i]){
-			cofit(n);
 			return false;
 		}
-		if(a[i] != 0){
+		if(a[i] != 0 && zero){
+			if(positive != n.positive){
+				return false;
+			}
 			zero = false;
 		}
 	}
-	cofit(n);
-	return zero || (positive == n.positive); //if 0, don't ask +-
+	return true;
 }
 template <typename T>
 bool BigNumber::operator != (const T& n) const{
@@ -492,32 +542,28 @@ bool BigNumber::operator != (const BigNumber& n) const{
 	return !(*this == n);
 }
 bool BigNumber::operator < (const BigNumber& n) const{
-	coresize(n);
-	bool same_number = true, pure_number_smaller = false, zero = true;
-	for(int i = SIZE - 1;i >= 0;i--){
-		if(zero && (a[i] != 0 || n.a[i] != 0)){
-			zero = false;
+	if(SIZE < n.SIZE){
+		return n.positive;
+	}else if(SIZE > n.SIZE){
+		return !positive;
+	}else{
+		int pure_big = 0;
+		for(int i = SIZE - 1;i >= 0;i--){
+			if(a[i] > n.a[i]){
+				pure_big = 1;
+				break;
+			}else if(a[i] < n.a[i]){
+				pure_big = -1;
+				break;
+			}
 		}
-		if(a[i] > n.a[i]){
-			pure_number_smaller = false;
-			same_number = false;
-			break;
-		}else if(a[i] < n.a[i]){
-			pure_number_smaller = true;
-			same_number = false;
-			break;
+		if(pure_big == 0){
+			return false;
+		}else if(pure_big == 1){
+			return !positive;
+		}else{
+			return n.positive;
 		}
-	}
-	cofit(n);
-	if(!same_number){ //impossibly be 0
-		if(positive && !n.positive){return false;}
-		else if(!positive && n.positive){return true;}
-		else if(positive){return pure_number_smaller;}
-		else{return !pure_number_smaller;}
-	}else{ //possibly be 0
-		if(zero){return false;}
-		else if(!positive && n.positive){return true;}
-		else{return false;}
 	}
 }
 template <typename T>
@@ -533,32 +579,28 @@ bool BigNumber::operator <= (const T& n) const{
 	return (*this) < n || (*this) == n;
 }
 bool BigNumber::operator > (const BigNumber& n) const{
-	coresize(n);
-	bool same_number = true, pure_number_larger = false, zero = true;
-	for(int i = SIZE - 1;i >= 0;i--){
-		if(zero && (a[i] != 0 || n.a[i] != 0)){
-			zero = false;
+	if(SIZE < n.SIZE){
+		return !n.positive;
+	}else if(SIZE > n.SIZE){
+		return positive;
+	}else{
+		int pure_big = 0;
+		for(int i = SIZE - 1;i >= 0;i--){
+			if(a[i] > n.a[i]){
+				pure_big = 1;
+				break;
+			}else if(a[i] < n.a[i]){
+				pure_big = -1;
+				break;
+			}
 		}
-		if(a[i] > n.a[i]){
-			pure_number_larger = true;
-			same_number = false;
-			break;
-		}else if(a[i] < n.a[i]){
-			pure_number_larger = false;
-			same_number = false;
-			break;
+		if(pure_big == 0){
+			return false;
+		}else if(pure_big == 1){
+			return positive;
+		}else{
+			return !n.positive;
 		}
-	}
-	cofit(n);
-	if(!same_number){ //impossibly be 0
-		if(positive && !n.positive){return true;}
-		else if(!positive && n.positive){return false;}
-		else if(positive){return pure_number_larger;}
-		else{return !pure_number_larger;}
-	}else{ //possibly be 0
-		if(zero){return false;}
-		else if(positive && !n.positive){return true;}
-		else{return false;}
 	}
 }
 template <typename T>
@@ -583,7 +625,24 @@ BigNumber BigNumber::operator - () const{
 }
 const BigNumber& BigNumber::operator = (const BigNumber& n){
 	if(this != &n){
-		PURE_assignment(n);
+		if(SIZE < n.SIZE || a == nullptr){
+			delete[] a;
+			a = new Int[n.SIZE];
+		}
+		SIZE = n.SIZE;
+		for(int i = 0;i < SIZE;i++){
+			a[i] = n.a[i];
+		}
+		positive = n.positive;
+	}
+	return (*this);
+}
+const BigNumber& BigNumber::operator = (BigNumber&& n){
+	if(this != &n){
+		SIZE = n.SIZE;
+		delete[] a;
+		a = n.a;
+		n.a = nullptr;
 		positive = n.positive;
 	}
 	return (*this);
@@ -696,14 +755,10 @@ BigNumber BigNumber::abs_inverse() const{
 	return temp;
 }
 const BigNumber& BigNumber::operator += (const BigNumber& n){
-	if(positive == n.positive){ //straightly add
-		PURE_ADD_assignment(n);
-	}else if(abs() >= n.abs()){
-		PURE_MINUS_assignment(n);
+	if(positive == n.positive){
+		simple_add(n);
 	}else{
-		const BigNumber temp = (*this);
-		(*this) = n;
-		PURE_MINUS_assignment(temp);
+		simple_minus(n);
 	}
 	return (*this);
 }
@@ -714,7 +769,11 @@ const BigNumber& BigNumber::operator += (const T& n){
 	return (*this);
 }
 const BigNumber& BigNumber::operator ++ (){
-	(*this) += 1;
+	if(positive){
+		simple_increment();
+	}else{
+		simple_decrement();
+	}
 	return (*this);
 }
 BigNumber BigNumber::operator ++ (int null){
@@ -734,14 +793,10 @@ BigNumber BigNumber::operator + (const T& n) const{
 	return temp;
 }
 const BigNumber& BigNumber::operator -= (const BigNumber& n){
-	if(positive != n.positive){ //straightly add
-		PURE_ADD_assignment(n);
-	}else if(abs() >= n.abs()){
-		PURE_MINUS_assignment(n);
+	if(positive != n.positive){
+		simple_add(n);
 	}else{
-		const BigNumber temp = (*this);
-		(*this) = -n;
-		PURE_MINUS_assignment(temp);
+		simple_minus(n);
 	}
 	return (*this);
 }
@@ -752,7 +807,11 @@ const BigNumber& BigNumber::operator -= (const T& n){
 	return (*this);
 }
 const BigNumber& BigNumber::operator -- (){
-	(*this) -= 1;
+	if(!positive){
+		simple_increment();
+	}else{
+		simple_decrement();
+	}
 	return (*this);
 }
 BigNumber BigNumber::operator -- (int null){
@@ -772,47 +831,55 @@ BigNumber BigNumber::operator - (const T& n) const{
 	return temp;
 }
 const BigNumber& BigNumber::operator *= (const BigNumber& n){
-	static constexpr int inteval = 700;
-	if(n.is_zero()){
-		(*this) = n;
-		return (*this);
-	}
-	if(is_ten(n) != -1 && n.getSize() - getSize() < inteval){
-		int time = is_ten(n);
-		BigNumber tmp = n;
-		for(int i = 1;i <= time;i++){
-			PURE_PSEUDOMULTIPLE_assignment();
-			tmp.PURE_PSEUDODIVIDE_assignment();
+	if(n.SIZE == BASIC_SIZE){
+		if(SIZE == BASIC_SIZE && getRealSize() + n.getRealSize() <= BASIC_SIZE){
+			Int b[BASIC_SIZE] = {0};
+			for(int i = 0;i < n.getRealSize();i++){
+				Int tmp = 0;
+				for(int j = 0;j < getRealSize();j++){
+					simple_multi(a[j], n.a[i]);
+					b[i + j] += m[0] + tmp;
+					tmp = m[1];
+					if(b[i + j] >= IMax){
+						b[i + j] -= IMax;
+						tmp++;
+					}
+				}
+				b[i + getRealSize()] += tmp;
+			}
+			for(int i = 0;i < BASIC_SIZE;i++){
+				a[i] = b[i];
+			}
+			if(positive == n.positive){
+				positive = true;
+			}else{
+				positive = false;
+			}
+			return (*this);
+		}else if(n.getRealSize() == 1){
+			Int tmp = 0;
+			for(int i = 0;i < SIZE;i++){
+				simple_multi(a[i], n.a[0]);
+				a[i] = m[0] + tmp;
+				tmp = m[1];
+				if(a[i] >= IMax){
+					a[i] -= IMax;
+					tmp++;
+				}
+			}
+			if(tmp > 0){
+				resize(SIZE + 1);
+				a[SIZE - 1] = tmp;
+			}
+			if(positive == n.positive){
+				positive = true;
+			}else{
+				positive = false;
+			}
+			return (*this);
 		}
-		(*this) *= tmp;
-		return (*this);
 	}
-	if(getSize() < n.getSize()){
-		BigNumber tmp = n;
-		tmp *= (*this);
-		(*this) = tmp;
-		return (*this);
-	}
-	coresize(n);
-	bool solution_positive = (positive == n.positive);
-	if(digit() + n.digit() > DIGIT * SIZE){
-		resize(getSize() + n.getSize());
-	}
-	BigNumber base = (*this);
-	(*this) = 0;
-	int t = n.digit();
-	for(int i = 2;i <= t;i++){
-		base.PURE_PSEUDOMULTIPLE_assignment();
-	}
-	for(int i = t;i >= 1;i--){
-		int time = n.getDigit(i);
-		for(int j = 1;j <= time;j++){
-			PURE_ADD_assignment(base);
-		}
-		base.PURE_PSEUDODIVIDE_assignment();
-	}
-	positive = solution_positive;
-	resize();
+	(*this) = (*this) * n; //move
 	return (*this);
 }
 template <typename T>
@@ -822,8 +889,23 @@ const BigNumber& BigNumber::operator *= (const T& n){
 	return (*this);
 }
 BigNumber BigNumber::operator * (const BigNumber& n) const{
-	BigNumber temp = (*this);
-	temp *= n;
+	BigNumber temp;
+	size_t a_size = getRealSize(), b_size = n.getRealSize();
+	temp.resize(a_size + b_size);
+	for(int i = 0;i < b_size;i++){
+		Int tmp = 0;
+		for(int j = 0;j < a_size;j++){
+			simple_multi(a[j], n.a[i]);
+			temp.a[i + j] += m[0] + tmp;
+			tmp = m[1];
+			if(temp.a[i + j] >= IMax){
+				temp.a[i + j] -= IMax;
+				tmp++;
+			}
+		}
+		temp.a[i + a_size] += tmp;
+	}
+	temp.resize();
 	return temp;
 }
 template <typename T>
@@ -832,8 +914,115 @@ BigNumber BigNumber::operator * (const T& n) const{
 	temp *= tmp;
 	return temp;
 }
-void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
-	be_divided = (*this);
+void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
+	BtoI BIMax = IMax, remain = 0;
+	BtoI a_size = getRealSize(), b_size = n.getRealSize();
+	BtoI target_size = a_size - b_size + 1;
+	if(target_size <= 0){
+		if(!mod){
+			SIZE = BASIC_SIZE;
+			for(int i = 0;i < BASIC_SIZE;i++){
+				a[i] = 0;
+			}
+		}
+		return;
+	}
+	Int* quo = nullptr;
+	if(!mod){
+		quo = new Int[target_size];
+	}
+	for(int i = target_size - 1;i >= 0;i--){
+		Int newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1], head = 0;
+		if(newhead == 0){
+			if(!mod){
+				quo[i] = 0;
+			}
+			remain = a[b_size - 1 + i];
+			continue;
+		}else if(remain != 0){
+			a[b_size + i] = 0;
+		}
+		//try
+		Int remin = -1, remax = -1, regap = 0;
+		while(head != newhead){ //iterate
+			if(newhead - head == regap){
+				if(remin != head || remax != newhead){
+					remin = head, remax = newhead;
+				}else{ //if repeating
+					if(regap == 1){ //the minimum one is solution
+						break;
+					}
+					newhead = (newhead + head) / 2; //get into medium
+				}
+			}else{
+				if(newhead > head){
+					regap = newhead - head;
+					remin = head, remax = newhead;
+				}
+			}
+			BtoI differ = head - newhead;
+			head = newhead;
+			for(int j = 0;j < b_size - 1;j++){
+				BtoI buffer = differ * n.a[j];
+				a[i + j] += buffer % BIMax;
+				a[i + j + 1] += buffer / BIMax;
+				while(a[i + j] >= IMax){
+					a[i + j] -= IMax;
+					a[i + j + 1]++;
+				}
+				while(a[i + j] < 0){
+					a[i + j] += IMax;
+					a[i + j + 1]--;
+				}
+			}
+			newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1];
+		}
+		if(head != newhead){
+			newhead = head;
+		}
+		/*for(int j = 0;j < b_size - 1;j++){
+			BtoI require = a[i + j] - n.a[j] * static_cast<BtoI>(head);
+			if(require < 0){
+				if(require % BIMax == 0){
+					a[i + j + 1] += require / BIMax;
+					require = 0;
+				}else{
+					a[i + j + 1] += require / BIMax - 1;
+					require %= BIMax;
+					require += BIMax;
+				}
+			}
+			a[i + j] = require;
+		}
+		Int newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1];
+		cout << head << ' ' << newhead << ' ' << remain << ' ' << a[b_size - 1 + i] << endl;
+		if(newhead != head){ //error
+			BtoI differ = head - newhead;
+			for(int j = 0;j < b_size - 1;j++){
+				BtoI buffer = differ * n.a[i];
+				a[i + j] = buffer % BIMax;
+				a[i + j + 1] += buffer / BIMax;
+			}
+		}*/
+		a[b_size - 1 + i] = (remain * BIMax + a[b_size - 1 + i]) - n.a[b_size - 1] * static_cast<BtoI>(newhead);
+		if(!mod){
+			quo[i] = head;
+		}
+		remain = a[b_size - 1 + i];
+	}
+	if(!mod){
+		for(int i = 0;i < BASIC_SIZE;i++){
+			a[i] = 0;
+		}
+		for(int i = 0;i < target_size;i++){
+			a[i] = quo[i];
+		}
+		delete[] quo;
+		SIZE = target_size;
+		positive = positive == n.positive;
+	}
+	resize();
+	/*be_divided = (*this);
 	divide = n;
 	BigNumber module = (*this), minus = n, quo(0), plus(1);
 	bool solution_positive = (positive == n.positive);
@@ -858,25 +1047,19 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n) const{
 	quo.positive = solution_positive;
 	HI = module;
 	LO = quo;
-	HI.coresize(LO);
+	HI.coresize(LO);*/
 }
 const BigNumber& BigNumber::operator /= (const BigNumber& n){
-	if(divide == n && be_divided == (*this)){
-		(*this) = LO;
-		return (*this);
-	}
-	if(is_ten(n, true) != -1){
-		int time = is_ten(n, true);
-		for(int i = 1;i <= time;i++){
-			PURE_PSEUDODIVIDE_assignment();
-		}
-		if(!n.positive){
-			positive = !positive;
+	if(SIZE < n.SIZE){
+		SIZE = BASIC_SIZE;
+		for(int i = 0;i < BASIC_SIZE;i++){
+			a[i] = 0;
 		}
 		return (*this);
+	}else if(n.is_zero()){
+		throw;
 	}
-	COMMON_DIVIDE(n);
-	(*this) = LO;
+	COMMON_DIVIDE(n, false);
 	return (*this);
 }
 template <typename T>
@@ -897,12 +1080,12 @@ BigNumber BigNumber::operator / (const T& n) const{
 	return temp;
 }
 const BigNumber& BigNumber::operator %= (const BigNumber& n){
-	if(divide == n && be_divided == (*this)){
-		(*this) = HI;
+	if(SIZE < n.SIZE){
 		return (*this);
+	}else if(n.is_zero()){
+		throw;
 	}
-	COMMON_DIVIDE(n);
-	(*this) = HI;
+	COMMON_DIVIDE(n, true);
 	return (*this);
 }
 template <typename T>
@@ -923,14 +1106,29 @@ BigNumber BigNumber::operator % (const T& n) const{
 	return tmp;
 }
 const BigNumber& BigNumber::operator ^= (const BigNumber& n){
-	if(n < 0){
-		(*this) = 0;
+	if(!n.positive){
+		bool zero = is_zero();
+		SIZE = BASIC_SIZE;
+		for(int i = 1;i < BASIC_SIZE;i++){
+			a[i] = 0;
+		}
+		a[0] = (zero) ? 1 : 0;
+		positive = true;
 		return (*this);
-	}else if(n == 0){
-		(*this) = 1;
-		return (*this);
-	}else if(n == 1){
-		return (*this);
+	}else{
+		if(n.getRealSize() == 1){
+			if(n.a[0] == 1){
+				return (*this);
+			}else if(n.a[0] == 0){
+				SIZE = BASIC_SIZE;
+				for(int i = 1;i < BASIC_SIZE;i++){
+					a[i] = 0;
+				}
+				a[0] = 1;
+				positive = true;
+				return (*this);
+			}
+		}
 	}
 	BigNumber base = (*this);
 	for(BigNumber i = 2;i <= n;i++){
@@ -955,6 +1153,9 @@ BigNumber BigNumber::operator ^ (const T& n) const{
 	return (*this) ^ temp;
 }
 bool BigNumber::is_zero() const{
+	if(SIZE > BASIC_SIZE){
+		return false;
+	}
 	for(int i = 0;i < SIZE;i++){
 		if(a[i] != 0){
 			return false;
@@ -1166,232 +1367,6 @@ void negate(BigNumber& n){
 
 void Typeof(const BigNumber& n){
 	cout << "BigNumber";
-}
-
-void BigNumber::coresize(const BigNumber&& n) const{
-	cofit(move(n));
-}
-void BigNumber::cofit(const BigNumber&& n) const{
-	resize();
-}
-const BigNumber& BigNumber::PURE_assignment(BigNumber&& n){
-	if(this != &n){
-		a = n.a;
-		n.a = nullptr;
-	}
-	return (*this);
-}
-const BigNumber& BigNumber::PURE_ADD_assignment(const BigNumber&& n){
-	coresize(n); //as lvalue
-	for(int i = 0;i < SIZE;i++){
-		a[i] += n.a[i];
-		if(a[i] >= IMax && i < SIZE - 1){
-			a[i + 1] ++;
-			a[i] -= IMax;
-		}
-	}
-	if(a[SIZE - 1] >= IMax){
-		int temp = SIZE;
-		resize(SIZE + 1);
-		a[temp - 1] -= IMax;
-		a[temp] ++;
-	}
-	cofit(move(n));
-	return (*this);
-}
-const BigNumber& BigNumber::PURE_MINUS_assignment(const BigNumber&& n){
-	coresize(n); //as lvalue
-	for(int i = 0;i < SIZE;i++){
-		a[i] -= n.a[i];
-		if(a[i] < 0 && i < SIZE - 1){
-			a[i + 1] --;
-			a[i] += IMax;
-		}
-	}
-	cofit(move(n));
-	return (*this);
-}
-BigNumber::BigNumber(BigNumber&& n){
-	if(this != &n){
-		SIZE = n.SIZE;
-		a = n.a;
-		n.a = nullptr;
-		positive = n.positive;
-	}
-}
-bool BigNumber::operator == (const BigNumber&& n) const{
-	coresize(n); //as lvalue
-	bool zero = true;
-	for(int i = 0;i < SIZE;i++){
-		if(a[i] != n.a[i]){
-			cofit(move(n));
-			return false;
-		}
-		if(a[i] != 0){
-			zero = false;
-		}
-	}
-	cofit(move(n));
-	return zero || (positive == n.positive); //if 0, don't ask +-
-}
-bool BigNumber::operator != (const BigNumber&& n) const{
-	return !(*this == move(n));
-}
-bool BigNumber::operator < (const BigNumber&& n) const{
-	coresize(n); //as lvalue
-	bool same_number = true, pure_number_smaller = false, zero = true;
-	for(int i = SIZE - 1;i >= 0;i--){
-		if(zero && (a[i] != 0 || n.a[i] != 0)){
-			zero = false;
-		}
-		if(a[i] > n.a[i]){
-			pure_number_smaller = false;
-			same_number = false;
-			break;
-		}else if(a[i] < n.a[i]){
-			pure_number_smaller = true;
-			same_number = false;
-			break;
-		}
-	}
-	cofit(move(n));
-	if(!same_number){ //impossibly be 0
-		if(positive && !n.positive){return false;}
-		else if(!positive && n.positive){return true;}
-		else if(positive){return pure_number_smaller;}
-		else{return !pure_number_smaller;}
-	}else{ //possibly be 0
-		if(zero){return false;}
-		else if(!positive && n.positive){return true;}
-		else{return false;}
-	}
-}
-bool BigNumber::operator <= (const BigNumber&& n) const{
-	return (*this) < move(n) || (*this) == move(n);
-}
-bool BigNumber::operator > (const BigNumber&& n) const{
-	coresize(n); //as lvalue
-	bool same_number = true, pure_number_larger = false, zero = true;
-	for(int i = SIZE - 1;i >= 0;i--){
-		if(zero && (a[i] != 0 || n.a[i] != 0)){
-			zero = false;
-		}
-		if(a[i] > n.a[i]){
-			pure_number_larger = true;
-			same_number = false;
-			break;
-		}else if(a[i] < n.a[i]){
-			pure_number_larger = false;
-			same_number = false;
-			break;
-		}
-	}
-	cofit(move(n));
-	if(!same_number){ //impossibly be 0
-		if(positive && !n.positive){return true;}
-		else if(!positive && n.positive){return false;}
-		else if(positive){return pure_number_larger;}
-		else{return !pure_number_larger;}
-	}else{ //possibly be 0
-		if(zero){return false;}
-		else if(positive && !n.positive){return true;}
-		else{return false;}
-	}
-}
-bool BigNumber::operator >= (const BigNumber&& n) const{
-	return (*this) > move(n) || (*this) == move(n);
-}
-const BigNumber& BigNumber::operator = (BigNumber&& n){
-	if(this != &n){
-		SIZE = n.SIZE;
-		a = n.a;
-		n.a = nullptr;
-		positive = n.positive;
-	}
-	return (*this);
-}
-const BigNumber& BigNumber::operator += (BigNumber&& n){
-	if(positive == n.positive){ //straightly add
-		PURE_ADD_assignment(move(n));
-	}else if(abs() >= n.abs()){
-		PURE_MINUS_assignment(move(n));
-	}else{
-		const BigNumber temp = (*this);
-		(*this) = move(n);
-		PURE_MINUS_assignment(temp);
-	}
-	return (*this);
-}
-BigNumber BigNumber::operator + (BigNumber&& n) const{
-	BigNumber temp = (*this);
-	temp += move(n);
-	return temp;
-}
-const BigNumber& BigNumber::operator -= (BigNumber&& n){
-	if(positive != n.positive){ //straightly add
-		PURE_ADD_assignment(move(n));
-	}else if(abs() >= n.abs()){
-		PURE_MINUS_assignment(move(n));
-	}else{
-		const BigNumber temp = (*this);
-		(*this) = -move(n);
-		PURE_MINUS_assignment(temp);
-	}
-	return (*this);
-}
-BigNumber BigNumber::operator - (BigNumber&& n) const{
-	BigNumber temp = (*this);
-	temp -= move(n);
-	return temp;
-}
-const BigNumber& BigNumber::operator *= (BigNumber&& n){
-	static constexpr int inteval = 700;
-	if(n.is_zero()){
-		(*this) = n;
-		return (*this);
-	}
-	if(is_ten(n) != -1 && n.getSize() - getSize() < inteval){
-		int time = is_ten(n);
-		BigNumber tmp = move(n);
-		for(int i = 1;i <= time;i++){
-			PURE_PSEUDOMULTIPLE_assignment();
-			tmp.PURE_PSEUDODIVIDE_assignment();
-		}
-		(*this) *= tmp;
-		return (*this);
-	}
-	if(getSize() < n.getSize()){
-		BigNumber tmp = move(n);
-		tmp *= (*this);
-		(*this) = tmp;
-		return (*this);
-	}
-	coresize(n); //as lvalue
-	bool solution_positive = (positive == n.positive);
-	if(digit() + n.digit() > DIGIT * SIZE){
-		resize(getSize() + n.getSize());
-	}
-	BigNumber base = (*this);
-	(*this) = 0;
-	int t = n.digit();
-	for(int i = 2;i <= t;i++){
-		base.PURE_PSEUDOMULTIPLE_assignment();
-	}
-	for(int i = t;i >= 1;i--){
-		int time = n.getDigit(i);
-		for(int j = 1;j <= time;j++){
-			PURE_ADD_assignment(base);
-		}
-		base.PURE_PSEUDODIVIDE_assignment();
-	}
-	positive = solution_positive;
-	resize();
-	return (*this);
-}
-BigNumber BigNumber::operator * (BigNumber&& n) const{
-	BigNumber temp = (*this);
-	temp *= move(n);
-	return temp;
 }
 
 const string convert_to_utf8(const string& str){
