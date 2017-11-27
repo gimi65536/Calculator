@@ -35,8 +35,6 @@ private:
 	static void simple_multi(Int x, Int y);
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
-	const BigNumber& PURE_PSEUDOMULTIPLE_assignment();
-	const BigNumber& PURE_PSEUDODIVIDE_assignment();
 	void COMMON_DIVIDE(const BigNumber& n, bool mod);
 	template <typename T>
 	void WIDE_CHAR_PASS(const T& ch);
@@ -156,7 +154,7 @@ static BigNumber be_divided = 0;
 static BigNumber divide = 0;
 
 void BigNumber::resize(){ //fit
-	for(int i = SIZE - 1;i > BASIC_SIZE;i--){
+	for(int i = SIZE - 1;i >= BASIC_SIZE;i--){
 		if(a[i] != 0){
 			SIZE = i + 1;
 			return;
@@ -904,6 +902,11 @@ BigNumber BigNumber::operator * (const BigNumber& n) const{
 			}
 		}
 		temp.a[i + a_size] += tmp;
+	}
+	if(positive == n.positive){
+		temp.positive = true;
+	}else{
+		temp.positive = false;
 	}
 	temp.resize();
 	return temp;
