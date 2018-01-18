@@ -1,3 +1,8 @@
+#!/usr/bin/perl
+
+use warnings;
+use 5.010;
+
 sub signtoregex{
 	my ($s) = @_;
 	$s =~ s/([^\w\$])/\\$1/g;
