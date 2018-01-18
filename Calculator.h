@@ -6,6 +6,7 @@
 #include <fstream>
 #include <chrono>
 #include <ctime>
+#include <regex>
 using namespace std;
 
 ofstream fout("calculations_log.txt", ios::app);
@@ -28,17 +29,21 @@ const wstream& operator << (const wstream& wout, const Wendl& wendl){
 	}
 	return wout;
 }
-const wstream wout;
-const Wendl wendl;
+constexpr wstream wout;
+constexpr Wendl wendl;
+
+template<typename T, size_t N>
+constexpr size_t SIZE(T(&a)[N]){return N;}
 
 const string CPPinputOPERATOR = "+-*/%()=";
 const string inputOPERATOR = CPPinputOPERATOR + "^";
 const string additional_assignment_OPERATOR = "`!@\\&";
 const string OPERATOR = inputOPERATOR + additional_assignment_OPERATOR + "~#";
-const string additional_assignment[5] = {"+=", "-=", "*=", "/=", "%="};
+const string additional_assignment[] = {"+=", "-=", "*=", "/=", "%="};
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
 const string space = " ";
+//regex cppcheck01(R"***(^\s+|\s+$|([\w\$]\s)\s+((?=[\w\$]))|([\w\$])\s+((?=[+\-*/%()^`!@\\&~#=]))|([+\-*/%()^`!@\\&~#=])\s+((?=[\w\$]))|([+\-*/%()^`!@\\&~#=])\s+((?=[+\-*/%()^`!@\\&~#=])))***");
 int put_length = 15; //should > 0
 
 stack<char> operand; //will be used to save operator
@@ -124,15 +129,16 @@ bool Cppcheck(string str){
 		wout << "You should not input any invalid symbol!" << wendl;
 		return false;
 	} //complete B01
-	for(int i = 0;i < 5;i++){
-		size_t pos = str.find(additional_assignment[i]);
+	for(const auto& add_assign : additional_assignment){
+		size_t pos = str.find(add_assign);
 		while(pos != string::npos){
 			str.erase(pos, 1);
-			pos = str.find(additional_assignment[i], pos + 1);
+			pos = str.find(add_assign, pos + 1);
 		}
 	}
 	delim = variable_namespace + scalar + digit_separator;
-	size_t pos = str.find(' ');
+	size_t pos;
+	pos = str.find(' ');
 	while(pos != string::npos){
 		if(pos == 0 || pos == str.length() - 1){
 			str.erase(pos, 1);
@@ -145,7 +151,9 @@ bool Cppcheck(string str){
 				pos = str.find(' ', pos + 1);
 			}
 		}
-	} //complete B00
+	}
+	//str = regex_replace(str, cppcheck01, "$1$2$3$4$5$6$7$8");
+	 //complete B00
 	if(str.find(' ') != string::npos){
 		alert(str.find(' '), 0, 0, str, "Cannot put space between two numbers or variables!");
 		return false;
@@ -265,7 +273,7 @@ bool Cppcheck(string str){
 bool check(const string& String){
 	string str = String, specialassignmentstr = String, delim = inputOPERATOR + variable_namespace + scalar + space;
 	string& allow = delim, deny = delim;
-	for(int i = 0;i < 5;i++){
+	for(int i = 0;i < SIZE(additional_assignment);i++){
 		size_t pos = str.find(additional_assignment[i]);
 		while(pos != string::npos){
 			str.erase(pos, 1);
@@ -273,6 +281,9 @@ bool check(const string& String){
 			specialassignmentstr[pos] = additional_assignment_OPERATOR[i];
 			pos = str.find(additional_assignment[i], pos + 1);
 		}
+		/*regex reg(additional_assignment[i]);
+		str = regex_replace(str, reg, "=");
+		specialassignmentstr = regex_replace(str, reg, string(1, additional_assignment_OPERATOR[i]));*/
 	}
 	size_t pos = str.find_first_not_of(delim);
 	while(pos != string::npos){
@@ -465,13 +476,15 @@ int main(){
 			str.erase(pos, 1);
 			pos = str.find_first_not_of(delim);
 		}
-		for(int i = 0;i < 5;i++){
+		for(int i = 0;i < SIZE(additional_assignment);i++){
 			pos = str.find(additional_assignment[i]);
 			while(pos != string::npos){
 				str.erase(pos, 1);
 				str[pos] = additional_assignment_OPERATOR[i];
 				pos = str.find(additional_assignment[i]);
 			}
+			/*regex reg(additional_assignment[i]);
+			str = regex_replace(str, reg, string(1, additional_assignment_OPERATOR[i]));*/
 		}
 		while(number.size() > 0){
 			number.pop();
@@ -479,7 +492,7 @@ int main(){
 		while(number_is_var.size() > 0){
 			number_is_var.pop();
 		}
-		bool variablesignal = false, scalarsignal = false;
+		/*bool variablesignal = false, scalarsignal = false;
 		for(int i = 0;i < str.length();i++){
 			if(is(str[i], OPERATOR)){
 				variablesignal = false;
@@ -499,8 +512,10 @@ int main(){
 				}
 				variablesignal = true;
 			}
-		}
-		//cout << str << wendl;
+		}*/
+		str = regex_replace(str, regex(R"***(([+\-*/%()^`!@\\&~#=]))***"), " $1 ");
+		str = regex_replace(str, regex(R"***(([A-Za-z_\$][\w\$]*)\b)***"), " $1 ");
+		//cout << str << endl;
 		ss.clear();
 		ss.str("");
 		ss << str;
