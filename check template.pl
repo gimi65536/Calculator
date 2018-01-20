@@ -56,8 +56,8 @@ $ope_regex            = &signtoregex(@ope);
 $var_regex     = '\w\$'; #A-Za-z0-9_
 $varinit_regex = 'A-Za-z_\$';
 
-#$s = "  4a23a23 aaa111_\$+ab+a'23'5 2a ```+=5{-|1|+|1waifu} += 5-=5*=5/=5%=5aaaaaa";
-$s = "5=(a += 5";
+$s = "  4a23a23 aaa111_\$+ab+a'23'5 2a ```+=5{-|1|+|1waifu} ";
+$s = "z=a b(c=5)";
 say $s;
 #A00.1
 #$s =~ s/[^\w\$\s+\-*\/%^\(\)=]//g;
@@ -87,11 +87,16 @@ say "A03 error" if $s =~ /[^$var_regex$rightparentope_regex]$/;
 say "A04 error" if $s =~ /[$plusope_regex$multiope_regex$expope_regex$leftparentope_regex$assignope_regex]\s[$multiope_regex$expope_regex]/;
 say "A05 error" if $s =~ /[^$var_regex$rightparentope_regex]\s[$rightparentope_regex]/;
 say "A06 error" if $s =~ /[^$var_regex]\s[$assignope_regex]/;
-say "A07 error" if $s =~ /[^$var_regex$leftparentope_regex$assignope_regex\s].*?[$assignope_regex]/;
-
+say "A07 error at $-[0] $+[0]" if $s =~ /[^$var_regex$leftparentope_regex$assignope_regex\s][^$leftparentope_regex]*?[$assignope_regex]/;
+say "A08 error-1" if $s =~ /(?:^|\s)\d[^$leftparentope_regex]*?[$assignope_regex]/;
+say "A08 error-2" if $s =~ /(?:^|[$leftparentope_regex$assignope_regex]\s)[$varinit_regex][$var_regex\s]*?\s[$varinit_regex][$var_regex\s]*?[$assignope_regex]/;
+while($s =~ /([$varinit_regex][$var_regex]*?)\s([$assignope_regex])/g){
+	#if($s2 is not in baseassignope and $s1 is not defined){say "A09 error";}
+}
 #@a;
 #push @a, [$1, $2] while ($s =~ /(a)(2)/g);
-#print $a[0][0];
+#say $a[0][0];
 #while($s =~ /(a)(2)/g){
-#	print $1;
+#	say $1;
 #}
+#say $s;
