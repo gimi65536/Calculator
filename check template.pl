@@ -53,15 +53,25 @@ $ope_regex            = &signtoregex(@ope);
 	&signtoregex($_) => &signtoregex($value)
 } keys %pairope;
 
-$var_regex     = '\w\$'; #A-Za-z0-9_
-$varinit_regex = 'A-Za-z_\$';
+$varcontent_regex  = '\w\$'; #A-Za-z0-9_
+$varinit_regex     = 'A-Za-z_\$';
+$varinitonly_regex = ''; #varinit - varcontent
+$varcontonly_regex = '\d'; #varcontent - varinit
+$vartotal_regex    = '\w\$'; #varinit + varcontent
+
+#$varcontent_regex  = '\w'; #A-Za-z0-9_
+#$varinit_regex     = '\$';
+#$varinitonly_regex = '\$';
+#$varcontonly_regex = '\w';
+#$vartotal_regex    = '\w\$';
 
 $s = "  4a23a23 aaa111_\$+ab+a'23'5 2a ```+=5{-|1|+|1waifu} ";
 $s = "z=a b(c=5)";
+#$s = '5a=5';
 say $s;
 #A00.1
 #$s =~ s/[^\w\$\s+\-*\/%^\(\)=]//g;
-$s =~ s/[^${var_regex}${baseope_regex}\s]//g;
+$s =~ s/[^\d${varinit_regex}${varcontent_regex}${baseope_regex}\s]//g;
 say $s;
 #A00.2
 foreach $i (keys %pairope){
@@ -75,24 +85,92 @@ $s =~ s/([${ope_regex}])/ $1 /g;
 say $s;
 #A00.4
 #$s =~ s/([A-Za-z_\$][^\s]*)(?:\s|$)/ $1  /g;
-$s =~ s/([${varinit_regex}][^\s]*)(?:\s|$)/ $1  /g;
+$s =~ s/([${varinit_regex}][^\s]*)(?:[${varinitonly_regex}\s]|$)/ $1  /g;
 say $s;
 #A00.5
+say "A00 error" if $s =~ /(?:^|\s)(?=[$varcontonly_regex])(?=[^\d])|(?:^|\s)\d[^\s]*?(?=[^\d])(?=[$varcontonly_regex])/;
+#A00.6
 $s =~ s/^\s+|\s+$|([^\s]\s)\s+(?=[^\s])/$1$2/g;
 say $s;
 
 say "A01 error" if $s !~ /[^\s]/;
-say "A02 error" if $s =~ /^[^$var_regex$plusope_regex$leftparentope_regex]/;
-say "A03 error" if $s =~ /[^$var_regex$rightparentope_regex]$/;
+say "A02 error" if $s =~ /^[^$vartotal_regex$plusope_regex$leftparentope_regex]/;
+say "A03 error" if $s =~ /[^$vartotal_regex$rightparentope_regex]$/;
 say "A04 error" if $s =~ /[$plusope_regex$multiope_regex$expope_regex$leftparentope_regex$assignope_regex]\s[$multiope_regex$expope_regex]/;
-say "A05 error" if $s =~ /[^$var_regex$rightparentope_regex]\s[$rightparentope_regex]/;
-say "A06 error" if $s =~ /[^$var_regex]\s[$assignope_regex]/;
-say "A07 error at $-[0] $+[0]" if $s =~ /[^$var_regex$leftparentope_regex$assignope_regex\s][^$leftparentope_regex]*?[$assignope_regex]/;
+say "A05 error" if $s =~ /[^$vartotal_regex$rightparentope_regex]\s[$rightparentope_regex]/;
+say "A06 error" if $s =~ /[^$vartotal_regex]\s[$assignope_regex]/;
+say "A07 error at $-[0] $+[0]" if $s =~ /[^$vartotal_regex$leftparentope_regex$assignope_regex\s][^$leftparentope_regex]*?[$assignope_regex]/;
 say "A08 error-1" if $s =~ /(?:^|\s)\d[^$leftparentope_regex]*?[$assignope_regex]/;
-say "A08 error-2" if $s =~ /(?:^|[$leftparentope_regex$assignope_regex]\s)[$varinit_regex][$var_regex\s]*?\s[$varinit_regex][$var_regex\s]*?[$assignope_regex]/;
-while($s =~ /([$varinit_regex][$var_regex]*?)\s([$assignope_regex])/g){
+say "A08 error-2" if $s =~ /(?:^|[$leftparentope_regex$assignope_regex]\s)[$varinit_regex][$vartotal_regex\s]*?\s[$varinit_regex][$vartotal_regex\s]*?[$assignope_regex]/;
+while($s =~ /([$varinit_regex][$varcontent_regex]*?)\s([$assignope_regex])/g){
 	#if($s2 is not in baseassignope and $s1 is not defined){say "A09 error";}
 }
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+#one-char operators
+@baseplusope        = qw(+ -);
+@basemultiope       = qw(* / %);
+@baseexpope         = qw();
+@baseleftparentope  = qw/(/;
+@baserightparentope = qw/)/;
+@baseassignope      = qw(=);
+@baseope = (@baseplusope, @basemultiope, @baseexpope, @baseleftparentope, @baserightparentope, @baseassignope);
+
+#multi-char operators
+%pairplusope        = ();
+%pairmultiope       = ();
+%pairexpope         = ();#('**' => '^')
+%pairleftparentope  = ();
+%pairrightparentope = ();
+%pairassignope      = ('+=' => '`', '-=' => '!', '*=' => '@', '/=' => '\\', '%=' => '&');
+%pairope = (%pairplusope, %pairmultiope, %pairexpope, %pairparentope, %pairassignope);
+
+#operator grouped
+@plusope        = (@baseplusope,        values %pairplusope);
+@multiope       = (@basemultiope,       values %pairmultiope);
+@expope         = (@baseexpope,         values %pairexpope);
+@leftparentope  = (@baseleftparentope,  values %pairleftparentope);
+@rightparentope = (@baserightparentope, values %pairrightparentope);
+@assignope      = (@baseassignope,      values %pairassignope);
+@ope = (@plusope, @multiope, @expope, @leftparentope, @rightparentope, @assignope);
+
+#operator in regex
+$baseope_regex        = &signtoregex(@baseope);
+$plusope_regex        = &signtoregex(@plusope);
+$multiope_regex       = &signtoregex(@multiope);
+$expope_regex         = &signtoregex(@expope);
+$leftparentope_regex  = &signtoregex(@leftparentope);
+$rightparentope_regex = &signtoregex(@rightparentope);
+$assignope_regex      = &signtoregex(@assignope);
+$ope_regex            = &signtoregex(@ope);
+%pairope_regex = map{
+	my ($tmp, $value) = ($_, $pairope{$_});
+	&signtoregex($_) => &signtoregex($value)
+} keys %pairope;
+
+@separator = qw(');#_ in Py
+
+$varcontent_regex  = '\w\$'; #A-Za-z0-9_
+$varinit_regex     = 'A-Za-z_\$';
+$varinitonly_regex = '';
+$varcontonly_regex = '\d';
+$vartotal_regex    = '\w\$';
+$separator_regex = &signtoregex(@separator);
+
+#$s = "  4a23a23 aaa111_\$+ab+a'23'5 2a ```+=5{-|1|+|1waifu} ";
+$s = "z=a b(c=5)";
+say $s;
+#B00.1
+say "B00 error" if $s =~ /[^\d${vartotal_regex}${baseope_regex}${separator_regex}\s]/;
+#B00.2
+foreach $i (keys %pairope){
+	my $tmp = &signtoregex($i);
+	$s =~ s/$tmp/${pairope{$i}}/g;
+}
+say $s;
 #@a;
 #push @a, [$1, $2] while ($s =~ /(a)(2)/g);
 #say $a[0][0];
