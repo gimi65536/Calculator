@@ -132,8 +132,8 @@ public:
 	void negate(){positive = !positive;}
 	void divide2();
 	operator long long int() const;
-	//operator unsigned long long int() const;
-	//operator long double() const;
+	explicit operator unsigned long long int() const;
+	explicit operator long double() const;
 };
 
 BtoI BigNumber::m[2] = {0};
@@ -1143,7 +1143,7 @@ BigNumber::operator long long int() const{
 	}
 	return tmp;
 }
-/*BigNumber::operator unsigned long long int() const{
+BigNumber::operator unsigned long long int() const{
 	unsigned long long int tmp = 0;
 	if((*this) >= ULLONG_MAX){
 		tmp = ULLONG_MAX;
@@ -1159,7 +1159,7 @@ BigNumber::operator long long int() const{
 BigNumber::operator long double() const{
 	long double tmp = static_cast<long double>(static_cast<long long int>((*this)));
 	return tmp;
-}*/
+}
 
 template <typename T>
 bool operator == (const T& n, const BigNumber& N){
