@@ -1,11 +1,16 @@
 #ifndef _BIG_NUMBER_
 #define _BIG_NUMBER_
 #include <iostream>
+#include <cstdio>
 #include <string>
 #include <sstream>
 #include <type_traits>
 #include <climits>
 #include <cctype>
+#include <regex>
+#include <string_view>
+#include <map>
+#include "../helper.h"
 using namespace std;
 
 

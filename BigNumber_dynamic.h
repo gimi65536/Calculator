@@ -648,7 +648,7 @@ const BigNumber& BigNumber::operator = (const T& n){
 		string str;
 		str += n;
 		PASS_BY_STRING(str);
-	}else if constexpr(is_same<T, wchar_t>::value || is_same<T, char16_t>::value || is_same<T, char32_t>::value){
+	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
 		WIDE_CHAR_PASS(n);
 		return (*this);
 	}else{
@@ -681,14 +681,12 @@ const BigNumber& BigNumber::operator = (const T& n){
 	}
 	return (*this);
 }
-template <class T>
-using expr_type = remove_cv_t<remove_reference_t<T>>;
 template <typename T>
 const BigNumber& BigNumber::operator = (T* const n){
 	if constexpr(is_same<expr_type<T>, char>::value){
 		string str = n;
 		PASS_BY_STRING(str);
-	}else if constexpr(is_same<expr_type<T>, wchar_t>::value, is_same<expr_type<T>, char16_t>::value, is_same<expr_type<T>, char32_t>::value){
+	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
 		WIDE_CHARARRAY_PASS(n);
 	}else{
 		ptrdiff_t temp = reinterpret_cast<ptrdiff_t>(n);
@@ -937,30 +935,6 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 		if(head != newhead){
 			newhead = head;
 		}
-		/*for(int j = 0;j < b_size - 1;j++){
-			BtoI require = a[i + j] - n.a[j] * static_cast<BtoI>(head);
-			if(require < 0){
-				if(require % BIMax == 0){
-					a[i + j + 1] += require / BIMax;
-					require = 0;
-				}else{
-					a[i + j + 1] += require / BIMax - 1;
-					require %= BIMax;
-					require += BIMax;
-				}
-			}
-			a[i + j] = require;
-		}
-		Int newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1];
-		cout << head << ' ' << newhead << ' ' << remain << ' ' << a[b_size - 1 + i] << endl;
-		if(newhead != head){ //error
-			BtoI differ = head - newhead;
-			for(int j = 0;j < b_size - 1;j++){
-				BtoI buffer = differ * n.a[i];
-				a[i + j] = buffer % BIMax;
-				a[i + j + 1] += buffer / BIMax;
-			}
-		}*/
 		a[b_size - 1 + i] = (remain * BIMax + a[b_size - 1 + i]) - n.a[b_size - 1] * static_cast<BtoI>(newhead);
 		if(!mod){
 			quo[i] = head;
@@ -979,32 +953,6 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 		positive = positive == n.positive;
 	}
 	resize();
-	/*be_divided = (*this);
-	divide = n;
-	BigNumber module = (*this), minus = n, quo(0), plus(1);
-	bool solution_positive = (positive == n.positive);
-	int t = digit() - n.digit();
-	if(t < 0){
-		HI = (*this);
-		LO = 0;
-		return;
-	}
-	for(int i = 1;i <= t;i++){
-		minus.PURE_PSEUDOMULTIPLE_assignment();
-		plus.PURE_PSEUDOMULTIPLE_assignment();
-	}
-	for(int i = t;i >= 0;i--){
-		while(module.abs() >= minus.abs()){
-			module.PURE_MINUS_assignment(minus);
-			quo.PURE_ADD_assignment(plus);
-		}
-		minus.PURE_PSEUDODIVIDE_assignment();
-		plus.PURE_PSEUDODIVIDE_assignment();
-	}
-	quo.positive = solution_positive;
-	HI = module;
-	LO = quo;
-	HI.coresize(LO);*/
 }
 const BigNumber& BigNumber::operator /= (const BigNumber& n){
 	if(SIZE < n.SIZE){
