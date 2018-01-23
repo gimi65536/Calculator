@@ -78,18 +78,6 @@ public:
 	const BigNumber& operator = (const string& str);
 	template <typename T>
 	const BigNumber& operator = (const basic_string<T>& STR);
-	const BigNumber& operator = (const char& ch);
-	const BigNumber& operator = (char* const n);
-	const BigNumber& operator = (const char* const n);
-	const BigNumber& operator = (const wchar_t& ch);
-	const BigNumber& operator = (wchar_t* const n);
-	const BigNumber& operator = (const wchar_t* const n);
-	const BigNumber& operator = (const char16_t& ch);
-	const BigNumber& operator = (char16_t* const n);
-	const BigNumber& operator = (const char16_t* const n);
-	const BigNumber& operator = (const char32_t& ch);
-	const BigNumber& operator = (char32_t* const n);
-	const BigNumber& operator = (const char32_t* const n);
 	template <typename T>
 	const BigNumber& operator = (const T& n);
 	template <typename T>
@@ -144,8 +132,8 @@ public:
 	void negate(){positive = !positive;}
 	void divide2();
 	operator long long int() const;
-	operator unsigned long long int() const;
-	operator long double() const;
+	explicit operator unsigned long long int() const;
+	explicit operator long double() const;
 };
 
 BtoI BigNumber::m[2] = {0};
@@ -654,92 +642,56 @@ const BigNumber& BigNumber::operator = (const basic_string<T>& STR){
 	PASS_BY_STRING(cvt_string(STR));
 	return (*this);
 }
-const BigNumber& BigNumber::operator = (const char& ch){
-	string str;
-	str += ch;
-	PASS_BY_STRING(str);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (char* const n){
-	string str = n;
-	PASS_BY_STRING(str);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const char* const n){
-	string str = n;
-	PASS_BY_STRING(str);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const wchar_t& ch){
-	WIDE_CHAR_PASS(ch);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (wchar_t* const n){
-	WIDE_CHARARRAY_PASS(n);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const wchar_t* const n){
-	WIDE_CHARARRAY_PASS(n);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const char16_t& ch){
-	WIDE_CHAR_PASS(ch);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (char16_t* const n){
-	WIDE_CHARARRAY_PASS(n);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const char16_t* const n){
-	WIDE_CHARARRAY_PASS(n);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const char32_t& ch){
-	WIDE_CHAR_PASS(ch);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (char32_t* const n){
-	WIDE_CHARARRAY_PASS(n);
-	return (*this);
-}
-const BigNumber& BigNumber::operator = (const char32_t* const n){
-	WIDE_CHARARRAY_PASS(n);
-	return (*this);
-}
 template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
-	SIZE = BASIC_SIZE;
-	delete[] a;
-	a = new Int[SIZE];
-	if(is_scalar<T>::value){ //faster
-		for(int i = SIZE - 1;i > 2;i--){
-			a[i] = 0;
-		}
-		if(is_signed<T>::value){
-			long long int temp = static_cast<long long int>(n);
-			positive = (n >= 0);
-			a[2] = static_cast<int>((temp / IIMax) * (temp < 0 ? -1 : 1));
-			a[1] = static_cast<int>((temp % IIMax / IMax) * (temp < 0 ? -1 : 1));
-			a[0] = static_cast<int>((temp % IMax) * (temp < 0 ? -1 : 1));
-		}else{
-			unsigned long long int temp = static_cast<long long int>(n);
-			positive = true;
-			a[2] = static_cast<int>(temp / IIMax);
-			a[1] = static_cast<int>(temp % IIMax / IMax);
-			a[0] = static_cast<int>(temp % IMax);
-		}
-	}else{
-		stringstream ss;
-		ss << n;
-		string str = ss.str();
+	if constexpr(is_same<T, char>::value){
+		string str;
+		str += n;
 		PASS_BY_STRING(str);
+	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
+		WIDE_CHAR_PASS(n);
+		return (*this);
+	}else{
+		SIZE = BASIC_SIZE;
+		delete[] a;
+		a = new Int[SIZE];
+		if constexpr(is_scalar<T>::value){ //faster
+			for(int i = SIZE - 1;i > 2;i--){
+				a[i] = 0;
+			}
+			if constexpr(is_signed<T>::value){
+				long long int temp = static_cast<long long int>(n);
+				positive = (n >= 0);
+				a[2] = static_cast<int>((temp / IIMax) * (temp < 0 ? -1 : 1));
+				a[1] = static_cast<int>((temp % IIMax / IMax) * (temp < 0 ? -1 : 1));
+				a[0] = static_cast<int>((temp % IMax) * (temp < 0 ? -1 : 1));
+			}else{
+				unsigned long long int temp = static_cast<long long int>(n);
+				positive = true;
+				a[2] = static_cast<int>(temp / IIMax);
+				a[1] = static_cast<int>(temp % IIMax / IMax);
+				a[0] = static_cast<int>(temp % IMax);
+			}
+		}else{
+			stringstream ss;
+			ss << n;
+			string str = ss.str();
+			PASS_BY_STRING(str);
+		}
 	}
 	return (*this);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (T* const n){
-	ptrdiff_t temp = reinterpret_cast<ptrdiff_t>(n);
-	(*this) = temp;
+	if constexpr(is_same<expr_type<T>, char>::value){
+		string str = n;
+		PASS_BY_STRING(str);
+	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
+		WIDE_CHARARRAY_PASS(n);
+	}else{
+		ptrdiff_t temp = reinterpret_cast<ptrdiff_t>(n);
+		(*this) = temp;
+	}
 	return (*this);
 }
 BigNumber BigNumber::abs() const{
@@ -983,30 +935,6 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 		if(head != newhead){
 			newhead = head;
 		}
-		/*for(int j = 0;j < b_size - 1;j++){
-			BtoI require = a[i + j] - n.a[j] * static_cast<BtoI>(head);
-			if(require < 0){
-				if(require % BIMax == 0){
-					a[i + j + 1] += require / BIMax;
-					require = 0;
-				}else{
-					a[i + j + 1] += require / BIMax - 1;
-					require %= BIMax;
-					require += BIMax;
-				}
-			}
-			a[i + j] = require;
-		}
-		Int newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1];
-		cout << head << ' ' << newhead << ' ' << remain << ' ' << a[b_size - 1 + i] << endl;
-		if(newhead != head){ //error
-			BtoI differ = head - newhead;
-			for(int j = 0;j < b_size - 1;j++){
-				BtoI buffer = differ * n.a[i];
-				a[i + j] = buffer % BIMax;
-				a[i + j + 1] += buffer / BIMax;
-			}
-		}*/
 		a[b_size - 1 + i] = (remain * BIMax + a[b_size - 1 + i]) - n.a[b_size - 1] * static_cast<BtoI>(newhead);
 		if(!mod){
 			quo[i] = head;
@@ -1025,32 +953,6 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 		positive = positive == n.positive;
 	}
 	resize();
-	/*be_divided = (*this);
-	divide = n;
-	BigNumber module = (*this), minus = n, quo(0), plus(1);
-	bool solution_positive = (positive == n.positive);
-	int t = digit() - n.digit();
-	if(t < 0){
-		HI = (*this);
-		LO = 0;
-		return;
-	}
-	for(int i = 1;i <= t;i++){
-		minus.PURE_PSEUDOMULTIPLE_assignment();
-		plus.PURE_PSEUDOMULTIPLE_assignment();
-	}
-	for(int i = t;i >= 0;i--){
-		while(module.abs() >= minus.abs()){
-			module.PURE_MINUS_assignment(minus);
-			quo.PURE_ADD_assignment(plus);
-		}
-		minus.PURE_PSEUDODIVIDE_assignment();
-		plus.PURE_PSEUDODIVIDE_assignment();
-	}
-	quo.positive = solution_positive;
-	HI = module;
-	LO = quo;
-	HI.coresize(LO);*/
 }
 const BigNumber& BigNumber::operator /= (const BigNumber& n){
 	if(SIZE < n.SIZE){
@@ -1233,7 +1135,7 @@ bool operator >= (const T& n, const BigNumber& N){
 }
 template <typename T>
 const T& operator += (T& n, const BigNumber& N){
-	if(is_signed<T>::value){
+	if constexpr(is_signed<T>::value){
 		n = static_cast<long long int>(N + n);
 	}else{
 		n = static_cast<unsigned long long int>(N + n);
@@ -1247,7 +1149,7 @@ const BigNumber operator + (const T& n, const BigNumber& N){
 }
 template <typename T>
 const T& operator -= (T& n, const BigNumber& N){
-	if(is_signed<T>::value){
+	if constexpr(is_signed<T>::value){
 		n = static_cast<long long int>(-N + n);
 	}else{
 		n = static_cast<unsigned long long int>(-N + n);
@@ -1261,7 +1163,7 @@ const BigNumber operator - (const T& n, const BigNumber& N){
 }
 template <typename T>
 const T& operator *= (T& n, const BigNumber& N){
-	if(is_signed<T>::value){
+	if constexpr(is_signed<T>::value){
 		n = static_cast<long long int>(N * n);
 	}else{
 		n = static_cast<unsigned long long int>(N * n);
@@ -1275,10 +1177,10 @@ const BigNumber operator * (const T& n, const BigNumber& N){
 }
 template <typename T>
 const T& operator /= (T& n, const BigNumber& N){
-	if(is_floating_point<T>::value){
+	if constexpr(is_floating_point<T>::value){
 		n /= static_cast<long double>(N);
 	}else{
-		if(is_signed<T>::value){
+		if constexpr(is_signed<T>::value){
 			n /= static_cast<long long int>(N);
 		}else{
 			n /= static_cast<unsigned long long int>(N);
@@ -1287,9 +1189,14 @@ const T& operator /= (T& n, const BigNumber& N){
 	return n;
 }
 template <typename T>
-typename conditional<is_floating_point<T>::value, T, BigNumber>::type operator / (const T& n, const BigNumber& N){
+/*typename conditional<is_floating_point<T>::value, T, BigNumber>::type*/auto operator / (const T& n, const BigNumber& N){
 	T temp = n;
-	return temp / static_cast<typename conditional<is_floating_point<T>::value, long double, BigNumber>::type>(N);
+	if constexpr(is_floating_point<T>::value){
+		return temp / static_cast<long double>(N);
+	}else{
+		return temp / static_cast<long long int>(N);
+	}
+	//return temp / static_cast<typename conditional<is_floating_point<T>::value, long double, BigNumber>::type>(N);
 }
 template <typename T>
 const T& operator %= (T& n, const BigNumber& N){

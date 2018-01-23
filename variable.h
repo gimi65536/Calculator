@@ -4,6 +4,11 @@
 #define _VARIABLE_ADT_
 
 const string variable_namespace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
+const string varinit_regex = "A-Za-z_\\$";
+const string varcontent_regex = "\\w\\$";
+const string varinitonly_regex = "";
+const string varcontonlt_regex = "\\d";
+const string vartotal_regex = "\\w\\$";
 
 class Node{
 friend class Variable_ADT;
