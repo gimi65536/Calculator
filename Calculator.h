@@ -73,12 +73,13 @@ const map<string, char> cpppairleftparentope{};
 const map<string, char> cpppairrightope{};
 const map<string, char> cpppairassignope{{"+=", '`'}, {"-=", '!'}, {"*=", '@'}, {"/=", '\\'}, {"%=", '&'}};
 
+const map<char, char> operator_mapping{{'+', '#'}, {'-', '~'}};
 
-const string CPPinputOPERATOR = "+-*/%()=";
-const string inputOPERATOR = CPPinputOPERATOR + "^";
-const string additional_assignment_OPERATOR = "`!@\\&";
-const string OPERATOR = inputOPERATOR + additional_assignment_OPERATOR + "~#";
-const string additional_assignment[] = {"+=", "-=", "*=", "/=", "%="};
+const string CPPinputOPERATOR = join("", concatsv(cppbaseplusope, cppbasemultiope, cppbaseexpope, cppbaseleftparentope, cppbaserightope, cppbaseassignope));
+const string inputOPERATOR = join("", concatsv(baseplusope, basemultiope, baseexpope, baseleftparentope, baserightope, baseassignope));
+const string additional_assignment_OPERATOR = join("", values(pairassignope));
+const string OPERATOR = inputOPERATOR + additional_assignment_OPERATOR + join("", values(operator_mapping));
+const vector<string> additional_assignment = keys(pairassignope);
 const string scalar = "1234567890";
 const string digit_separator = "\'"; //c++14
 const string space = " ";
@@ -91,6 +92,7 @@ stack<bool> number_is_var;
 
 bool ope = true; //use for unary minus
 bool CPPTYPE = true; //whether to use C++ format arithmetic expression
+bool is_regex = false;
 
 int getPrior(char& n, bool ope = ::ope){
 	if(n == '~' || n == '#' || n == '^'){
@@ -163,7 +165,7 @@ void alert(const int now, const int lef, const int righ, const string& str, cons
 
 bool Cppcheck(string str, bool is_regex){
 	if(is_regex){
-		static const vector<char> baseope         = concatsv(cppbaseplusope, cppbasemultiope, cppbaseexpope, cppbaseleftparentope, cppbaserightope, baseassignope);
+		static const vector<char> baseope         = concatsv(cppbaseplusope, cppbasemultiope, cppbaseexpope, cppbaseleftparentope, cppbaserightope, cppbaseassignope);
 		static const map<string, char> pairope    = concatsm(cpppairplusope, cpppairmultiope, cpppairexpope, cpppairleftparentope, cpppairrightope, cpppairassignope);	
 		static const vector<char> plusope         = concatsv(cppbaseplusope, values(cpppairplusope));
 		static const vector<char> multiope        = concatsv(cppbasemultiope, values(cpppairmultiope));
@@ -185,10 +187,10 @@ bool Cppcheck(string str, bool is_regex){
 		static const regex B00_1("[^\\d" + vartotal_regex + baseope_regex + separator_regex + "\\s]");
 		static const regex B00_3("([" + ope_regex + "])");
 		static const regex B00_5("(?:^|\\s)\\d[\\d" + separator_regex + "]*([^\\s\\d" + separator_regex + "])");
-		static const regex B00_6("^\\s+|\\s+$|([^\\s]\\s)\\s+(?=[^\\s])");
+		static const regex B00_6("(?:^|\\s)[" + varinit_regex + "][" + varcontent_regex + "]*([^\\s" + varcontent_regex + "])");
+		static const regex B00_7("^\\s+|\\s+$|([^\\s]\\s)\\s+(?=[^\\s])");
 		static const regex B01_1("(?:^|\\s)((?=[" + separator_regex + "]))(?=[^" + varinit_regex + "])");
-		static const regex B01_2("(?:^|\\s)([" + varinit_regex + "])[^\\s]*?((?=[" + separator_regex + "]))(?=[^" + varcontent_regex + "])");
-		static const regex B01_3("(?:^|\\s)\\d[\\d" + separator_regex + "]*?([" + separator_regex + "])(?=[^\\d]|$)");
+		static const regex B01_2("(?:^|\\s)\\d[\\d" + separator_regex + "]*?([" + separator_regex + "])(?=[^\\d]|$)");
 		static const regex B02("[^" + ope_regex + "]\\s[" + leftparentope_regex + "]");
 		static const regex B03("[" + rightparentope_regex + "]\\s[^" + ope_regex + "]");
 		static const regex B04("[^" + ope_regex + "]\\s[^" + ope_regex + "]");
@@ -209,16 +211,16 @@ bool Cppcheck(string str, bool is_regex){
 			alert(m.position(1), 0, 0, str, "Cannot put invalid symbol in a number!");
 			return false;
 		}
-		str = regex_replace(str, B00_6, "$1$2");
+		if(smatch m; regex_search(str, m, B00_6)){
+			alert(m.position(1), 0, 0, str, "Cannot put invalid symbol in a variable!");
+			return false;
+		}
+		str = regex_replace(str, B00_7, "$1$2");
 		if(smatch m; regex_search(str, m, B01_1)){
 			alert(m.position(1), 0, 0, str, "Cannot put quote at beginning position!");
 			return false;
 		}
 		if(smatch m; regex_search(str, m, B01_2)){
-			alert(m.position(2), m.position(2) - m.position(1), 0, str, "Cannot put quote in a variable!");
-			return false;
-		}
-		if(smatch m; regex_search(str, m, B01_3)){
 			alert(m.position(1), 1, 1, str, "Quote should be between two digits!");
 			return false;
 		}
@@ -416,13 +418,109 @@ bool Cppcheck(string str, bool is_regex){
 	return true;
 }
 
-bool check(const string& String, bool is_regex = true){
+bool check(const string& String, bool is_regex){
 	if(is_regex){
-		//...
+		static const vector<char> baseope         = concatsv(baseplusope, basemultiope, baseexpope, baseleftparentope, baserightope, baseassignope);
+		static const map<string, char> pairope    = concatsm(pairplusope, pairmultiope, pairexpope, pairleftparentope, pairrightope, pairassignope);	
+		static const vector<char> plusope         = concatsv(baseplusope, values(pairplusope));
+		static const vector<char> multiope        = concatsv(basemultiope, values(pairmultiope));
+		static const vector<char> expope          = concatsv(baseexpope, values(pairexpope));
+		static const vector<char> leftparentope   = concatsv(baseleftparentope, values(pairleftparentope));
+		static const vector<char> rightparentope  = concatsv(baserightope, values(pairrightope));
+		static const vector<char> assignope       = concatsv(baseassignope, values(pairassignope));
+		static const vector<char> ope             = concatsv(plusope, multiope, expope, leftparentope, rightparentope, assignope);
+		static const string baseope_regex         = sign_to_regex(join("", baseope));
+		static const string plusope_regex         = sign_to_regex(join("", plusope));
+		static const string multiope_regex        = sign_to_regex(join("", multiope));
+		static const string expope_regex          = sign_to_regex(join("", expope));
+		static const string leftparentope_regex   = sign_to_regex(join("", leftparentope));
+		static const string rightparentope_regex  = sign_to_regex(join("", rightparentope));
+		static const string assignope_regex       = sign_to_regex(join("", assignope));
+		static const string ope_regex             = sign_to_regex(join("", ope));
+		static const regex A00_1("[^\\d" + varinit_regex + varcontent_regex + baseope_regex + "\\s]");
+		static const regex A00_3("([" + ope_regex + "])");
+		static const regex A00_4("([" + varinit_regex + "][" + varcontent_regex + "]*)");
+		//static const regex A00_5("(?:^|\\s)((?=[" + varcontonly_regex + "]))(?=[^\\d])|(?:^|\\s)\\d[^\\s]*?(?=[^\\d])((?=[" + varcontonly_regex + "]))");
+		static const regex A00_6("^\\s+|\\s+$|([^\\s]\\s)\\s+(?=[^\\s])");
+		static const regex A01("[^\\s]");
+		static const regex A02("^[^" + vartotal_regex + plusope_regex + leftparentope_regex + "]");
+		static const regex A03("[^" + vartotal_regex + rightparentope_regex + "]$");
+		static const regex A04("[" + plusope_regex + multiope_regex + expope_regex + leftparentope_regex + assignope_regex + "]\\s[" + multiope_regex + expope_regex + "]");
+		static const regex A05("[^" + vartotal_regex + rightparentope_regex + "]\\s[" + rightparentope_regex + "]");
+		static const regex A06("[^" + vartotal_regex + "]\\s[" + assignope_regex + "]");
+		static const regex A07("[^" + vartotal_regex + leftparentope_regex + assignope_regex + "\\s][^" + leftparentope_regex + "]*?[" + assignope_regex + "]");
+		static const regex A08_1("(?:^|\\s)(\\d)[^" + leftparentope_regex + "]*?[" + assignope_regex + "]");
+		static const regex A08_2("(?:^|[" + leftparentope_regex + assignope_regex + "]\\s)[" + varinit_regex + "][" + vartotal_regex + "\\s]*?\\s([" + varinit_regex + "])[" + vartotal_regex + "\\s]*?[" + assignope_regex + "]");
+		static const regex A09("([" + varinit_regex + "][" + varcontent_regex + "]*?)(?=\\s(.)|$)");
+		static const regex is_baseassign("[" + baseope_regex + "]");
+		string str = regex_replace(String, A00_1, "");
+		for(const auto& [P, rep] : pairope){ //A00-2
+			str = regex_replace(str, regex(sign_to_regex(P)), char_to_string(rep));
+		}
+		str = regex_replace(str, A00_3, " $1 ");
+		str = regex_replace(str, A00_4, " $1 ");
+		/*if(smatch m;regex_search(str, m, A00_5)){
+			size_t pos = 0;
+			if(m[1].matched){
+				pos = m.position(1);
+			}else{
+				pos = m.position(2);
+			}
+			alert(pos, 0, 0, str, "Should not put this at this position!");
+			return false;
+		}*/
+		str = regex_replace(str, A00_6, "$1$2");
+		if(!regex_search(str, A01)){
+			wout << "You should input any valid symbol!" << wendl;
+			return false;
+		}
+		if(regex_search(str, A02)){
+			alert(0, 0, 0, str, "Should not put this at this position!");
+			return false;
+		}
+		if(regex_search(str, A03)){
+			alert(str.length() - 1, 0, 0, str, "Should not put this at this position!");
+			return false;
+		}
+		if(smatch m;regex_search(str, m, A04)){
+			alert(m.position() + 1, 1, 1, str, "Cannot put \"+-*/%^(=\" right after operator \"*/%^\" !");
+			return false;
+		}
+		if(smatch m;regex_search(str, m, A05)){
+			alert(m.position() + 1, 1, 1, str, "Cannot put this before \")\" !");
+			return false;
+		}
+		if(smatch m;regex_search(str, m, A06)){
+			alert(m.position() + 1, 1, 1, str, "Operator should NOT appear right before any assignment!");
+			return false;
+		}
+		if(smatch m;regex_search(str, m, A07)){
+			alert(m.position(), 0, 0, str, "This operator illegally appear BEFORE an assignment!");
+			return false;
+		}
+		if(smatch m;regex_search(str, m, A08_1)){
+			alert(m.position(1), 0, 0, str, "This number illegally appear BEFORE an assignment!");
+			return false;
+		}
+		if(smatch m;regex_search(str, m, A08_2)){
+			alert(m.position(1), 0, 0, str, "No second variable BEFORE an assignment!");
+			return false;
+		}
+		smatch m;
+		while(regex_search(str, m, A09)){
+			string var = m.str(1);
+			if(!variable.check_name(var)){
+				if(!m[2].matched || !regex_match(m.str(2), is_baseassign)){
+					alert(m.position(1), 0, var.size() - 1, str, "Don't put undefined variable before additional assignment operator.");
+					return false;
+				}
+			}
+			str = m.suffix();
+		}
 	}else{
 		string str = String, specialassignmentstr = String, delim = inputOPERATOR + variable_namespace + scalar + space;
 		string& allow = delim, deny = delim;
-		for(int i = 0;i < SIZE(additional_assignment);i++){
+		for(int i = 0;i < additional_assignment.size();i++){
 			size_t pos = str.find(additional_assignment[i]);
 			while(pos != string::npos){
 				str.erase(pos, 1);
@@ -599,7 +697,7 @@ bool check(const string& String, bool is_regex = true){
 
 int main(){
 	ifstream fin("setup.ini");
-	fin >> CPPTYPE >> put_length >> file_out;
+	fin >> CPPTYPE >> put_length >> file_out >> is_regex;
 	fin.close();
 	string str, buf, postfix, delim = inputOPERATOR + variable_namespace + scalar + space;
 	stringstream ss;
@@ -614,7 +712,7 @@ int main(){
 		if(file_out){
 			fout << ">>> " << str << endl;
 		}
-		if(!check(str)){
+		if(!check(str, is_regex)){
 			wout << "Please try to input again..." << wendl;
 			continue;
 		}
@@ -626,7 +724,7 @@ int main(){
 			str.erase(pos, 1);
 			pos = str.find_first_not_of(delim);
 		}
-		for(int i = 0;i < SIZE(additional_assignment);i++){
+		for(int i = 0;i < additional_assignment.size();i++){
 			pos = str.find(additional_assignment[i]);
 			while(pos != string::npos){
 				str.erase(pos, 1);

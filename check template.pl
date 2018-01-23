@@ -89,7 +89,7 @@ say $s;
 $s =~ s/([${varinit_regex}][$varcontent_regex]*)/ $1 /g;
 say $s;
 #A00.5
-say "A00 error" if $s =~ /(?:^|\s)(?=[$varcontonly_regex])(?=[^\d])|(?:^|\s)\d[^\s]*?(?=[^\d])(?=[$varcontonly_regex])/;
+say "A00 error" if $s =~ /(?:^|\s)((?=[$varcontonly_regex]))(?=[^\d])|(?:^|\s)\d[^\s]*?(?=[^\d])((?=[$varcontonly_regex]))/;
 #A00.6
 $s =~ s/^\s+|\s+$|([^\s]\s)\s+(?=[^\s])/$1$2/g;
 say $s;
@@ -158,11 +158,11 @@ $varcontent_regex  = '\w\$'; #A-Za-z0-9_
 $varinit_regex     = 'A-Za-z_\$';
 $varinitonly_regex = '';
 $varcontonly_regex = '\d';
-$vartotal_regex    = '\w\$';
+$vartotal_regex    = 'A-Za-z_\$';
 $separator_regex = &signtoregex(@separator);
 
 #$s = "  4a23a23 aaa111_\$+ab+a'23'5 2a ```+=5{-|1|+|1waifu} ";
-$s = "5+6'6'";
+$s = "a4";
 say $s;
 #B00.1
 say "B00 error-1" if $s =~ /[^\d${vartotal_regex}${baseope_regex}${separator_regex}\s]/;
@@ -180,12 +180,13 @@ say $s;
 #B00.5
 say "B00 error-3" if $s =~ /(?:^|\s)\d[\d$separator_regex]*([^\s\d$separator_regex])/;
 #B00.6
+say "B00 error-4" if $s =~ /(?:^|\s)[$varinit_regex][$varcontent_regex]*([^\s$varcontent_regex])/;
+#B00.7
 $s =~ s/^\s+|\s+$|([^\s]\s)\s+(?=[^\s])/$1$2/g;
 say $s;
 
 say "B01 error-1" if $s =~ /(?:^|\s)((?=[$separator_regex]))(?=[^$varinit_regex])/;
-say "B01 error-2" if $s =~ /(?:^|\s)([$varinit_regex])[^\s]*?((?=[$separator_regex]))(?=[^$varcontent_regex])/;
-say "B01 error-3" if $s =~ /(?:^|\s)\d[\d$separator_regex]*?([$separator_regex])(?=[^\d]|$)/;
+say "B01 error-2" if $s =~ /(?:^|\s)\d[\d$separator_regex]*?([$separator_regex])(?=[^\d]|$)/;
 say "B02 error" if $s =~ /[^$ope_regex]\s[$leftparentope_regex]/;
 say "B03 error" if $s =~ /[$rightparentope_regex]\s[^$ope_regex]/;
 say "B04 error" if $s =~ /[^$ope_regex]\s[^$ope_regex]/;
