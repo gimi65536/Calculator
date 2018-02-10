@@ -131,6 +131,8 @@ public:
 	bool get_positive() const{return positive;}
 	void negate(){positive = !positive;}
 	void divide2();
+	bool is_odd() const;
+	bool is_even() const;
 	operator long long int() const;
 	explicit operator unsigned long long int() const;
 	explicit operator long double() const;
@@ -846,8 +848,14 @@ BigNumber BigNumber::operator * (const BigNumber& n) const{
 		Int tmp = 0;
 		for(int j = 0;j < a_size;j++){
 			simple_multi(a[j], n.a[i]);
-			temp.a[i + j] += m[0] + tmp;
+			//temp.a[i + j] += m[0] + tmp; //may over 2147483647
+			temp.a[i + j] += tmp;
 			tmp = m[1];
+			if(temp.a[i + j] >= IMax){ //overflow avoid
+				temp.a[i + j] -= IMax;
+				tmp++;
+			}
+			temp.a[i + j] += m[0];
 			if(temp.a[i + j] >= IMax){
 				temp.a[i + j] -= IMax;
 				tmp++;
@@ -1021,7 +1029,7 @@ const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 		positive = true;
 		return (*this);
 	}else{
-		if(n.getRealSize() == 1){
+		if(n.getRealSize() == 1){ //base case
 			if(n.a[0] == 1){
 				return (*this);
 			}else if(n.a[0] == 0){
@@ -1035,10 +1043,22 @@ const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 			}
 		}
 	}
-	BigNumber base = (*this);
+	/*BigNumber base = (*this);
 	for(BigNumber i = 2;i <= n;i++){
 		(*this) *= base;
+	}*/
+	BigNumber nd2 = n;
+	nd2.divide2();
+	if(n.is_even()){
+		(*this) ^= nd2;
+		(*this) *= (*this);
+	}else{
+		BigNumber base = (*this);
+		(*this) ^= nd2;
+		(*this) *= (*this);
+		(*this) *= base;
 	}
+	//cout << base << " ^ " << n << " = " << (*this) << endl;
 	return (*this);
 }
 template <typename T>
@@ -1076,6 +1096,12 @@ void BigNumber::divide2(){
 		}
 		a[i] /= 2;
 	}
+}
+bool BigNumber::is_odd() const{
+	return a[0] % 2 == 1;
+}
+bool BigNumber::is_even() const{
+	return a[0] % 2 == 0;
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;
