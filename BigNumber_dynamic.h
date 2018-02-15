@@ -20,13 +20,17 @@ class BigNumber;
 
 typedef BigNumber bnint;
 
+namespace bnint_swap{
+void swap(bnint& a, bnint& b);
+}
+
 class BigNumber{
 private:
 	static BtoI m[2];
 	size_t SIZE;
 	Int* a;
 	bool positive;
-	void resize();
+	void resize() noexcept;
 	void resize(size_t n);
 	void simple_increment();
 	void simple_decrement();
@@ -41,34 +45,37 @@ private:
 	template <typename T>
 	void WIDE_CHARARRAY_PASS(const T* C_STR);
 public:
+	using base_type = Int;
+	static constexpr Int base_max = IMax - 1;
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
+	friend void bnint_swap::swap(bnint& a, bnint& b);
 	BigNumber();
 	template <typename T>
 	BigNumber(const T& n);
 	BigNumber(const BigNumber& n);
 	BigNumber(BigNumber&& n);
 	~BigNumber();
-	size_t digit() const;
-	int getDigit(int n) const;
-	int getSize() const;
-	int getRealSize() const;
+	size_t digit() const noexcept;
+	int getDigit(int n) const noexcept;
+	int getSize() const noexcept;
+	int getRealSize() const noexcept;
 	template <typename T>
 	bool operator == (const T& n) const;
-	bool operator == (const BigNumber& n) const;
+	bool operator == (const BigNumber& n) const noexcept;
 	template <typename T>
 	bool operator != (const T& n) const;
-	bool operator != (const BigNumber& n) const;
-	bool operator < (const BigNumber& n) const;
+	bool operator != (const BigNumber& n) const noexcept;
+	bool operator < (const BigNumber& n) const noexcept;
 	template <typename T>
 	bool operator < (const T& n) const;
-	bool operator <= (const BigNumber& n) const;
+	bool operator <= (const BigNumber& n) const noexcept;
 	template <typename T>
 	bool operator <= (const T& n) const;
-	bool operator > (const BigNumber& n) const;
+	bool operator > (const BigNumber& n) const noexcept;
 	template <typename T>
 	bool operator > (const T& n) const;
-	bool operator >= (const BigNumber& n) const;
+	bool operator >= (const BigNumber& n) const noexcept;
 	template <typename T>
 	bool operator >= (const T& n) const;
 	BigNumber operator + () const;
@@ -125,14 +132,15 @@ public:
 	template <typename T>
 	BigNumber operator ^ (const T& n) const;
 	const string str(int notation = 10) const;
-	size_t Sizeof() const{return SIZE;}
+	size_t Sizeof() const noexcept{return SIZE;}
 	void print() const{cout << (*this);}
-	bool is_zero() const;
-	bool get_positive() const{return positive;}
-	void negate(){positive = !positive;}
-	void divide2();
-	bool is_odd() const;
-	bool is_even() const;
+	bool is_zero() const noexcept;
+	bool get_positive() const noexcept{return positive;}
+	void negate() noexcept{positive = !positive;}
+	void divide2() noexcept;
+	bool is_odd() const noexcept;
+	bool is_even() const noexcept;
+	Int get(size_t n) const;
 	operator long long int() const;
 	explicit operator unsigned long long int() const;
 	explicit operator long double() const;
@@ -143,7 +151,7 @@ BigNumber HI = 0, LO = 0;
 static BigNumber be_divided = 0;
 static BigNumber divide = 0;
 
-void BigNumber::resize(){ //fit
+void BigNumber::resize() noexcept{ //fit
 	for(int i = SIZE - 1;i >= BASIC_SIZE;i--){
 		if(a[i] != 0){
 			SIZE = i + 1;
@@ -166,10 +174,10 @@ void BigNumber::resize(size_t n){ //large
 		a = tmp;
 	}
 }
-int BigNumber::getSize() const{
+int BigNumber::getSize() const noexcept{
 	return SIZE;
 }
-int BigNumber::getRealSize() const{
+int BigNumber::getRealSize() const noexcept{
 	for(int i = SIZE - 1;i > 0;i--){
 		if(a[i] != 0){
 			return i + 1;
@@ -475,7 +483,7 @@ BigNumber::~BigNumber(){
 	delete[] a;
 }
 
-size_t BigNumber::digit() const{
+size_t BigNumber::digit() const noexcept{
 	size_t i = SIZE - 1;
 	for(;i > 0;i--){
 		if(a[i] != 0){
@@ -487,7 +495,7 @@ size_t BigNumber::digit() const{
 	for(;tmp / 10 != 0;tmp /= 10, sol++);
 	return sol;
 }
-int BigNumber::getDigit(int n) const{
+int BigNumber::getDigit(int n) const noexcept{
 	if(n <= 0 || n > DIGIT * SIZE){
 		return -1;
 	}
@@ -504,7 +512,7 @@ bool BigNumber::operator == (const T& n) const{
 	BigNumber temp = n;
 	return (*this) == temp;
 }
-bool BigNumber::operator == (const BigNumber& n) const{
+bool BigNumber::operator == (const BigNumber& n) const noexcept{
 	if(SIZE != n.SIZE){
 		return false;
 	}
@@ -526,10 +534,10 @@ template <typename T>
 bool BigNumber::operator != (const T& n) const{
 	return !(*this == n);
 }
-bool BigNumber::operator != (const BigNumber& n) const{
+bool BigNumber::operator != (const BigNumber& n) const noexcept{
 	return !(*this == n);
 }
-bool BigNumber::operator < (const BigNumber& n) const{
+bool BigNumber::operator < (const BigNumber& n) const noexcept{
 	if(SIZE < n.SIZE){
 		return n.positive;
 	}else if(SIZE > n.SIZE){
@@ -559,14 +567,14 @@ bool BigNumber::operator < (const T& n) const{
 	BigNumber temp = n;
 	return (*this) < temp;
 }
-bool BigNumber::operator <= (const BigNumber& n) const{
+bool BigNumber::operator <= (const BigNumber& n) const noexcept{
 	return (*this) < n || (*this) == n;
 }
 template <typename T>
 bool BigNumber::operator <= (const T& n) const{
 	return (*this) < n || (*this) == n;
 }
-bool BigNumber::operator > (const BigNumber& n) const{
+bool BigNumber::operator > (const BigNumber& n) const noexcept{
 	if(SIZE < n.SIZE){
 		return !n.positive;
 	}else if(SIZE > n.SIZE){
@@ -596,7 +604,7 @@ bool BigNumber::operator > (const T& n) const{
 	BigNumber temp = n;
 	return (*this) > temp;
 }
-bool BigNumber::operator >= (const BigNumber& n) const{
+bool BigNumber::operator >= (const BigNumber& n) const noexcept{
 	return (*this) > n || (*this) == n;
 }
 template <typename T>
@@ -970,7 +978,7 @@ const BigNumber& BigNumber::operator /= (const BigNumber& n){
 		}
 		return (*this);
 	}else if(n.is_zero()){
-		throw;
+		throw domain_error("Cannot divide by zero within " + str() + " / " + n.str());
 	}
 	COMMON_DIVIDE(n, false);
 	return (*this);
@@ -996,7 +1004,7 @@ const BigNumber& BigNumber::operator %= (const BigNumber& n){
 	if(SIZE < n.SIZE){
 		return (*this);
 	}else if(n.is_zero()){
-		throw;
+		throw domain_error("Cannot divide by zero within " + str() + " % " + n.str());
 	}
 	COMMON_DIVIDE(n, true);
 	return (*this);
@@ -1077,7 +1085,7 @@ BigNumber BigNumber::operator ^ (const T& n) const{
 	BigNumber temp = n;
 	return (*this) ^ temp;
 }
-bool BigNumber::is_zero() const{
+bool BigNumber::is_zero() const noexcept{
 	if(SIZE > BASIC_SIZE){
 		return false;
 	}
@@ -1088,7 +1096,7 @@ bool BigNumber::is_zero() const{
 	}
 	return true;
 }
-void BigNumber::divide2(){
+void BigNumber::divide2() noexcept{
 	a[0] /= 2;
 	for(int i = 1;i < SIZE;i++){
 		if(a[i] % 2 != 0){
@@ -1096,12 +1104,18 @@ void BigNumber::divide2(){
 		}
 		a[i] /= 2;
 	}
+	if(a[SIZE - 1] == 0 && SIZE > BASIC_SIZE){
+		SIZE--;
+	}
 }
-bool BigNumber::is_odd() const{
+bool BigNumber::is_odd() const noexcept{
 	return a[0] % 2 == 1;
 }
-bool BigNumber::is_even() const{
+bool BigNumber::is_even() const noexcept{
 	return a[0] % 2 == 0;
+}
+Int BigNumber::get(size_t n) const{
+	return a[n];
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;
@@ -1498,6 +1512,28 @@ const BigNumber operator "" _bnint(const char32_t literal){
 const BigNumber operator "" _bnint(const char32_t* string_values, size_t num_chars){
 	BigNumber temp = string_values;
 	return temp;
+}
+/* it seems to be unuseful
+namespace bnint_swap{
+void swap(bnint& a, bnint& b){
+	std::swap(a.SIZE, b.SIZE);
+	std::swap(a.positive, b.positive);
+	std::swap(a.a, b.a);
+}
+}*/
+namespace std{
+//bnint traits
+template<>
+struct is_integral<bnint> : true_type{};
+//is_arithmetic is true if is_integral is true
+//is_scalar becomes true if is_integral is true, which is not reasonable.
+template<>
+struct is_scalar<bnint> : false_type{};
+//is_object     is true of course
+//because is_integral is true, is_fundamental becomes true, which is not reasonable.
+template<>
+struct is_fundamental<bnint> : false_type{};
+//is_compound_type is true
 }
 
 #endif
