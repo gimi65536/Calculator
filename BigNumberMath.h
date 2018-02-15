@@ -233,7 +233,6 @@ public:
 				continue;
 			}
 			sol.fit();
-			cout << sol << low << ' ' << sol + low;
 			sol += low;
 			return sol;
 		}
