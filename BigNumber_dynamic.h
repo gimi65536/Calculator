@@ -36,7 +36,7 @@ private:
 	void simple_increment();
 	void simple_decrement();
 	void simple_add(const BigNumber& n);
-	void simple_minus(const BigNumber& n);
+	void simple_minus(const BigNumber& n, bool negative);
 	static void simple_multi(Int x, Int y);
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
@@ -293,7 +293,7 @@ void BigNumber::simple_add(const BigNumber& n){
 		}
 	}
 }
-void BigNumber::simple_minus(const BigNumber& n){
+void BigNumber::simple_minus(const BigNumber& n, bool negative){
 	const Int* b = nullptr;
 	size_t b_size = 0;
 	bool flag = false, equal = false;
@@ -302,7 +302,8 @@ void BigNumber::simple_minus(const BigNumber& n){
 		b_size = SIZE;
 		a = nullptr;
 		operator = (n);
-		positive = !n.positive;
+		if(!negative){positive = n.positive;}
+		else{positive = !n.positive;}
 		flag = true;
 	}else{
 		b = n.a;
@@ -746,7 +747,7 @@ const BigNumber& BigNumber::operator += (const BigNumber& n){
 	if(positive == n.positive){
 		simple_add(n);
 	}else{
-		simple_minus(n);
+		simple_minus(n, false);
 	}
 	return (*this);
 }
@@ -784,7 +785,7 @@ const BigNumber& BigNumber::operator -= (const BigNumber& n){
 	if(positive != n.positive){
 		simple_add(n);
 	}else{
-		simple_minus(n);
+		simple_minus(n, true);
 	}
 	return (*this);
 }
