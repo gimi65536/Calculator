@@ -28,6 +28,7 @@ class BigNumber{
 private:
 	static BtoI m[2];
 	size_t SIZE;
+	size_t capacity;
 	Int* a;
 	bool positive;
 	void resize() noexcept;
@@ -141,6 +142,12 @@ public:
 	bool is_odd() const noexcept;
 	bool is_even() const noexcept;
 	Int get(size_t n) const;
+	void reserve(size_t n);
+	void upgrade(size_t n = 1);
+	void downgrade(size_t n = 1) noexcept;
+	void fit() noexcept;
+	void operator << (size_t n);
+	void operator >> (size_t n) noexcept;
 	operator long long int() const;
 	explicit operator unsigned long long int() const;
 	explicit operator long double() const;
@@ -162,16 +169,23 @@ void BigNumber::resize() noexcept{ //fit
 }
 void BigNumber::resize(size_t n){ //large
 	if(n > SIZE){
-		Int* tmp = new Int[n];
-		for(int i = 0;i < SIZE;i++){
-			tmp[i] = a[i];
+		if(n <= capacity && capacity / n < 2){
+			for(int i = SIZE;i < n;i++){
+				a[i] = 0;
+			}
+		}else{
+			capacity = n;
+			Int* tmp = new Int[capacity];
+			for(int i = 0;i < SIZE;i++){
+				tmp[i] = a[i];
+			}
+			for(int i = SIZE;i < n;i++){
+				tmp[i] = 0;
+			}
+			delete[] a;
+			a = tmp;
 		}
-		for(int i = SIZE;i < n;i++){
-			tmp[i] = 0;
-		}
-		delete[] a;
 		SIZE = n;
-		a = tmp;
 	}
 }
 int BigNumber::getSize() const noexcept{
@@ -197,13 +211,18 @@ void BigNumber::simple_increment(){
 	}
 	if(a[SIZE - 1] >= IMax){
 		a[SIZE - 1] -= IMax;
-		Int* tmp = new Int[SIZE + 1];
-		for(int i = 0;i < SIZE;i++){
-			tmp[i] = a[i];
+		if(capacity < SIZE + 1 || capacity / (SIZE + 1) >= 2){ //same condition as resize(SIZE + 1)
+			capacity = SIZE + 1;
+			Int* tmp = new Int[capacity];
+			for(int i = 0;i < SIZE;i++){
+				tmp[i] = a[i];
+			}
+			tmp[SIZE++] = 1;
+			delete[] a;
+			a = tmp;
+		}else{
+			a[SIZE++] = 1;
 		}
-		tmp[SIZE++] = 1;
-		delete[] a;
-		a = tmp;
 	}
 }
 void BigNumber::simple_decrement(){
@@ -226,6 +245,7 @@ void BigNumber::simple_decrement(){
 		positive = false;
 	}
 }
+//only reallocate when it is necessary to expand its space
 void BigNumber::simple_add(const BigNumber& n){
 	bool have_SIZE_plus1 = false, less_or_equal = false;
 	if(SIZE < n.SIZE){
@@ -378,8 +398,9 @@ void BigNumber::PASS_BY_STRING(string str){
 	if(str.length() > DIGIT * SIZE){
 		SIZE = (str.length() - 1) / DIGIT + 1;
 	}
+	capacity = SIZE;
 	delete[] a;
-	a = new Int[SIZE];
+	a = new Int[capacity];
 	for(int i = 0;i < SIZE;i++){
 		a[i] = 0;
 	}
@@ -420,8 +441,9 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 	BigNumber notation = notation_t;
 	str.erase(0, 1);
 	SIZE = BASIC_SIZE;
+	capacity = BASIC_SIZE;
 	delete[] a;
-	a = new Int[SIZE];
+	a = new Int[capacity];
 	for(int i = 0;i < SIZE;i++){
 		a[i] = 0;
 	}
@@ -449,7 +471,8 @@ void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
 }
 BigNumber::BigNumber(){
 	SIZE = BASIC_SIZE;
-	a = new Int[SIZE];
+	capacity = BASIC_SIZE;
+	a = new Int[capacity];
 	positive = true;
 	for(int i = 0;i < SIZE;i++){
 		a[i] = 0;
@@ -463,7 +486,8 @@ BigNumber::BigNumber(const T& n){
 BigNumber::BigNumber(const BigNumber& n){
 	if(this != &n){
 		SIZE = n.SIZE;
-		a = new Int[SIZE];
+		capacity = n.SIZE;
+		a = new Int[capacity];
 		for(int i = 0;i < SIZE;i++){
 			a[i] = n.a[i];
 		}
@@ -473,6 +497,7 @@ BigNumber::BigNumber(const BigNumber& n){
 BigNumber::BigNumber(BigNumber&& n){
 	if(this != &n){
 		SIZE = n.SIZE;
+		capacity = n.capacity;
 		a = n.a;
 		n.a = nullptr;
 		positive = n.positive;
@@ -621,9 +646,10 @@ BigNumber BigNumber::operator - () const{
 }
 const BigNumber& BigNumber::operator = (const BigNumber& n){
 	if(this != &n){
-		if(SIZE < n.SIZE || a == nullptr){
+		if(capacity < n.SIZE || a == nullptr){
 			delete[] a;
-			a = new Int[n.SIZE];
+			capacity = n.SIZE;
+			a = new Int[capacity];
 		}
 		SIZE = n.SIZE;
 		for(int i = 0;i < SIZE;i++){
@@ -636,6 +662,7 @@ const BigNumber& BigNumber::operator = (const BigNumber& n){
 const BigNumber& BigNumber::operator = (BigNumber&& n){
 	if(this != &n){
 		SIZE = n.SIZE;
+		capacity = n.capacity;
 		delete[] a;
 		a = n.a;
 		n.a = nullptr;
@@ -663,8 +690,9 @@ const BigNumber& BigNumber::operator = (const T& n){
 		return (*this);
 	}else{
 		SIZE = BASIC_SIZE;
+		capacity = BASIC_SIZE;
 		delete[] a;
-		a = new Int[SIZE];
+		a = new Int[capacity];
 		if constexpr(is_scalar<T>::value){ //faster
 			for(int i = SIZE - 1;i > 2;i--){
 				a[i] = 0;
@@ -966,6 +994,7 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 		}
 		delete[] quo;
 		SIZE = target_size;
+		capacity - target_size;
 		positive = positive == n.positive;
 	}
 	resize();
@@ -1116,6 +1145,60 @@ bool BigNumber::is_even() const noexcept{
 }
 Int BigNumber::get(size_t n) const{
 	return a[n];
+}
+void BigNumber::reserve(size_t n){
+	if(n == capacity){
+		return;
+	}
+	if(n > SIZE){
+		capacity = n;
+		Int* tmp = new Int[capacity];
+		for(int i = 0;i < SIZE;i++){
+			tmp[i] = a[i];
+		}
+		for(int i = SIZE;i < n;i++){
+			tmp[i] = 0;
+		}
+		delete[] a;
+		a = tmp;
+	}
+}
+void BigNumber::upgrade(size_t n){
+	if(SIZE == BASIC_SIZE){
+		if(a[BASIC_SIZE - 1] != 0){
+			if(capacity == BASIC_SIZE){
+				resize(SIZE + 1);
+			}else{
+				SIZE++;
+			}
+		}
+	}else{
+		if(capacity < SIZE + 1){
+			resize(SIZE + 1);
+		}else{
+			SIZE++;
+		}
+	}
+	for(int i = SIZE - 1;i > 0;i--){
+		a[i] = a[i - 1];
+	}
+	a[0] = 0;
+}
+void BigNumber::downgrade(size_t n) noexcept{
+	for(int i = 0;i < SIZE - 1;i++){
+		a[i] = a[i + 1];
+	}
+	a[SIZE - 1] = 0;
+	resize();
+}
+void BigNumber::fit() noexcept{
+	resize();
+}
+void BigNumber::operator << (size_t n){
+	upgrade(n);
+}
+void BigNumber::operator >> (size_t n) noexcept{
+	downgrade(n);
 }
 BigNumber::operator long long int() const{
 	long long int tmp = 0;
