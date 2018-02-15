@@ -220,7 +220,6 @@ public:
 		sol.reserve(size);
 		//no matter what IMax is or how large/special the number is, the expected value of times of attempt is less than 2.
 		while(true){
-			cout << '!';
 			bnint::base_type init = init_dis(__urng);
 			bool signal = (init == range.get(size - 1));
 			sol += init;
