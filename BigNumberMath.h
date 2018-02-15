@@ -182,7 +182,7 @@ public:
 		static optional<size_t> inf_size_saved;
 		static bnint saved;
 		bnint low, high;
-		if(!a_real().has_value() || !b_real().has_value()){
+		if(!__p.a_real().has_value() || !__p.b_real().has_value()){
 			if(inf_size_saved != inf_size){
 				if(!inf_size_saved.has_value()){
 					saved = base ^ inf_size;
@@ -233,6 +233,7 @@ public:
 				continue;
 			}
 			sol.fit();
+			cout << sol << low << ' ' << sol + low;
 			sol += low;
 			return sol;
 		}
