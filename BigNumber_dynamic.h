@@ -1102,7 +1102,7 @@ const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 template <typename T>
 const BigNumber& BigNumber::operator ^= (const T& n){
 	BigNumber temp = n;
-	(*this) ^= n;
+	(*this) ^= temp;
 	return (*this);
 }
 BigNumber BigNumber::operator ^ (const BigNumber& n) const{
