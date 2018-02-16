@@ -3,6 +3,10 @@
 #include <cmath>
 #include <optional>
 #include <random>
+#include <array>
+#include <algorithm>
+//#include <execution>
+#include <functional>
 
 #ifndef _BNMATH_
 #define _BNMATH_
@@ -108,6 +112,87 @@ bool mod3(const bnint& n){
 		}
 	}
 }*/
+bnint powmod(bnint base, bnint power, const bnint& mod){
+	//not understood so much, to be researched
+	bnint sol = 1;
+	while(power.get_positive() && !power.is_zero()){
+		if(power.is_odd()){
+			sol = (sol * base) % mod;
+		}
+		base ^= 2;
+		base %= mod;
+		power.divide2();
+	}
+	return sol;
+}
+pair<bool, optional<vector<int>>> MillerRabin(const bnint& n, int addition = 0){
+	constexpr static array must_com = {2, 3, 5, 7, 11, 233};
+	constexpr static array chos_com = {13, 17, 19, 23, 29, 31, 37, 41, 43, 47,
+		53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
+		101, 103, 107, 109, 113, 127, 131, 137, 139, 149,
+		151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
+		199, 211, 223, 227, 229, 239, 241, 251, 257, 263,
+		269, 271, 277, 281, 283, 293, 307, 311, 313, 317,
+		331, 337, 347, 349, 353, 359, 367, 373, 379, 383,
+		389, 397, 401, 409, 419, 421, 431, 433, 439, 443,
+		449, 457, 461, 463, 467, 479, 487, 491, 499, 503,
+		509, 521, 523, 541, 547, 557, 563, 569, 571, 577,
+		587, 593, 599, 601, 607, 613, 617, 619, 631, 641,
+		643, 647, 653, 659, 661, 673, 677, 683, 691, 701,
+		709, 719, 727, 733, 739, 743, 751, 757, 761, 769,
+		773, 787, 797, 809, 811, 821, 823, 827, 829, 839,
+		853, 857, 859, 863, 877, 881, 883, 887, 907, 911,
+		919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997};
+	//static uniform_int_distribution<> g(0, chos_com.size() - 1);
+	static mt19937_64 rd(random_device{}());
+	if(n.digit() < 4){
+		auto f = bind(equal_to<bnint>(), n, placeholders::_1);
+		return make_pair(any_of(must_com.begin(), must_com.end(), f)
+		              || any_of(chos_com.begin(), chos_com.end(), f), nullopt);
+		/*return make_pair(any_of(execution::par_unseq, must_com.begin(), must_com.end(), f))
+		    || any_of(execution::par_unseq, chos_com.begin(), chos_com.end(), f), nullopt);*/
+	}
+	if(n.is_even()){
+		return make_pair(false, nullopt);
+	}
+	if(addition < 0){addition = 0;}
+	else if(addition + 1 > chos_com.size()){
+		addition = chos_com.size() - 1;
+	}
+	vector<int> witness(must_com.size() + 1 + addition);
+	copy(must_com.begin(), must_com.end(), witness.begin());
+	sample(chos_com.begin(), chos_com.end(), witness.begin() + must_com.size(), 1 + addition, rd);
+	//*witness.rbegin() = chos_com[g(rd)];
+	bnint d, s = 0, minusone;
+	d = minusone = n - 1;
+	while(d.is_even()){
+		d.divide2();
+		s++;
+	}
+	for(auto a : witness){
+		//cout << a << ' ' << s << endl;
+		bnint base = powmod(a, d, n); //a ^ d mod n
+		if(base == 1 || base == minusone){
+			continue;
+		}
+		bool success = false;
+		for(bnint i = 1;i < s;i++){
+			base ^= 2;
+			base %= n;
+			if(base == minusone){
+				success = true;
+				break;
+			}else if(base == 1){
+				//always 1 (!= n - 1) so it is composite
+				break;
+			}
+		}
+		if(!success){
+			return make_pair(false, witness);
+		}
+	}
+	return make_pair(true, witness);
+}
 }
 namespace std{
 //C++ allows template specialization in std
@@ -252,11 +337,29 @@ public:
 	friend bool operator == (const uniform_int_distribution& __d1, const uniform_int_distribution& __d2){
 		return __d1._M_param == __d2._M_param;
 	}
+	friend bool operator != (const uniform_int_distribution& __d1, const uniform_int_distribution& __d2){
+		return !(__d1._M_param == __d2._M_param);
+	}
 private:
 	param_type _M_param;
 	//template<typename _ForwardIterator, typename _UniformRandomNumberGenerator>
 	//void __generate_impl(_ForwardIterator __f, _ForwardIterator __t, _UniformRandomNumberGenerator& __urng, const param_type& __p);
 };
+template<class CharT, class Traits>
+basic_ostream<CharT, Traits>& operator << (basic_ostream<CharT, Traits>& os, const uniform_int_distribution<bnint>& __d){
+	if(__d.a_real().has_value()){
+		os << __d.a();
+	}else{
+		os << "-inf";
+	}
+	os << ' ';
+	if(__d.b_real().has_value()){
+		os << __d.b();
+	}else{
+		os << "inf";
+	}
+	return os;
 }
+} //end of std
 
 #endif
