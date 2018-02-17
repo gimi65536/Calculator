@@ -26,7 +26,7 @@ void swap(bnint& a, bnint& b);
 
 class BigNumber{
 private:
-	static BtoI m[2];
+	//static BtoI m[2];
 	size_t SIZE;
 	size_t capacity;
 	Int* a;
@@ -37,7 +37,7 @@ private:
 	void simple_decrement();
 	void simple_add(const BigNumber& n);
 	void simple_minus(const BigNumber& n, bool negative);
-	static void simple_multi(Int x, Int y);
+	static pair<BtoI, BtoI> simple_multi(Int x, Int y);
 	void PASS_BY_STRING(string str);
 	void PASS_BY_STRING_with_notation(string str);
 	void COMMON_DIVIDE(const BigNumber& n, bool mod);
@@ -153,7 +153,7 @@ public:
 	explicit operator long double() const;
 };
 
-BtoI BigNumber::m[2] = {0};
+//BtoI BigNumber::m[2] = {0};
 BigNumber HI = 0, LO = 0;
 static BigNumber be_divided = 0;
 static BigNumber divide = 0;
@@ -355,10 +355,10 @@ void BigNumber::simple_minus(const BigNumber& n, bool negative){
 		delete[] b;
 	}
 }
-void BigNumber::simple_multi(Int x, Int y){
+pair<BtoI, BtoI> BigNumber::simple_multi(Int x, Int y){
 	BtoI x_ = x, y_ = y;
 	BtoI sol = x_ * y_;
-	m[0] = sol % IMax, m[1] = sol / IMax;
+	return make_pair(sol % IMax, sol / IMax);
 }
 void BigNumber::PASS_BY_STRING(string str){
 	//check notation
@@ -826,9 +826,9 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 			for(int i = 0;i < n.getRealSize();i++){
 				Int tmp = 0;
 				for(int j = 0;j < getRealSize();j++){
-					simple_multi(a[j], n.a[i]);
-					b[i + j] += m[0] + tmp;
-					tmp = m[1];
+					auto [low, high] = simple_multi(a[j], n.a[i]);
+					b[i + j] += low + tmp;
+					tmp = high;
 					if(b[i + j] >= IMax){
 						b[i + j] -= IMax;
 						tmp++;
@@ -848,9 +848,9 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 		}else if(n.getRealSize() == 1){
 			Int tmp = 0;
 			for(int i = 0;i < SIZE;i++){
-				simple_multi(a[i], n.a[0]);
-				a[i] = m[0] + tmp;
-				tmp = m[1];
+				auto [low, high] = simple_multi(a[i], n.a[0]);
+				a[i] = low + tmp;
+				tmp = high;
 				if(a[i] >= IMax){
 					a[i] -= IMax;
 					tmp++;
@@ -884,15 +884,15 @@ BigNumber BigNumber::operator * (const BigNumber& n) const{
 	for(int i = 0;i < b_size;i++){
 		Int tmp = 0;
 		for(int j = 0;j < a_size;j++){
-			simple_multi(a[j], n.a[i]);
+			auto [low, high] = simple_multi(a[j], n.a[i]);
 			//temp.a[i + j] += m[0] + tmp; //may over 2147483647
 			temp.a[i + j] += tmp;
-			tmp = m[1];
+			tmp = high;
 			if(temp.a[i + j] >= IMax){ //overflow avoid
 				temp.a[i + j] -= IMax;
 				tmp++;
 			}
-			temp.a[i + j] += m[0];
+			temp.a[i + j] += low;
 			if(temp.a[i + j] >= IMax){
 				temp.a[i + j] -= IMax;
 				tmp++;
