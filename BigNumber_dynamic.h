@@ -10,7 +10,6 @@ typedef intmax_t BtoI;
 typedef uintmax_t uBtoI;
 typedef long double BtoD;
 //constexpr BtoI IIMax = 1'000'000'000'000'000'000;
-static_assert(sizeof(BtoI) >= sizeof(Int) * 2, "BtoI should be 2 or more times larger than Int");
 
 constexpr auto BtoItimes = [](){
 	intmax_t sol = 0, a = INTMAX_MAX;
@@ -28,6 +27,7 @@ constexpr auto uBtoItimes = [](){
 	}
 	return sol;
 }();
+static_assert(BtoItimes >= 2, "BtoI should be able to contain at least 1 full array position of BigNumber::a.");
 
 const string cvt_string(const string& str);
 template <typename T>
