@@ -1618,6 +1618,10 @@ struct is_scalar<bnint> : false_type{};
 template<>
 struct is_fundamental<bnint> : false_type{};
 //is_compound_type is true
+template<>
+struct is_signed<bnint> : true_type{};
+template<>
+struct is_unsigned<bnint> : false_type{};
 }
 
 #endif
