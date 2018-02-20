@@ -148,7 +148,7 @@ public:
 	void fit() noexcept;
 	void operator << (size_t n);
 	void operator >> (size_t n) noexcept;
-	operator long long int() const;
+	explicit operator long long int() const;
 	explicit operator unsigned long long int() const;
 	explicit operator long double() const;
 };
@@ -1465,7 +1465,7 @@ const string BigNumber::str(int notation) const{
 	string temp;
 	BigNumber n = abs();
 	do{
-		BtoI t = n % notation;
+		BtoI t = static_cast<BtoI>(n % notation);
 		if(t < 10){
 			temp += static_cast<char>('0' + t);
 		}else{
