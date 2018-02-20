@@ -10,6 +10,8 @@
 #include <regex>
 #include <map>
 #include <stdexcept>
+#include <utility>
+#include <cstdint>
 #include "../helper.h"
 using namespace std;
 

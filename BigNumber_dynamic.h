@@ -6,11 +6,28 @@ typedef int Int;
 constexpr Int IMax = 1'000'000'000;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should larger than 3.");
 
-typedef long long int BtoI;
-typedef unsigned long long int uBtoI;
+typedef intmax_t BtoI;
+typedef uintmax_t uBtoI;
 typedef long double BtoD;
-constexpr BtoI IIMax = 1'000'000'000'000'000'000;
+//constexpr BtoI IIMax = 1'000'000'000'000'000'000;
 static_assert(sizeof(BtoI) >= sizeof(Int) * 2, "BtoI should be 2 or more times larger than Int");
+
+constexpr auto BtoItimes = [](){
+	intmax_t sol = 0, a = INTMAX_MAX;
+	while(a > 0){
+		sol++;
+		a /= IMax;
+	}
+	return sol;
+}();
+constexpr auto uBtoItimes = [](){
+	uintmax_t sol = 0, a = UINTMAX_MAX;
+	while(a > 0){
+		sol++;
+		a /= IMax;
+	}
+	return sol;
+}();
 
 const string cvt_string(const string& str);
 template <typename T>
@@ -699,17 +716,17 @@ const BigNumber& BigNumber::operator = (const T& n){
 				a[i] = 0;
 			}
 			if constexpr(is_signed<T>::value){
-				long long int temp = static_cast<long long int>(n);
+				BtoI temp = static_cast<BtoI>(n);
 				positive = (n >= 0);
-				a[2] = static_cast<int>((temp / IIMax) * (temp < 0 ? -1 : 1));
-				a[1] = static_cast<int>((temp % IIMax / IMax) * (temp < 0 ? -1 : 1));
-				a[0] = static_cast<int>((temp % IMax) * (temp < 0 ? -1 : 1));
+				for(int i = 0;i < BtoItimes;i++, temp /= IMax){
+					a[i] = temp % IMax * (temp < 0 ? -1 : 1);
+				}
 			}else{
-				unsigned long long int temp = static_cast<long long int>(n);
+				uBtoI temp = static_cast<uBtoI>(n);
 				positive = true;
-				a[2] = static_cast<int>(temp / IIMax);
-				a[1] = static_cast<int>(temp % IIMax / IMax);
-				a[0] = static_cast<int>(temp % IMax);
+				for(int i = 0;i < BtoItimes;i++, temp /= IMax){
+					a[i] = temp % IMax * (temp < 0 ? -1 : 1);
+				}
 			}
 		}else{
 			stringstream ss;
@@ -1201,30 +1218,43 @@ void BigNumber::operator << (size_t n){
 void BigNumber::operator >> (size_t n) noexcept{
 	downgrade(n);
 }
-BigNumber::operator long long int() const{
-	long long int tmp = 0;
-	if((*this) >= LLONG_MAX){
-		tmp = LLONG_MAX;
-	}else if((*this) <= LLONG_MIN){
-		tmp = LLONG_MIN;
+BigNumber::operator intmax_t() const{
+	intmax_t tmp = 0;
+	if((*this) >= INTMAX_MAX){
+		tmp = INTMAX_MAX;
+	}else if((*this) <= INTMAX_MIN){
+		tmp = INTMAX_MIN;
 	}else{
-		tmp += a[0];
+		static auto times = [](){
+			intmax_t sol = 0, a = INTMAX_MAX;
+			while(a > 0){
+				sol++;
+				a /= IMax;
+			}
+			return sol;
+		}();
+		for(int i = BtoItimes - 1;i >= 0;i--){
+			tmp *= static_cast<intmax_t>(IMax);
+			tmp += a[i];
+		}
+		/*tmp += a[0];
 		tmp += a[1] * static_cast<long long int>(IMax);
-		tmp += a[2] * IIMax;
+		tmp += a[2] * IIMax;*/
 		tmp *= (positive ? 1 : -1);
 	}
 	return tmp;
 }
-BigNumber::operator unsigned long long int() const{
-	unsigned long long int tmp = 0;
-	if((*this) >= ULLONG_MAX){
-		tmp = ULLONG_MAX;
+BigNumber::operator uintmax_t() const{
+	uintmax_t tmp = 0;
+	if((*this) >= UINTMAX_MAX){
+		tmp = UINTMAX_MAX;
 	}else if((*this) <= 0){
 		tmp = 0;
 	}else{
-		tmp += a[0];
-		tmp += a[1] * static_cast<unsigned long long int>(IMax);
-		tmp += a[2] * IIMax;
+		for(int i = uBtoItimes - 1;i >= 0;i--){
+			tmp *= static_cast<uintmax_t>(IMax);
+			tmp += a[i];
+		}
 	}
 	return tmp;
 }
