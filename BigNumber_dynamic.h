@@ -27,7 +27,7 @@ constexpr auto uBtoItimes = [](){
 	}
 	return sol;
 }();
-static_assert(BtoItimes >= 2, "BtoI should be able to contain at least 1 full array position of BigNumber::a.");
+static_assert(BtoItimes >= 3, "BtoI should be able to contain at least 2 full array position of BigNumber::a.");
 
 const string cvt_string(const string& str);
 template <typename T>
@@ -165,15 +165,12 @@ public:
 	void fit() noexcept;
 	void operator << (size_t n);
 	void operator >> (size_t n) noexcept;
-	explicit operator long long int() const;
-	explicit operator unsigned long long int() const;
+	explicit operator intmax_t() const;
+	explicit operator uintmax_t() const;
 	explicit operator long double() const;
 };
 
 //BtoI BigNumber::m[2] = {0};
-BigNumber HI = 0, LO = 0;
-static BigNumber be_divided = 0;
-static BigNumber divide = 0;
 
 void BigNumber::resize() noexcept{ //fit
 	for(int i = SIZE - 1;i >= BASIC_SIZE;i--){
