@@ -40,6 +40,7 @@ public:
 	static vector<Package_thread> fast_thread;
 	static int now_thread;
 	enum _INDICATE{NAME, SOLUTION, PUT_IN, SOL_PRECISION, PRO_PRECISION, ROUND_MODE, MIDWAY_BN_VECTOR};
+private:
 	bnint numerator;
 	bnint denominator;
 	bool positive;
