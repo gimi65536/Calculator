@@ -3,8 +3,16 @@
 constexpr size_t BASIC_SIZE = 4;
 constexpr int DIGIT = 9;
 typedef int Int;
+constexpr Int BASE = 10;
 constexpr Int IMax = 1'000'000'000;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should larger than 3.");
+static_assert([](){
+	Int tmp = 1;
+	for(int i = 0;i < DIGIT;i++){
+		tmp *= BASE;
+	}
+	return tmp;
+}() == IMax, "BASE ^ DIGIT should equal to IMax.");
 
 typedef intmax_t BtoI;
 typedef uintmax_t uBtoI;
@@ -165,8 +173,8 @@ public:
 	void fit() noexcept;
 	void operator << (size_t n);
 	void operator >> (size_t n) noexcept;
-	explicit operator intmax_t() const;
-	explicit operator uintmax_t() const;
+	explicit operator BtoI() const;
+	explicit operator uBtoI() const;
 	explicit operator long double() const;
 };
 
@@ -1215,21 +1223,13 @@ void BigNumber::operator << (size_t n){
 void BigNumber::operator >> (size_t n) noexcept{
 	downgrade(n);
 }
-BigNumber::operator intmax_t() const{
+BigNumber::operator BtoI() const{
 	intmax_t tmp = 0;
 	if((*this) >= INTMAX_MAX){
 		tmp = INTMAX_MAX;
 	}else if((*this) <= INTMAX_MIN){
 		tmp = INTMAX_MIN;
 	}else{
-		static auto times = [](){
-			intmax_t sol = 0, a = INTMAX_MAX;
-			while(a > 0){
-				sol++;
-				a /= IMax;
-			}
-			return sol;
-		}();
 		for(int i = BtoItimes - 1;i >= 0;i--){
 			tmp *= static_cast<intmax_t>(IMax);
 			tmp += a[i];
@@ -1241,7 +1241,7 @@ BigNumber::operator intmax_t() const{
 	}
 	return tmp;
 }
-BigNumber::operator uintmax_t() const{
+BigNumber::operator uBtoI() const{
 	uintmax_t tmp = 0;
 	if((*this) >= UINTMAX_MAX){
 		tmp = UINTMAX_MAX;
