@@ -3,16 +3,16 @@
 constexpr size_t BASIC_SIZE = 4;
 constexpr int DIGIT = 9;
 typedef int Int;
-constexpr Int BASE = 10;
+constexpr Int NOTATION = 10;
 constexpr Int IMax = 1'000'000'000;
-static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should larger than 3.");
+static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should be larger than 3.");
 static_assert([](){
 	Int tmp = 1;
 	for(int i = 0;i < DIGIT;i++){
-		tmp *= BASE;
+		tmp *= NOTATION;
 	}
 	return tmp;
-}() == IMax, "BASE ^ DIGIT should equal to IMax.");
+}() == IMax, "NOTATION ^ DIGIT should equal to IMax.");
 
 typedef intmax_t BtoI;
 typedef uintmax_t uBtoI;
@@ -45,10 +45,6 @@ class BigNumber;
 
 typedef BigNumber bnint;
 
-namespace bnint_swap{
-void swap(bnint& a, bnint& b);
-}
-
 class BigNumber{
 private:
 	//static BtoI m[2];
@@ -75,7 +71,6 @@ public:
 	static constexpr Int base_max = IMax - 1;
 	friend ostream& operator << (ostream& os, const BigNumber& n);
 	friend istream& operator >> (istream& is, BigNumber& n);
-	friend void bnint_swap::swap(bnint& a, bnint& b);
 	BigNumber();
 	template <typename T>
 	BigNumber(const T& n);
@@ -157,7 +152,7 @@ public:
 	BigNumber operator ^ (const BigNumber& n) const;
 	template <typename T>
 	BigNumber operator ^ (const T& n) const;
-	const string str(int notation = 10) const;
+	string str(Int notation = NOTATION) const;
 	size_t Sizeof() const noexcept{return SIZE;}
 	void print() const{cout << (*this);}
 	bool is_zero() const noexcept;
@@ -176,6 +171,7 @@ public:
 	explicit operator BtoI() const;
 	explicit operator uBtoI() const;
 	explicit operator long double() const;
+	explicit operator string() const;
 };
 
 //BtoI BigNumber::m[2] = {0};
@@ -1259,6 +1255,9 @@ BigNumber::operator long double() const{
 	long double tmp = static_cast<long double>(static_cast<long long int>((*this)));
 	return tmp;
 }
+BigNumber::operator string() const{
+	return str();
+}
 
 template <typename T>
 bool operator == (const T& n, const BigNumber& N){
@@ -1477,33 +1476,39 @@ const string cvt_string(const basic_string<T>& STR){
 	return convert_to_utf8(STR);
 }
 
-const string BigNumber::str(int notation) const{
-	stringstream ss;
-	if(notation == 10){
-		ss << (*this);
-		return ss.str();
-	}
-	if(!positive && (*this) != 0){
-		ss << '-';
-	}
-	ss << 0;
-	char note = (notation != 16) ? ('a' - 1 + notation) : ('x');
-	ss << note;
-	string temp;
-	BigNumber n = abs();
-	do{
-		BtoI t = static_cast<BtoI>(n % notation);
-		if(t < 10){
-			temp += static_cast<char>('0' + t);
-		}else{
-			temp += static_cast<char>('A' + (t - 10));
+string BigNumber::str(Int notation) const{
+	if(notation <= 1){notation = NOTATION;}
+	if(notation <= 36){
+		stringstream ss;
+		if(notation == 10){
+			ss << (*this);
+			return ss.str();
 		}
-		n /= notation;
-	}while(n != 0);
-	for(int i = temp.length() - 1;i >= 0;i--){
-		ss << temp[i];
+		if(!positive && (*this) != 0){
+			ss << '-';
+		}
+		ss << 0;
+		char note = (notation != 16) ? ('a' - 1 + notation) : ('x');
+		ss << note;
+		string temp;
+		BigNumber n = abs();
+		do{
+			BtoI t = static_cast<BtoI>(n % notation);
+			if(t < 10){
+				temp += static_cast<char>('0' + t);
+			}else{
+				temp += static_cast<char>('A' + (t - 10));
+			}
+			n /= notation;
+		}while(n != 0);
+		for(int i = temp.length() - 1;i >= 0;i--){
+			ss << temp[i];
+		}
+		return ss.str();
+	}else{
+		//...
+		return string();
 	}
-	return ss.str();
 }
 
 const string& operator += (string& str, const BigNumber& n){
