@@ -181,7 +181,7 @@ basic_ostream<CharT, Traits>& operator << (basic_ostream<CharT, Traits>& os, con
 } //end of std
 
 namespace BigIntMath{
-using StaticSort::easygcd;
+using Math::easygcd;
 bnint sqrt(const bnint& n){
 	if(n.is_zero()){
 		return 0;
