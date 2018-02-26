@@ -555,7 +555,7 @@ auto RSAkeygenerator(){
 	}
 }
 template<typename T>
-bnint howpow(const T& a, T b){
+bnint howpow(const T& a, const T& b){
 	return _howpow<bnint>(a, b);
 }
 } //end of BigIntMath
