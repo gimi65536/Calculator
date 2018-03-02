@@ -78,7 +78,7 @@ public:
 	                 BigNumber   (BigNumber&& n);
 	                 ~BigNumber  ();
 	         size_t  digit()                                  const noexcept;
-	            int  getDigit    (int n)                      const noexcept;
+	            Int  getDigit    (int n)                      const noexcept;
 	            int  getSize     ()                           const noexcept;
 	            int  getRealSize ()                           const noexcept;
 	template <typename T>
@@ -537,10 +537,10 @@ size_t BigNumber::digit() const noexcept{
 	}
 	size_t sol = DIGIT * i + 1;
 	Int tmp = a[i];
-	for(;tmp / 10 != 0;tmp /= 10, sol++);
+	for(;tmp / NOTATION != 0;tmp /= NOTATION, sol++);
 	return sol;
 }
-int BigNumber::getDigit(int n) const noexcept{
+Int BigNumber::getDigit(int n) const noexcept{
 	if(n <= 0 || n > DIGIT * SIZE){
 		return -1;
 	}
@@ -548,9 +548,9 @@ int BigNumber::getDigit(int n) const noexcept{
 	int target = a[index];
 	n = (n - 1) % DIGIT;
 	for(int i = 1;i <= n;i++){
-		target /= 10;
+		target /= NOTATION;
 	}
-	return target % 10;
+	return target % NOTATION;
 }
 template <typename T>
 bool BigNumber::operator == (const T& n) const{
