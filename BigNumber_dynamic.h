@@ -1472,16 +1472,33 @@ string BigNumber::str(Int notation) const{
 		independence = true;
 	}
 	list<string> l;
+	auto f = [&](const string& buf){
+		if(notation < 36 && buf.length() < DIGIT){
+			l.push_back(string(DIGIT - buf.length(), '0'));
+		}else if(notation >= 36 && count_char(buf, '|') < DIGIT - 1){
+			l.push_back(repeat_str("0|", DIGIT - 1 - count_char(buf, '|')));
+		}
+	};
 	if(independence){
 		int size = getRealSize();
 		for(int i = size - 1;i >= 0;i--){
-			l.push_back(notation_cast(a[i], notation));
+			string buf = notation_cast(a[i], notation);
+			if(i != size - 1){
+				f(buf);
+			}
+			l.push_back(buf);
 		}
 	}else{
 		BigNumber n = abs();
+		bool success = false;
 		do{
 			BtoI t = static_cast<BtoI>(n % notation);
-			l.push_front(notation_cast(t, notation));
+			string buf = notation_cast(t, notation);
+			if(success){
+				f(buf);
+			}
+			success = true;
+			l.push_front(buf);
 			n /= notation;
 		}while(!n.is_zero());
 	}
