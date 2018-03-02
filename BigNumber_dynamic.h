@@ -545,7 +545,7 @@ Int BigNumber::getDigit(int n) const noexcept{
 		return -1;
 	}
 	int index = (n - 1) / DIGIT;
-	int target = a[index];
+	Int target = a[index];
 	n = (n - 1) % DIGIT;
 	for(int i = 1;i <= n;i++){
 		target /= NOTATION;
