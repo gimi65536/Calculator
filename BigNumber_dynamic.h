@@ -153,6 +153,7 @@ public:
 	template <typename T>
 	BigNumber operator ^ (const T& n) const;
 	string str(Int notation = NOTATION) const;
+	string str_hint(Int notation = NOTATION) const;
 	size_t Sizeof() const noexcept{return SIZE;}
 	void print() const{cout << (*this);}
 	bool is_zero() const noexcept;
@@ -1370,7 +1371,7 @@ const BigNumber operator ^ (const T& n, const BigNumber& N){
 }
 
 ostream& operator << (ostream& os, const BigNumber& n){
-	for(int i = n.SIZE - 1;i >= 0;i--){
+	/*for(int i = n.SIZE - 1;i >= 0;i--){
 		if(n.a[i] != 0){
 			if(!n.positive){
 				os << '-';
@@ -1385,7 +1386,8 @@ ostream& operator << (ostream& os, const BigNumber& n){
 		}else if(i == 0){
 			os << 0;
 		}
-	}
+	}*/
+	os << n.str_hint();
 	return os;
 }
 
@@ -1477,8 +1479,34 @@ const string cvt_string(const basic_string<T>& STR){
 }
 
 string BigNumber::str(Int notation) const{
+	if(is_zero()){
+		return "0";
+	}
 	if(notation <= 1){notation = NOTATION;}
-	if(notation <= 36){
+	bool independence = false;
+	if(ispow_exchange(notation, IMax)){
+		independence = true;
+	}
+	list<string> l;
+	if(independence){
+		int size = getRealSize();
+		for(int i = size - 1;i >= 0;i--){
+			l.push_back(notation_cast(a[i], notation));
+		}
+		string sol = (positive ? "" : "-");
+		if(notation >= 36){
+			return sol + join("|", l);
+		}else{
+			return sol + join("", l);
+		}
+	}else{
+		BigNumber n = abs();
+		do{
+			BtoI t = static_cast<BtoI>(n % notation);
+			l.push_front(notation_cast(t, notation));
+			n /= notation;
+		}while(!n.is_zero());
+		/*
 		stringstream ss;
 		if(notation == 10){
 			ss << (*this);
@@ -1504,10 +1532,28 @@ string BigNumber::str(Int notation) const{
 		for(int i = temp.length() - 1;i >= 0;i--){
 			ss << temp[i];
 		}
-		return ss.str();
+		return ss.str();*/
+	}
+	string sol = (positive ? "" : "-");
+	if(notation >= 36){
+		return sol + join("|", l);
 	}else{
-		//...
-		return string();
+		return sol + join("", l);
+	}
+}
+
+string BigNumber::str_hint(Int notation) const{
+	string sol = str(notation);
+	if(notation == 10){
+		return sol;
+	}else if(notation == 2){
+		return "0b" + sol;
+	}else if(notation == 8){
+		return "0" + sol;
+	}else if(notation == 16){
+		return "0x" + sol;
+	}else{
+		return sol + " (" + to_string(notation) + ")";
 	}
 }
 
