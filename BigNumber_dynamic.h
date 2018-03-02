@@ -50,129 +50,129 @@ private:
 	//static BtoI m[2];
 	size_t SIZE;
 	size_t capacity;
-	Int* a;
-	bool positive;
-	void resize() noexcept;
-	void resize(size_t n);
-	void simple_increment();
-	void simple_decrement();
-	void simple_add(const BigNumber& n);
-	void simple_minus(const BigNumber& n, bool negative);
-	static pair<BtoI, BtoI> simple_multi(Int x, Int y);
-	void PASS_BY_STRING(string str);
-	void PASS_BY_STRING_with_notation(string str);
-	void COMMON_DIVIDE(const BigNumber& n, bool mod);
+	Int*   a;
+	bool   positive;
+	                   void  resize() noexcept;
+	                   void  resize(size_t n);
+	                   void  simple_increment();
+	                   void  simple_decrement();
+	                   void  simple_add(const BigNumber& n);
+	                   void  simple_minus(const BigNumber& n, bool negative);
+	static pair<BtoI, BtoI>  simple_multi(Int x, Int y);
+	                   void  PASS_BY_STRING(string str);
+	                   void  PASS_BY_STRING_with_notation(string str);
+	                   void  COMMON_DIVIDE(const BigNumber& n, bool mod);
 	template <typename T>
-	void WIDE_CHAR_PASS(const T& ch);
+	                   void  WIDE_CHAR_PASS(const T& ch);
 	template <typename T>
-	void WIDE_CHARARRAY_PASS(const T* C_STR);
+	                   void  WIDE_CHARARRAY_PASS(const T* C_STR);
 public:
 	using base_type = Int;
 	static constexpr Int base_max = IMax - 1;
-	friend ostream& operator << (ostream& os, const BigNumber& n);
-	friend istream& operator >> (istream& is, BigNumber& n);
-	BigNumber();
+	friend  ostream& operator << (ostream& os, const BigNumber& n);
+	friend  istream& operator >> (istream& is, BigNumber& n);
+	                 BigNumber();
 	template <typename T>
-	BigNumber(const T& n);
-	BigNumber(const BigNumber& n);
-	BigNumber(BigNumber&& n);
-	~BigNumber();
-	size_t digit() const noexcept;
-	int getDigit(int n) const noexcept;
-	int getSize() const noexcept;
-	int getRealSize() const noexcept;
+	                 BigNumber   (const T& n);
+	                 BigNumber   (const BigNumber& n);
+	                 BigNumber   (BigNumber&& n);
+	                 ~BigNumber  ();
+	         size_t  digit()                                  const noexcept;
+	            int  getDigit    (int n)                      const noexcept;
+	            int  getSize     ()                           const noexcept;
+	            int  getRealSize ()                           const noexcept;
 	template <typename T>
-	bool operator == (const T& n) const;
-	bool operator == (const BigNumber& n) const noexcept;
+	           bool  operator == (const T& n)                 const;
+	           bool  operator == (const BigNumber& n)         const noexcept;
 	template <typename T>
-	bool operator != (const T& n) const;
-	bool operator != (const BigNumber& n) const noexcept;
-	bool operator < (const BigNumber& n) const noexcept;
+	           bool  operator != (const T& n)                 const;
+	           bool  operator != (const BigNumber& n)         const noexcept;
+	           bool  operator <  (const BigNumber& n)         const noexcept;
 	template <typename T>
-	bool operator < (const T& n) const;
-	bool operator <= (const BigNumber& n) const noexcept;
+	           bool  operator <  (const T& n)                 const;
+	           bool  operator <= (const BigNumber& n)         const noexcept;
 	template <typename T>
-	bool operator <= (const T& n) const;
-	bool operator > (const BigNumber& n) const noexcept;
+	           bool  operator <= (const T& n)                 const;
+	           bool  operator >  (const BigNumber& n)         const noexcept;
 	template <typename T>
-	bool operator > (const T& n) const;
-	bool operator >= (const BigNumber& n) const noexcept;
+	           bool  operator >  (const T& n)                 const;
+	           bool  operator >= (const BigNumber& n)         const noexcept;
 	template <typename T>
-	bool operator >= (const T& n) const;
-	BigNumber operator + () const;
-	BigNumber operator - () const;
-	const BigNumber& operator = (const BigNumber& n);
-	const BigNumber& operator = (BigNumber&& n);
-	const BigNumber& operator = (const string& str);
+	           bool  operator >= (const T& n)                 const;
+	      BigNumber  operator +  ()                           const;
+	      BigNumber  operator -  ()                           const;
+	const BigNumber& operator =  (const BigNumber& n);
+	const BigNumber& operator =  (BigNumber&& n);
+	const BigNumber& operator =  (const string& str);
 	template <typename T>
-	const BigNumber& operator = (const basic_string<T>& STR);
+	const BigNumber& operator =  (const basic_string<T>& STR);
 	template <typename T>
-	const BigNumber& operator = (const T& n);
+	const BigNumber& operator =  (const T& n);
 	template <typename T>
-	const BigNumber& operator = (T* const n);
-	BigNumber abs() const;
-	BigNumber abs_inverse() const;
+	const BigNumber& operator =  (T* const n);
+	      BigNumber  abs         ()                            const;
+	      BigNumber  abs_inverse ()                            const;
 	const BigNumber& operator += (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator += (const T& n);
 	const BigNumber& operator ++ ();
-	BigNumber operator ++ (int null);
-	BigNumber operator + (const BigNumber& n) const;
+	      BigNumber  operator ++ (int null);
+	      BigNumber  operator +  (const BigNumber& n)          const;
 	template<typename T>
-	BigNumber operator + (const T& n) const;
+	      BigNumber  operator +  (const T& n)                  const;
 	const BigNumber& operator -= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator -= (const T& n);
 	const BigNumber& operator -- ();
-	BigNumber operator -- (int null);
-	BigNumber operator - (const BigNumber& n) const;
+	      BigNumber  operator -- (int null);
+	      BigNumber  operator -  (const BigNumber& n)          const;
 	template <typename T>
-	BigNumber operator - (const T& n) const;
+	      BigNumber  operator -  (const T& n)                  const;
 	const BigNumber& operator *= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator *= (const T& n);
-	BigNumber operator * (const BigNumber& n) const;
+	      BigNumber  operator *  (const BigNumber& n)          const;
 	template <typename T>
-	BigNumber operator * (const T& n) const;
+	      BigNumber  operator *  (const T& n)                  const;
 	const BigNumber& operator /= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator /= (const T& n);
-	BigNumber operator / (const BigNumber& n) const;
+	      BigNumber  operator /  (const BigNumber& n)          const;
 	template <typename T>
-	BigNumber operator / (const T& n) const;
+	      BigNumber  operator /  (const T& n)                  const;
 	const BigNumber& operator %= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator %= (const T& n);
-	BigNumber operator % (const BigNumber& n) const;
+	      BigNumber  operator %  (const BigNumber& n)          const;
 	template <typename T>
-	BigNumber operator % (const T& n) const;
+	      BigNumber  operator %  (const T& n)                  const;
 	const BigNumber& operator ^= (const BigNumber& n);
 	template <typename T>
 	const BigNumber& operator ^= (const T& n);
-	BigNumber operator ^ (const BigNumber& n) const;
+	      BigNumber  operator ^  (const BigNumber& n)          const;
 	template <typename T>
-	BigNumber operator ^ (const T& n) const;
-	string str(Int notation = NOTATION) const;
-	string str_hint(Int notation = NOTATION) const;
-	size_t Sizeof() const noexcept{return SIZE;}
-	void print() const{cout << (*this);}
-	bool is_zero() const noexcept;
-	bool get_positive() const noexcept{return positive;}
-	void negate() noexcept{positive = !positive;}
-	void divide2() noexcept;
-	bool is_odd() const noexcept;
-	bool is_even() const noexcept;
-	Int get(size_t n) const;
-	void reserve(size_t n);
-	void upgrade(size_t n = 1);
-	void downgrade(size_t n = 1) noexcept;
-	void fit() noexcept;
-	void operator << (size_t n);
-	void operator >> (size_t n) noexcept;
-	explicit operator BtoI() const;
-	explicit operator uBtoI() const;
-	explicit operator long double() const;
-	explicit operator string() const;
+	      BigNumber  operator ^  (const T& n)                  const;
+	         string  str         (Int notation = NOTATION)     const;
+	         string  str_hint    (Int notation = NOTATION)     const;
+	         size_t  Sizeof      ()                            const noexcept{return SIZE;}
+	           void  print       ()                            const         {cout << (*this);}
+	           bool  is_zero     ()                            const noexcept;
+	           bool  get_positive()                            const noexcept{return positive;}
+	           void  negate      ()                                  noexcept{positive = !positive;}
+	           void  divide2     ()                                  noexcept;
+	           bool  is_odd      ()                            const noexcept;
+	           bool  is_even     ()                            const noexcept;
+	            Int  get         (size_t n)                    const;
+	           void  reserve     (size_t n);
+	           void  upgrade     (size_t n = 1);
+	           void  downgrade   (size_t n = 1)                      noexcept;
+	           void  fit         ()                                  noexcept;
+	           void  operator << (size_t n);
+	           void  operator >> (size_t n)                          noexcept;
+	explicit         operator BtoI       ()                    const;
+	explicit         operator uBtoI      ()                    const;
+	explicit         operator long double()                    const;
+	explicit         operator string     ()                    const;
 };
 
 //BtoI BigNumber::m[2] = {0};
