@@ -1,4 +1,5 @@
-#ifdef _BIG_NUMBER_STATIC_
+#if defined(_BIG_NUMBER_STATIC_) && !defined(_BIG_NUMBER_INCLUDED_)
+#define _BIG_NUMBER_INCLUDED_
 
 constexpr int BASIC_SIZE = 4;
 constexpr int DIGIT = 9;
