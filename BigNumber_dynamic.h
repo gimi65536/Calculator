@@ -171,10 +171,11 @@ public:
 	           void  fit         ()                                 noexcept;
 	           void  operator << (size_t n);
 	           void  operator >> (size_t n)                         noexcept;
-	explicit         operator BtoI       ()                   const;
-	explicit         operator uBtoI      ()                   const;
-	explicit         operator long double()                   const;
-	explicit         operator string     ()                   const;
+	   list<string>  std_list    (Int notation = NOTATION)    const;
+	explicit         operator BtoI   ()                       const;
+	explicit         operator uBtoI  ()                       const;
+	explicit         operator BtoD   ()                       const;
+	explicit         operator string ()                       const;
 };
 
 //BtoI BigNumber::m[2] = {0};
@@ -1102,10 +1103,6 @@ const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 			}
 		}
 	}
-	/*BigNumber base = (*this);
-	for(BigNumber i = 2;i <= n;i++){
-		(*this) *= base;
-	}*/
 	BigNumber nd2 = n;
 	nd2.divide2();
 	if(n.is_even()){
@@ -1117,7 +1114,6 @@ const BigNumber& BigNumber::operator ^= (const BigNumber& n){
 		(*this) *= (*this);
 		(*this) *= base;
 	}
-	//cout << base << " ^ " << n << " = " << (*this) << endl;
 	return (*this);
 }
 template <typename T>
@@ -1233,9 +1229,6 @@ BigNumber::operator BtoI() const{
 			tmp *= static_cast<intmax_t>(IMax);
 			tmp += a[i];
 		}
-		/*tmp += a[0];
-		tmp += a[1] * static_cast<long long int>(IMax);
-		tmp += a[2] * IIMax;*/
 		tmp *= (positive ? 1 : -1);
 	}
 	return tmp;
@@ -1254,7 +1247,7 @@ BigNumber::operator uBtoI() const{
 	}
 	return tmp;
 }
-BigNumber::operator long double() const{
+BigNumber::operator BtoD() const{
 	long double tmp = static_cast<long double>(static_cast<long long int>((*this)));
 	return tmp;
 }
@@ -1342,14 +1335,13 @@ const T& operator /= (T& n, const BigNumber& N){
 	return n;
 }
 template <typename T>
-/*typename conditional<is_floating_point<T>::value, T, BigNumber>::type*/auto operator / (const T& n, const BigNumber& N){
+auto operator / (const T& n, const BigNumber& N){
 	T temp = n;
 	if constexpr(is_floating_point<T>::value){
 		return temp / static_cast<long double>(N);
 	}else{
 		return temp / static_cast<long long int>(N);
 	}
-	//return temp / static_cast<typename conditional<is_floating_point<T>::value, long double, BigNumber>::type>(N);
 }
 template <typename T>
 const T& operator %= (T& n, const BigNumber& N){
@@ -1476,6 +1468,25 @@ const string cvt_string(const basic_string<T>& STR){
 	return convert_to_utf8(STR);
 }
 
+list<string> BigNumber::std_list(Int notation) const{
+	list<string> l;
+	if(is_zero()){
+		l.push_back("0");
+		return l;
+	}
+	BigNumber n = abs();
+	do{
+		BtoI t = static_cast<BtoI>(n % notation);
+		string buf = notation_cast(t, notation);
+		l.push_front(buf);
+		n /= notation;
+	}while(!n.is_zero());
+	if(!positive){
+		l.push_front("-");
+	}
+	return l;
+}
+
 string BigNumber::str(Int notation) const{
 	if(is_zero()){
 		return "0";
@@ -1486,35 +1497,24 @@ string BigNumber::str(Int notation) const{
 		independence = true;
 	}
 	list<string> l;
-	auto f = [&](const string& buf){
-		if(notation < 36 && buf.length() < DIGIT){
-			l.push_back(string(DIGIT - buf.length(), '0'));
-		}else if(notation >= 36 && count_char(buf, '|') < DIGIT - 1){
-			l.push_back(repeat_str("0|", DIGIT - 1 - count_char(buf, '|')));
-		}
-	};
 	if(independence){
 		int size = getRealSize();
 		for(int i = size - 1;i >= 0;i--){
 			string buf = notation_cast(a[i], notation);
 			if(i != size - 1){
-				f(buf);
+				if(notation < 36 && buf.length() < DIGIT){
+					l.push_back(string(DIGIT - buf.length(), '0'));
+				}else if(notation >= 36 && count_char(buf, '|') < DIGIT - 1){
+					l.push_back(repeat_str("0|", DIGIT - 1 - count_char(buf, '|')));
+				}
 			}
 			l.push_back(buf);
 		}
 	}else{
-		BigNumber n = abs();
-		bool success = false;
-		do{
-			BtoI t = static_cast<BtoI>(n % notation);
-			string buf = notation_cast(t, notation);
-			if(success){
-				f(buf);
-			}
-			success = true;
-			l.push_front(buf);
-			n /= notation;
-		}while(!n.is_zero());
+		l = std_list(notation);
+		if(!positive){
+			l.pop_front();
+		}
 	}
 	string sol = (positive ? "" : "-");
 	if(notation >= 36){
