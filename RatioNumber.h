@@ -6,8 +6,6 @@
 #ifndef _RATIO_NUMBER_
 #define _RATIO_NUMBER_
 
-using Math::gcd;
-using Math::lcm;
 constexpr int DEFAULT_endure_precision = 100;
 
 enum Endian{big_endian, little_endian};
@@ -311,7 +309,7 @@ void RatioNumber::reduce(){
 		positive = !positive;
 		denominator.negate();
 	}
-	bnint tmp = gcd(numerator, denominator);
+	bnint tmp = Math::gcd(numerator, denominator);
 	if(tmp.is_zero()){ //NaN
 		positive = true;
 		return;
@@ -1085,7 +1083,7 @@ bool RatioNumber::operator == (const RatioNumber& r) const{
 			return false;
 		}
 	}
-	bnint Lcm = lcm(denominator, r.denominator);
+	bnint Lcm = Math::lcm(denominator, r.denominator);
 	bnint t1 = numerator * (Lcm / denominator), t2 = r.numerator * (Lcm / r.denominator);
 	if(!positive){t1 *= -1;}
 	if(!r.positive){t2 *= -1;}
@@ -1127,7 +1125,7 @@ bool RatioNumber::operator < (const RatioNumber& r) const{
 	}else if(r.is_negative_INF()){
 		return false;
 	}
-	bnint Lcm = lcm(denominator, r.denominator);
+	bnint Lcm = Math::lcm(denominator, r.denominator);
 	bnint t1 = numerator * (Lcm / denominator), t2 = r.numerator * (Lcm / r.denominator);
 	if(!positive){t1 *= -1;}
 	if(!r.positive){t2 *= -1;}
@@ -1169,7 +1167,7 @@ bool RatioNumber::operator > (const RatioNumber& r) const{
 	}else if(r.is_negative_INF()){
 		return true; //!is_negative_INF()
 	}
-	bnint Lcm = lcm(denominator, r.denominator);
+	bnint Lcm = Math::lcm(denominator, r.denominator);
 	bnint t1 = numerator * (Lcm / denominator), t2 = r.numerator * (Lcm / r.denominator);
 	if(!positive){t1 *= -1;}
 	if(!r.positive){t2 *= -1;}
@@ -1498,7 +1496,7 @@ void RatioNumber::add_without_reduction(RatioNumber r){
 			return;
 		}
 	}
-	bnint Lcm = lcm(denominator, r.denominator);
+	bnint Lcm = Math::lcm(denominator, r.denominator);
 	if(!positive){
 		numerator.negate();
 		positive = true;
@@ -1570,7 +1568,7 @@ void RatioNumber::minus_without_reduction(RatioNumber r){
 			return;
 		}
 	}
-	bnint Lcm = lcm(denominator, r.denominator);
+	bnint Lcm = Math::lcm(denominator, r.denominator);
 	if(!positive){
 		numerator.negate();
 		positive = true;
