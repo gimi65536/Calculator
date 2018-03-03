@@ -19,9 +19,9 @@ const Endian endian = [](){
 	int i = 1;
 	char* ptr = reinterpret_cast<char*>(&i);
 	if(ptr[0] == 1){
-		return little_endian;
+		return Endian::little_endian;
 	}else{
-		return big_endian;
+		return Endian::big_endian;
 	}
 }();
 const LONG_DOUBLE ld_type = judge_ldtype();
@@ -282,7 +282,7 @@ LONG_DOUBLE judge_ldtype(){
 	char* j = reinterpret_cast<char*>(&t);
 	int size = sizeof(t);
 	int i = 0, di = 0;
-	if(endian == little_endian){
+	if(endian == Endian::little_endian){
 		i = size - 1;
 		di = -1;
 	}else{
@@ -372,7 +372,7 @@ void RatioNumber::PASS_BY_IEEE(T r, int byte, int exp){
 	char* j = reinterpret_cast<char*>(&r);
 	int size = sizeof(r);
 	int i = 0, di = 0;
-	if(endian == little_endian){
+	if(endian == Endian::little_endian){
 		i = byte - 1;
 		di = -1;
 	}else{
@@ -441,7 +441,7 @@ void RatioNumber::PASS_BY_80_bits(T ld){
 	char* j = reinterpret_cast<char*>(&ld);
 	int size = sizeof(ld);
 	int i = 0, di = 0;
-	if(endian == little_endian){
+	if(endian == Endian::little_endian){
 		i = size - 1;
 		di = -1;
 	}else{
@@ -634,7 +634,7 @@ T RatioNumber::TRANSTO_FLOAT(int byte, int exp) const{
 		bnint t = buf;
 		temp[i] = static_cast<BtoI>(t);
 	}
-	if(endian == little_endian){
+	if(endian == Endian::little_endian){
 		unsigned char c = 0;
 		for(int i = 0;i < size / 2;i++){
 			c = temp[i];
@@ -775,7 +775,7 @@ T RatioNumber::TRANSTO_80bitsFLOAT() const{
 		bnint t = buf;
 		temp[i] = static_cast<BtoI>(t);
 	}
-	if(endian == little_endian){
+	if(endian == Endian::little_endian){
 		unsigned char c = 0;
 		for(int i = 0;i < size / 2;i++){
 			c = temp[i];
