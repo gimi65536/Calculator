@@ -13,6 +13,7 @@ static_assert([](){
 	}
 	return tmp;
 }() == IMax, "NOTATION ^ DIGIT should equal to IMax.");
+constexpr bool use_codecvt = true;
 
 typedef intmax_t BtoI;
 typedef uintmax_t uBtoI;
@@ -1420,35 +1421,47 @@ const string convert_to_utf8(const string& str){
 }
 template <typename T>
 const string convert_to_utf8(const basic_string<T>& STR){ //precondition: T is wchar_t, char16_t, or char32_t
-	size_t len = STR.length();
 	string str;
-	for(int i = 0;i < len;i++){
-		char s1 = 0, s2 = 0, s3 = 0, s4 = 0;
-		unsigned int ch = static_cast<unsigned int>(STR[i]);
-		if(ch < 128){
-			s4 = ch;
-			str += s4;
-		}else if(ch < 2048){
-			s3 = -64 + (ch / 64);
-			s4 = -128 + (ch % 64);
-			str += s3;
-			str += s4;
-		}else if(ch < 65536){
-			s2 = -32 + (ch / 4096);
-			s3 = -128 + (ch % 4096 / 64);
-			s4 = -128 + (ch % 4096 % 64);
-			str += s2;
-			str += s3;
-			str += s4;
-		}else if(ch < 1114112){
-			s1 = -16 + (ch / 262144);
-			s2 = -128 + (ch % 262144 / 4096);
-			s3 = -128 + (ch % 262144 % 4096 / 64);
-			s4 = -128 + (ch % 262144 % 4096 % 64);
-			str += s1;
-			str += s2;
-			str += s3;
-			str += s4;
+	if constexpr(use_codecvt){
+		if constexpr(!is_same_v<T, char32_t>){
+			str = wstring_convert<codecvt_utf8_utf16<T>, T>{}.to_bytes(STR);
+		}else{
+			try{
+				str = wstring_convert<codecvt_utf8_utf16<T>, T>{}.to_bytes(STR);
+			}catch(const range_error& e){
+				str = wstring_convert<codecvt_utf8<T>, T>{}.to_bytes(STR);
+			}
+		}
+	}else{
+		size_t len = STR.length();
+		for(int i = 0;i < len;i++){
+			char s1 = 0, s2 = 0, s3 = 0, s4 = 0;
+			unsigned int ch = static_cast<unsigned int>(STR[i]);
+			if(ch < 128){
+				s4 = ch;
+				str += s4;
+			}else if(ch < 2048){
+				s3 = -64 + (ch / 64);
+				s4 = -128 + (ch % 64);
+				str += s3;
+				str += s4;
+			}else if(ch < 65536){
+				s2 = -32 + (ch / 4096);
+				s3 = -128 + (ch % 4096 / 64);
+				s4 = -128 + (ch % 4096 % 64);
+				str += s2;
+				str += s3;
+				str += s4;
+			}else if(ch < 1114112){
+				s1 = -16 + (ch / 262144);
+				s2 = -128 + (ch % 262144 / 4096);
+				s3 = -128 + (ch % 262144 % 4096 / 64);
+				s4 = -128 + (ch % 262144 % 4096 % 64);
+				str += s1;
+				str += s2;
+				str += s3;
+				str += s4;
+			}
 		}
 	}
 	return str;

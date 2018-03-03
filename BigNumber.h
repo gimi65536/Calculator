@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <utility>
 #include <cstdint>
+#include <codecvt>
 #include "../helper.h"
 using namespace std;
 
@@ -21,9 +22,11 @@ using namespace std;
 #endif
 
 #if _DYNAMIC_ == 0
+//out of update
 #define _BIG_NUMBER_STATIC_
 #include "BigNumber_static.h"
 #else
+//support C++17 and above
 #define _BIG_NUMBER_DYNAMIC_
 #include "BigNumber_dynamic.h"
 #endif
