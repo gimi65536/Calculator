@@ -6,9 +6,9 @@
 #ifndef _RATIO_NUMBER_
 #define _RATIO_NUMBER_
 
-bnint gcd(bnint a, bnint b);
-bnint lcm(bnint a, bnint b);
-const int DEFAULT_endure_precision = 100;
+using Math::gcd;
+using Math::lcm;
+constexpr int DEFAULT_endure_precision = 100;
 
 enum Endian{big_endian, little_endian};
 enum LONG_DOUBLE{is_80bits, is_IEEE};
@@ -252,30 +252,6 @@ int RatioNumber::endure_precision = DEFAULT_endure_precision;
 int RatioNumber::mode = 0;
 vector<Package_thread> RatioNumber::fast_thread;
 int RatioNumber::now_thread = -1;
-
-bnint gcd(bnint a, bnint b){
-	if(!a.get_positive()){
-		a.negate();
-	}
-	if(!b.get_positive()){
-		b.negate();
-	}
-	bnint tmp;
-	while(!a.is_zero() && !b.is_zero()){
-		tmp = a % b;
-		a = b;
-		b = tmp;
-	}
-	if(b.is_zero()){
-		return a;
-	}else{
-		return b;
-	}
-}
-
-bnint lcm(bnint a, bnint b){
-	return a * b / gcd(a, b);
-}
 
 LONG_DOUBLE judge_ldtype(){
 	long double t = 1.0;
