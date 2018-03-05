@@ -896,10 +896,10 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 					tmp = high;
 					if(temp >= IMax){
 						temp -= IMax;
-						b[i + j] = temp;
 						//b[i + j] -= IMax;
 						tmp++;
 					}
+					b[i + j] = temp;
 				}
 				b[i + getRealSize()] += tmp;
 			}
@@ -922,10 +922,10 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 				tmp = high;
 				if(temp >= IMax){
 					temp -= IMax;
-					a[i] = temp;
 					//a[i] -= IMax;
 					tmp++;
 				}
+				a[i] = temp;
 			}
 			if(tmp > 0){
 				resize(SIZE + 1);
