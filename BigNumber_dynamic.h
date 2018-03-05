@@ -20,7 +20,6 @@ static_assert([](){
 }() == IMax, "NOTATION ^ DIGIT should equal to IMax.");
 static constexpr bool use_codecvt = true;
 
-
 constexpr auto BtoItimes = [](){
 	intmax_t sol = 0, a = INTMAX_MAX;
 	while(a > 0){
@@ -889,12 +888,16 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 			Int b[BASIC_SIZE] = {0};
 			for(int i = 0;i < n.getRealSize();i++){
 				Int tmp = 0;
+				BtoI temp;
 				for(int j = 0;j < getRealSize();j++){
 					auto [low, high] = simple_multi(a[j], n.a[i]);
-					b[i + j] += low + tmp;
+					temp = b[i + j] + low + tmp;
+					//b[i + j] += low + tmp;
 					tmp = high;
-					if(b[i + j] >= IMax){
-						b[i + j] -= IMax;
+					if(temp >= IMax){
+						temp -= IMax;
+						b[i + j] = temp;
+						//b[i + j] -= IMax;
 						tmp++;
 					}
 				}
@@ -911,12 +914,16 @@ const BigNumber& BigNumber::operator *= (const BigNumber& n){
 			return (*this);
 		}else if(n.getRealSize() == 1){
 			Int tmp = 0;
+			BtoI temp;
 			for(int i = 0;i < SIZE;i++){
 				auto [low, high] = simple_multi(a[i], n.a[0]);
-				a[i] = low + tmp;
+				temp = low + tmp;
+				//a[i] = low + tmp;
 				tmp = high;
-				if(a[i] >= IMax){
-					a[i] -= IMax;
+				if(temp >= IMax){
+					temp -= IMax;
+					a[i] = temp;
+					//a[i] -= IMax;
 					tmp++;
 				}
 			}
@@ -946,13 +953,19 @@ BigNumber BigNumber::operator * (const BigNumber& n) const{
 	size_t a_size = getRealSize(), b_size = n.getRealSize();
 	temp.resize(a_size + b_size);
 	for(int i = 0;i < b_size;i++){
-		Int tmp = 0;
+		Int tmp = 0; //tmp will never go to IMax
+		BtoI ttmp;
 		for(int j = 0;j < a_size;j++){
 			auto [low, high] = simple_multi(a[j], n.a[i]);
-			//temp.a[i + j] += m[0] + tmp; //may over 2147483647
-			temp.a[i + j] += tmp;
+			ttmp = a[i + j] + tmp + low;
+			//temp.a[i + j] += tmp;
 			tmp = high;
-			if(temp.a[i + j] >= IMax){ //overflow avoid
+			while(ttmp >= IMax){
+				ttmp -= IMax;
+				tmp++;
+			}
+			temp.a[i + j] = ttmp;
+			/*if(temp.a[i + j] >= IMax){ //overflow avoid
 				temp.a[i + j] -= IMax;
 				tmp++;
 			}
@@ -960,7 +973,7 @@ BigNumber BigNumber::operator * (const BigNumber& n) const{
 			if(temp.a[i + j] >= IMax){
 				temp.a[i + j] -= IMax;
 				tmp++;
-			}
+			}*/
 		}
 		temp.a[i + a_size] += tmp;
 	}
