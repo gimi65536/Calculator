@@ -957,7 +957,7 @@ BigNumber BigNumber::operator * (const BigNumber& n) const{
 		BtoI ttmp;
 		for(int j = 0;j < a_size;j++){
 			auto [low, high] = simple_multi(a[j], n.a[i]);
-			ttmp = a[i + j] + tmp + low;
+			ttmp = temp.a[i + j] + tmp + low;
 			//temp.a[i + j] += tmp;
 			tmp = high;
 			while(ttmp >= IMax){
