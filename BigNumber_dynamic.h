@@ -1,11 +1,15 @@
 #if defined(_BIG_NUMBER_DYNAMIC_) && !defined(_BIG_NUMBER_INCLUDED_)
 #define _BIG_NUMBER_INCLUDED_
 
-constexpr size_t BASIC_SIZE = 4;
-constexpr int DIGIT = 9;
+static constexpr size_t BASIC_SIZE = 4;
+static constexpr int DIGIT = 9;
 typedef int Int;
-constexpr Int NOTATION = 10;
-constexpr Int IMax = 1'000'000'000;
+typedef intmax_t BtoI;
+typedef uintmax_t uBtoI;
+typedef long double BtoD;
+//constexpr BtoI IIMax = 1'000'000'000'000'000'000;
+static constexpr Int NOTATION = 10;
+constexpr BtoI IMax = 1'000'000'000;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should be larger than 3.");
 static_assert([](){
 	Int tmp = 1;
@@ -14,12 +18,8 @@ static_assert([](){
 	}
 	return tmp;
 }() == IMax, "NOTATION ^ DIGIT should equal to IMax.");
-constexpr bool use_codecvt = true;
+static constexpr bool use_codecvt = true;
 
-typedef intmax_t BtoI;
-typedef uintmax_t uBtoI;
-typedef long double BtoD;
-//constexpr BtoI IIMax = 1'000'000'000'000'000'000;
 
 constexpr auto BtoItimes = [](){
 	intmax_t sol = 0, a = INTMAX_MAX;
@@ -222,26 +222,40 @@ int BigNumber::getRealSize() const noexcept{
 	return 1;
 }
 void BigNumber::simple_increment(){
-	a[0]++;
+	BtoI tmp = a[0];
+	bool increase = false;
+	tmp++;
 	for(int i = 0;i < SIZE - 1;i++){
-		if(a[i] >= IMax){
-			a[i] -= IMax;
-			a[i + 1]++;
+		if(increase){
+			tmp = a[i];
+			tmp++;
+			increase = false;
+		}
+		if(tmp >= IMax){
+			tmp -= IMax;
+			a[i] = tmp;
+			increase = true;
 		}else{
 			return;
 		}
 	}
-	if(a[SIZE - 1] >= IMax){
-		a[SIZE - 1] -= IMax;
+	if(increase){
+		tmp = a[SIZE - 1];
+		tmp++;
+		increase = false;
+	}
+	if(tmp >= IMax){
+		tmp -= IMax;
+		a[SIZE - 1] = tmp;
 		if(capacity < SIZE + 1 || capacity / (SIZE + 1) >= 2){ //same condition as resize(SIZE + 1)
 			capacity = SIZE + 1;
-			Int* tmp = new Int[capacity];
+			Int* temp = new Int[capacity];
 			for(int i = 0;i < SIZE;i++){
-				tmp[i] = a[i];
+				temp[i] = a[i];
 			}
-			tmp[SIZE++] = 1;
+			temp[SIZE++] = 1;
 			delete[] a;
-			a = tmp;
+			a = temp;
 		}else{
 			a[SIZE++] = 1;
 		}
@@ -278,38 +292,64 @@ void BigNumber::simple_add(const BigNumber& n){
 	}else if(SIZE == n.SIZE){
 		less_or_equal = true;
 	}
+	BtoI tmp;
+	bool increase = false;
 	for(int i = 0;i < n.SIZE - 1;i++){
-		a[i] += n.a[i];
-		if(a[i] >= IMax){
-			a[i] -= IMax;
-			a[i + 1]++;
+		tmp = a[i];
+		if(increase){
+			increase = false;
+			tmp++;
 		}
+		tmp += n.a[i];
+		if(tmp >= IMax){
+			tmp -= IMax;
+			increase = true;
+		}
+		a[i] = tmp;
 	}
-	a[n.SIZE - 1] += n.a[n.SIZE - 1];
-	if(a[n.SIZE - 1] >= IMax){
+	tmp = a[n.SIZE - 1];
+	tmp += n.a[n.SIZE - 1];
+	if(increase){
+		increase = false;
+		tmp++;
+	}
+	if(tmp >= IMax){
+		tmp -= IMax;
 		if(!less_or_equal){
-			a[n.SIZE - 1] -= IMax;
-			a[n.SIZE]++;
+			increase = true;
+			a[n.SIZE - 1] = tmp;
+			//a[n.SIZE - 1] -= IMax;
+			//a[n.SIZE]++;
 			for(int i = n.SIZE;i < SIZE - 1;i++){
-				if(a[i] < IMax){
+				tmp = a[i];
+				if(increase){
+					increase = false;
+					tmp++;
+				}
+				if(tmp < IMax){
+					a[i] = tmp;
 					return;
 				}
-				a[i] -= IMax;
-				a[i + 1]++;
+				tmp -= IMax;
+				a[i] = tmp;
+				increase = true;
 			}
-			if(a[SIZE - 1] >= IMax){
+			if(increase){
+				tmp = a[SIZE - 1];
+				tmp -= IMax;
+				a[SIZE - 1] = tmp;
 				resize(SIZE + 1);
-				a[SIZE - 2] -= IMax;
 				a[SIZE - 1]++;
 			}
 		}else{
 			if(have_SIZE_plus1){
-				a[SIZE - 1] -= IMax;
+				a[SIZE - 1] = tmp;
+				//a[SIZE - 1] -= IMax;
 				a[SIZE]++;
 				SIZE++;
 			}else{
+				a[SIZE - 1] = tmp;
 				resize(SIZE + 1);
-				a[SIZE - 2] -= IMax;
 				a[SIZE - 1]++;
 			}
 		}
@@ -1474,6 +1514,7 @@ list<string> BigNumber::std_list(Int notation) const{
 		l.push_back("0");
 		return l;
 	}
+	if(notation <= 1){notation = NOTATION;}
 	BigNumber n = abs();
 	do{
 		BtoI t = static_cast<BtoI>(n % notation);
@@ -1493,7 +1534,7 @@ string BigNumber::str(Int notation) const{
 	}
 	if(notation <= 1){notation = NOTATION;}
 	bool independence = false;
-	if(ispow_exchange(notation, IMax)){
+	if(ispow_exchange(static_cast<BtoI>(notation), IMax)){
 		independence = true;
 	}
 	list<string> l;

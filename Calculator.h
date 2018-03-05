@@ -763,7 +763,7 @@ int main(){
 		}*/
 		str = regex_replace(str, regex(R"***(([+\-*/%()^`!@\\&~#=]))***"), " $1 ");
 		str = regex_replace(str, regex(R"***(([A-Za-z_\$][\w\$]*))***"), " $1 ");
-		wout << str << wendl;
+		//wout << str << wendl;
 		ss.clear();
 		ss.str("");
 		ss << str;
@@ -865,7 +865,7 @@ int main(){
 					BtoI temp_index_for_assign = 0;
 					if(number_is_var.top()){
 						ll = variable[number.top()];
-						temp_index_for_assign = number.top();
+						temp_index_for_assign = static_cast<BtoI>(number.top());
 					}else{
 						ll = number.top();
 					}
