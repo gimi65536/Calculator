@@ -230,6 +230,8 @@ void BigNumber::simple_increment(){
 			tmp = a[i];
 			tmp++;
 			increase = false;
+		}else{
+			return;
 		}
 		if(tmp >= IMax){
 			tmp -= IMax;
