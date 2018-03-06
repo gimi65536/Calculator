@@ -2,14 +2,14 @@
 #define _BIG_NUMBER_INCLUDED_
 
 static constexpr size_t BASIC_SIZE = 4;
-static constexpr int DIGIT = 9;
+static constexpr int DIGIT = 30;
 typedef int Int;
 typedef intmax_t BtoI;
 typedef uintmax_t uBtoI;
 typedef long double BtoD;
 //constexpr BtoI IIMax = 1'000'000'000'000'000'000;
-static constexpr Int NOTATION = 10;
-constexpr BtoI IMax = 1'000'000'000;
+static constexpr Int NOTATION = 2;
+constexpr BtoI IMax = 1073741824;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should be larger than 3.");
 static_assert([](){
 	Int tmp = 1;
@@ -53,20 +53,26 @@ private:
 	size_t capacity;
 	Int*   a;
 	bool   positive;
-	                   void  resize                      ()                                  noexcept;
-	                   void  resize                      (size_t n);
-	                   void  simple_increment            ();
-	                   void  simple_decrement            ();
-	                   void  simple_add                  (const BigNumber& n);
-	                   void  simple_minus                (const BigNumber& n, bool negative);
-	static pair<BtoI, BtoI>  simple_multi                (Int x, Int y);
-	                   void  PASS_BY_STRING              (string str);
-	                   void  PASS_BY_STRING_with_notation(string str);
-	                   void  COMMON_DIVIDE               (const BigNumber& n, bool mod);
+	                     void  resize                      ()                                   noexcept;
+	                     void  resize                      (size_t n);
+	                     void  simple_increment            ();
+	                     void  simple_decrement            ();
+	                     void  simple_add                  (const BigNumber& n);
+	                     void  simple_minus                (const BigNumber& n, bool negative);
+	static pair<BtoI,   BtoI>  simple_multi                (Int x, Int y);
+	static pair<string, bool>  STANDARD_STR                (string str, regex re);
+	                     void  PASS_BY_STRING              (string str);
+	                     void  PASS_BY_STRING              (string str, Int notation);
+	                     void  PASS_BY_STRING_with_notation(string str, bool pos, Int notation);
+	                     void  COMMON_DIVIDE               (const BigNumber& n, bool mod);
 	template <typename T>
-	                   void  WIDE_CHAR_PASS              (const T& ch);
+	                     void  WIDE_CHAR_PASS              (const T& ch);
 	template <typename T>
-	                   void  WIDE_CHARARRAY_PASS         (const T* C_STR);
+	                     void  WIDE_CHAR_PASS              (const T& ch, Int notation);
+	template <typename T>
+	                     void  WIDE_CHARARRAY_PASS         (const T* C_STR);
+	template <typename T>
+	                     void  WIDE_CHARARRAY_PASS         (const T* C_STR, Int notation);
 public:
 	using base_type = Int;
 	static constexpr Int base_max = IMax - 1;
@@ -75,6 +81,8 @@ public:
 	                 BigNumber();
 	template <typename T>
 	                 BigNumber   (const T& n);
+	template <typename T>
+	                 BigNumber   (const T& n, Int notation);
 	                 BigNumber   (const BigNumber& n);
 	                 BigNumber   (BigNumber&& n);
 	                 ~BigNumber  ();
@@ -171,6 +179,12 @@ public:
 	           void  operator << (size_t n);
 	           void  operator >> (size_t n)                         noexcept;
 	   list<string>  std_list    (Int notation = NOTATION)    const;
+	template <typename T>
+	           void  injureString(const T& n, bool order = false, Int notation = 10);
+	template <typename T>
+	           void  injureString(T* const n, bool order = false, Int notation = 10);
+	template <typename T>
+	           void  injureString(const basic_string<T>& STR, bool order = false, Int notation = 10);
 	explicit         operator BtoI   ()                       const;
 	explicit         operator uBtoI  ()                       const;
 	explicit         operator BtoD   ()                       const;
@@ -423,87 +437,52 @@ pair<BtoI, BtoI> BigNumber::simple_multi(Int x, Int y){
 	BtoI sol = x_ * y_;
 	return make_pair(sol % IMax, sol / IMax);
 }
-void BigNumber::PASS_BY_STRING(string str){
-	//check notation
-	string test;
-	if(str.length() >= 3 && (str[0] == '+' || str[0] == '-')){
-		test = str.substr(1, 2);
-	}else if(str.length() >= 2){
-		test = str.substr(0, 2);
-	}
-	if(test.length() == 2){
-		if(test[0] == '0' && test.find_first_of("BbCcDdEeFfGgHhIiJjKkLlMmNnOoXx") != string::npos){
-			PASS_BY_STRING_with_notation(str);
-			return;
+pair<string, bool> BigNumber::STANDARD_STR(string str, regex re){
+	bool tmp;
+	str = regex_replace(str, re, "");
+	if(str.length() >= 1){
+		if(str[0] == '+'){
+			tmp = true;
+		}else if(str[0] == '-'){
+			tmp = false;
+		}else{
+			tmp = true;
 		}
 	}
-	//end
-	size_t pos = str.find_first_not_of("0123456789+-");
-	while(pos != string::npos){
-		str.erase(pos, 1);
-		pos = str.find_first_not_of("0123456789+-");
-	}
-	if(str.length() > 0 && str[0] == '-'){
-		positive = false;
-	}else if(str.length() > 0 && str[0] == '+'){
-		positive = true;
-	}else{
-		positive = true;
-	}
-	pos = str.find_first_of("+-");
-	while(pos != string::npos){
-		str.erase(pos, 1);
-		pos = str.find_first_of("+-");
-	}
-	while(str.length() > 0 && str[0] == '0'){
-		str.erase(0, 1);
-	}
-	SIZE = BASIC_SIZE;
-	if(str.length() > DIGIT * SIZE){
-		SIZE = (str.length() - 1) / DIGIT + 1;
-	}
-	capacity = SIZE;
-	delete[] a;
-	a = new Int[capacity];
-	for(int i = 0;i < SIZE;i++){
-		a[i] = 0;
-	}
-	if(str.length() == 0 || str.find_first_of("0123456789") == string::npos){
-		return;
-	}
-	stringstream ss;
-	int t = (str.length() - 1) / DIGIT;
-	for(int i = 0;i < t;i++){
-		string sub = str.substr(str.length() - DIGIT, DIGIT);
-		ss << sub;
-		ss >> a[i];
-		ss.clear();
-		ss.str("");
-		str = str.erase(str.length() - DIGIT, DIGIT);
-	}
-	ss << str;
-	ss >> a[t];
+	str = regex_replace(str, regex("[\\+\\-]"), "");
+	return make_pair(str, tmp);
 }
-void BigNumber::PASS_BY_STRING_with_notation(string str){
-	bool remain_positive = true;
-	if(str[0] == '+'){
-		remain_positive = true;
-		str.erase(0, 1);
-	}else if(str[0] == '-'){
-		remain_positive = false;
-		str.erase(0, 1);
-	}
-	str.erase(0, 1);
-	for(int i = 0;i < str.length();i++){
-		str[i] = toupper(str[i]);
-		if(!isalpha(str[i]) && !isdigit(str[i])){
-			str.erase(i, 1);
-			i--;
+void BigNumber::PASS_BY_STRING(string str){
+	auto [tmp, pos] = STANDARD_STR(str, regex("[^\\dBbOoXx\\+\\-]"));
+	str = move(tmp);
+	//check notation
+	Int notation = 10;
+	if(str.length() >= 2 && str[0] == '0'){
+		switch(str[1]){
+			case 'B':
+			case 'b':
+				notation = 2;
+				str.erase(0, 2);
+				break;
+			case 'O':
+			case 'o':
+				notation = 8;
+				str.erase(0, 2);
+				break;
+			case 'X':
+			case 'x':
+				notation = 16;
+				str.erase(0, 2);
+				break;
 		}
 	}
-	int notation_t = (str[0] != 'X') ? (str[0] - 'A' + 1) : (16);
-	BigNumber notation = notation_t;
-	str.erase(0, 1);
+	PASS_BY_STRING_with_notation(str, pos, notation);
+}
+void BigNumber::PASS_BY_STRING(string str, Int notation){
+	auto [tmp, pos] = STANDARD_STR(str, regex("[^\\d\\w\\+\\-]"));
+	PASS_BY_STRING_with_notation(tmp, pos, notation);
+}
+void BigNumber::PASS_BY_STRING_with_notation(string str, bool pos, Int notation){
 	SIZE = BASIC_SIZE;
 	capacity = BASIC_SIZE;
 	delete[] a;
@@ -511,16 +490,20 @@ void BigNumber::PASS_BY_STRING_with_notation(string str){
 	for(int i = 0;i < SIZE;i++){
 		a[i] = 0;
 	}
-	for(int i = 0;i < str.length();i++){
+	for(auto i : str){
 		BigNumber num;
-		if(isdigit(str[i])){
-			num = str[i];
+		if(isdigit(i)){
+			num = static_cast<BtoI>(i - '0');
 		}else{
-			num = static_cast<BtoI>(str[i] - 'A' + 10);
+			if(isupper(i)){
+				num = static_cast<BtoI>(i - 'A' + 10);
+			}else{
+				num = static_cast<BtoI>(i - 'a' + 10);
+			}
 		}
 		(*this) = num + ((*this) * notation);
 	}
-	positive = remain_positive;
+	positive = pos;
 }
 template <typename T>
 void BigNumber::WIDE_CHAR_PASS(const T& ch){
@@ -529,9 +512,20 @@ void BigNumber::WIDE_CHAR_PASS(const T& ch){
 	PASS_BY_STRING(cvt_string(STR));
 }
 template <typename T>
+void BigNumber::WIDE_CHAR_PASS(const T& ch, Int notation){
+	basic_string<T> STR;
+	STR += ch;
+	PASS_BY_STRING(cvt_string(STR), notation);
+}
+template <typename T>
 void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR){
 	basic_string<T> STR = C_STR;
 	PASS_BY_STRING(cvt_string(STR));
+}
+template <typename T>
+void BigNumber::WIDE_CHARARRAY_PASS(const T* C_STR, Int notation){
+	basic_string<T> STR = C_STR;
+	PASS_BY_STRING(cvt_string(STR), notation);
 }
 BigNumber::BigNumber(){
 	SIZE = BASIC_SIZE;
@@ -546,6 +540,11 @@ template <typename T>
 BigNumber::BigNumber(const T& n){
 	a = nullptr;
 	(*this) = n;
+}
+template <typename T>
+BigNumber::BigNumber(const T& n, Int notation){
+	a = nullptr;
+	injureString(n, true, notation);
 }
 BigNumber::BigNumber(const BigNumber& n){
 	if(this != &n){
@@ -735,23 +734,20 @@ const BigNumber& BigNumber::operator = (BigNumber&& n){
 	return (*this);
 }
 const BigNumber& BigNumber::operator = (const string& str){
-	PASS_BY_STRING(str);
+	injureString(str);
 	return (*this);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (const basic_string<T>& STR){
-	PASS_BY_STRING(cvt_string(STR));
+	injureString(STR);
 	return (*this);
 }
 template <typename T>
 const BigNumber& BigNumber::operator = (const T& n){
 	if constexpr(is_same<T, char>::value){
-		string str;
-		str += n;
-		PASS_BY_STRING(str);
+		injureString(n);
 	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
-		WIDE_CHAR_PASS(n);
-		return (*this);
+		injureString(n);
 	}else{
 		SIZE = BASIC_SIZE;
 		capacity = BASIC_SIZE;
@@ -786,10 +782,9 @@ const BigNumber& BigNumber::operator = (const T& n){
 template <typename T>
 const BigNumber& BigNumber::operator = (T* const n){
 	if constexpr(is_same<expr_type<T>, char>::value){
-		string str = n;
-		PASS_BY_STRING(str);
+		injureString(n);
 	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
-		WIDE_CHARARRAY_PASS(n);
+		injureString(n);
 	}else{
 		ptrdiff_t temp = reinterpret_cast<ptrdiff_t>(n);
 		(*this) = temp;
@@ -1542,6 +1537,53 @@ list<string> BigNumber::std_list(Int notation) const{
 	}
 	return l;
 }
+template <typename T>
+void BigNumber::injureString(const T& n, bool order, Int notation){
+	if constexpr(is_same_v<T, char>){
+		string str;
+		str += n;
+		if(order){
+			PASS_BY_STRING(str, notation);
+		}else{
+			PASS_BY_STRING(str);
+		}
+	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
+		if(order){
+			WIDE_CHAR_PASS(n, notation);
+		}else{
+			WIDE_CHAR_PASS(n);
+		}
+	}else{
+		(*this) = "0";
+	}
+}
+template <typename T>
+void BigNumber::injureString(T* const n, bool order, Int notation){
+	if constexpr(is_same_v<expr_type<T>, char>){
+		string str = n;
+		if(order){
+			PASS_BY_STRING(str, notation);
+		}else{
+			PASS_BY_STRING(str);
+		}
+	}else if constexpr(is_contain_first<expr_type<T>, wchar_t, char16_t, char32_t>::value){
+		if(order){
+			WIDE_CHARARRAY_PASS(n, notation);
+		}else{
+			WIDE_CHARARRAY_PASS(n);
+		}
+	}else{
+		(*this) = "0";
+	}
+}
+template <typename T>
+void BigNumber::injureString(const basic_string<T>& STR, bool order, Int notation){
+	if(order){
+		PASS_BY_STRING(cvt_string(STR), notation);
+	}else{
+		PASS_BY_STRING(cvt_string(STR));
+	}
+}
 
 string BigNumber::str(Int notation) const{
 	if(is_zero()){
@@ -1587,7 +1629,7 @@ string BigNumber::str_hint(Int notation) const{
 	}else if(notation == 2){
 		return "0b" + sol;
 	}else if(notation == 8){
-		return "0" + sol;
+		return "0o" + sol;
 	}else if(notation == 16){
 		return "0x" + sol;
 	}else{
