@@ -178,7 +178,8 @@ public:
 	           void  fit         ()                                 noexcept;
 	           void  operator << (size_t n);
 	           void  operator >> (size_t n)                         noexcept;
-	   list<string>  std_list    (Int notation = NOTATION)    const;
+	   list<Int   >  stdlist     (Int notation = NOTATION)    const;
+	   list<string>  stdstrlist  (Int notation = NOTATION)    const;
 	template <typename T>
 	           void  injureString(const T& n, bool order = false, Int notation = 10);
 	template <typename T>
@@ -1518,22 +1519,29 @@ const string cvt_string(const basic_string<T>& STR){
 	return convert_to_utf8(STR);
 }
 
-list<string> BigNumber::std_list(Int notation) const{
-	list<string> l;
+list<Int> BigNumber::stdlist(Int notation) const{
+	list<Int> l;
 	if(is_zero()){
-		l.push_back("0");
+		l.push_back(0);
 		return l;
 	}
 	if(notation <= 1){notation = NOTATION;}
 	BigNumber n = abs();
 	do{
-		BtoI t = static_cast<BtoI>(n % notation);
-		string buf = notation_cast(t, notation);
-		l.push_front(buf);
+		Int t = static_cast<BtoI>(n % notation);
+		l.push_front(t);
 		n /= notation;
 	}while(!n.is_zero());
 	if(!positive){
-		l.push_front("-");
+		l.front() = -l.front();
+	}
+	return l;
+}
+list<string> BigNumber::stdstrlist(Int notation) const{
+	list<Int> tmp = stdlist(notation);
+	list<string> l;
+	for(const auto& i : tmp){
+		l.push_back(notation_cast(i, notation));
 	}
 	return l;
 }
@@ -1609,12 +1617,9 @@ string BigNumber::str(Int notation) const{
 			l.push_back(buf);
 		}
 	}else{
-		l = std_list(notation);
-		if(!positive){
-			l.pop_front();
-		}
+		l = stdstrlist(notation);
 	}
-	string sol = (positive ? "" : "-");
+	string sol;
 	if(notation >= 36){
 		return sol + join("|", l);
 	}else{
