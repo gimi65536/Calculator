@@ -1541,7 +1541,7 @@ list<string> BigNumber::stdstrlist(Int notation) const{
 	list<Int> tmp = stdlist(notation);
 	list<string> l;
 	for(const auto& i : tmp){
-		l.push_back(notation_cast(i, notation));
+		l.push_back(numtostr_with_notation(i, notation));
 	}
 	return l;
 }
@@ -1606,7 +1606,7 @@ string BigNumber::str(Int notation) const{
 	if(independence){
 		int size = getRealSize();
 		for(int i = size - 1;i >= 0;i--){
-			string buf = notation_cast(a[i], notation);
+			string buf = numtostr_with_notation(a[i], notation);
 			if(i != size - 1){
 				if(notation < 36 && buf.length() < DIGIT){
 					l.push_back(string(DIGIT - buf.length(), '0'));
