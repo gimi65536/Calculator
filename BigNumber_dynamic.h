@@ -2,14 +2,14 @@
 #define _BIG_NUMBER_INCLUDED_
 
 static constexpr size_t BASIC_SIZE = 4;
-static constexpr int DIGIT = 30;
+static constexpr int DIGIT = 9;
 typedef int Int;
 typedef intmax_t BtoI;
 typedef uintmax_t uBtoI;
 typedef long double BtoD;
 //constexpr BtoI IIMax = 1'000'000'000'000'000'000;
-static constexpr Int NOTATION = 2;
-constexpr BtoI IMax = 1073741824;
+static constexpr Int NOTATION = 10;
+constexpr BtoI IMax = 1000000000;
 static_assert(BASIC_SIZE >= 3, "BASIC_SIZE should be larger than 3.");
 static_assert([](){
 	Int tmp = 1;
@@ -755,7 +755,7 @@ const BigNumber& BigNumber::operator = (const T& n){
 		delete[] a;
 		a = new Int[capacity];
 		if constexpr(is_scalar<T>::value){ //faster
-			for(int i = SIZE - 1;i > 2;i--){
+			for(int i = SIZE - 1;i >= 0;i--){
 				a[i] = 0;
 			}
 			if constexpr(is_signed<T>::value){
@@ -787,7 +787,7 @@ const BigNumber& BigNumber::operator = (T* const n){
 	}else if constexpr(is_contain_first<T, wchar_t, char16_t, char32_t>::value){
 		injureString(n);
 	}else{
-		ptrdiff_t temp = reinterpret_cast<ptrdiff_t>(n);
+		intptr_t temp = reinterpret_cast<ptrdiff_t>(n);
 		(*this) = temp;
 	}
 	return (*this);
@@ -1620,6 +1620,9 @@ string BigNumber::str(Int notation) const{
 		l = stdstrlist(notation);
 	}
 	string sol;
+	if(!positive){
+		sol += "-";
+	}
 	if(notation >= 36){
 		return sol + join("|", l);
 	}else{
