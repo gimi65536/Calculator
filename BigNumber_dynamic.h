@@ -245,6 +245,7 @@ void BigNumber::simple_increment(){
 			tmp++;
 			increase = false;
 		}else{
+			a[i] = tmp;
 			return;
 		}
 		if(tmp >= IMax){
@@ -252,6 +253,7 @@ void BigNumber::simple_increment(){
 			a[i] = tmp;
 			increase = true;
 		}else{
+			a[i] = tmp;
 			return;
 		}
 	}
@@ -988,7 +990,7 @@ BigNumber BigNumber::operator * (const T& n) const{
 	return temp;
 }
 void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
-	BtoI BIMax = IMax, remain = 0;
+	BtoI remain = 0;
 	BtoI a_size = getRealSize(), b_size = n.getRealSize();
 	BtoI target_size = a_size - b_size + 1;
 	if(target_size <= 0){
@@ -1005,7 +1007,7 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 		quo = new Int[target_size];
 	}
 	for(int i = target_size - 1;i >= 0;i--){
-		Int newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1], head = 0;
+		Int newhead = (remain * IMax + a[b_size - 1 + i]) / n.a[b_size - 1], head = 0;
 		if(newhead == 0){
 			if(!mod){
 				quo[i] = 0;
@@ -1037,8 +1039,8 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 			head = newhead;
 			for(int j = 0;j < b_size - 1;j++){
 				BtoI buffer = differ * n.a[j];
-				a[i + j] += buffer % BIMax;
-				a[i + j + 1] += buffer / BIMax;
+				a[i + j] += buffer % IMax;
+				a[i + j + 1] += buffer / IMax;
 				while(a[i + j] >= IMax){
 					a[i + j] -= IMax;
 					a[i + j + 1]++;
@@ -1048,12 +1050,12 @@ void BigNumber::COMMON_DIVIDE(const BigNumber& n, bool mod){
 					a[i + j + 1]--;
 				}
 			}
-			newhead = (remain * BIMax + a[b_size - 1 + i]) / n.a[b_size - 1];
+			newhead = (remain * IMax + a[b_size - 1 + i]) / n.a[b_size - 1];
 		}
 		if(head != newhead){
 			newhead = head;
 		}
-		a[b_size - 1 + i] = (remain * BIMax + a[b_size - 1 + i]) - n.a[b_size - 1] * static_cast<BtoI>(newhead);
+		a[b_size - 1 + i] = (remain * IMax + a[b_size - 1 + i]) - n.a[b_size - 1] * static_cast<BtoI>(newhead);
 		if(!mod){
 			quo[i] = head;
 		}
@@ -1299,7 +1301,7 @@ BigNumber::operator uBtoI() const{
 	return tmp;
 }
 BigNumber::operator BtoD() const{
-	long double tmp = static_cast<long double>(static_cast<long long int>((*this)));
+	BtoD tmp = static_cast<BtoD>(static_cast<BtoI>((*this)));
 	return tmp;
 }
 BigNumber::operator string() const{
